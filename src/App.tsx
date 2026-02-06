@@ -17,6 +17,7 @@ import Reports from "./pages/Reports";
 import AdminPanel from "./pages/AdminPanel";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
+import MeetingRooms from "./pages/MeetingRooms";
 import React from "react";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => {
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/kpi" element={<KPITracking />} />
               <Route path="/tickets" element={<Tickets />} />
+              <Route path="/meeting-rooms" element={<MeetingRooms />} />
               
               {/* Manager+ Routes */}
               <Route path="/analytics" element={

@@ -510,19 +510,25 @@ docker-compose up -d
 
 ## 🔑 Test Kullanıcıları
 
-Seed data ile birlikte 3 test kullanıcısı oluşturulur:
+Seed data ile birlikte 4 test kullanıcısı oluşturulur:
 
 1. **Admin**
    - Email: `admin@gurgil.com`
    - Şifre: `123456`
    - Departman: İnsan Kaynakları
 
-2. **Department Manager**
+2. **Department Manager (Bilgi İşlem)**
    - Email: `manager@gurgil.com`
    - Şifre: `123456`
    - Departman: Bilgi İşlem
 
-3. **Employee**
+3. **Department Manager (IT)**
+   - Email: `musa@gurgil.com`
+   - Şifre: `123456`
+   - Departman: IT
+   - Tam Adı: Musa Gürgil
+
+4. **Employee**
    - Email: `employee@gurgil.com`
    - Şifre: `123456`
    - Departman: Bilgi İşlem

@@ -1,5 +1,16 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,11 +29,16 @@ import {
   XCircle,
   Pause,
   AlertTriangle,
-  Edit
+  Edit,
+  Trash2,
+  Download
 } from "lucide-react";
 import { Ticket, TicketComment, TICKET_STATUSES, TICKET_PRIORITIES } from "@/types/ticket";
 import { User as UserType } from "@/types/user";
 import { cn } from "@/lib/utils";
+import { exportTicketDetailToCSV } from "@/lib/export";
+import { toast as sonnerToast } from 'sonner';
+import { TicketSLA } from "./TicketSLA";
 
 interface TicketDetailsProps {
   ticket: Ticket | null;
@@ -32,6 +48,7 @@ interface TicketDetailsProps {
   onUpdateTicket: (ticketId: string, updates: Partial<Ticket>) => void;
   onAssignTicket: (ticketId: string, assignedTo: string) => void;
   onAddComment: (ticketId: string, content: string, isInternal?: boolean) => void;
+  onDeleteTicket?: (ticketId: string) => void;
   onRefreshTicket?: () => void;
 }
 
@@ -43,6 +60,7 @@ export function TicketDetails({
   onUpdateTicket,
   onAssignTicket,
   onAddComment,
+  onDeleteTicket,
   onRefreshTicket
 }: TicketDetailsProps) {
   const [newComment, setNewComment] = useState('');
@@ -66,6 +84,26 @@ export function TicketDetails({
     return currentUser.role === 'admin' ||
            (currentUser.role === 'department_manager' && 
             currentUser.department === ticket.targetDepartment);
+  };
+
+  const canDeleteTicket = () => {
+    return currentUser.role === 'admin' || ticket.createdBy === currentUser.id;
+  };
+
+  const handleExportTicket = () => {
+    try {
+      exportTicketDetailToCSV(ticket);
+      sonnerToast.success('✅ Ticket raporu Excel dosyasına aktarıldı!');
+    } catch (error: any) {
+      sonnerToast.error('❌ Export işlemi başarısız: ' + error.message);
+    }
+  };
+
+  const handleDeleteClick = () => {
+    if (onDeleteTicket) {
+      onDeleteTicket(ticket.id);
+      onClose();
+    }
   };
 
   const getStatusColor = (status: Ticket['status']) => {
@@ -112,10 +150,14 @@ export function TicketDetails({
     try {
       await onAddComment(ticket.id, newComment.trim());
       setNewComment('');
+      
+      // Wait a brief moment for backend to update
+      setTimeout(() => {
       // Refresh ticket data after adding comment
       if (onRefreshTicket) {
         onRefreshTicket();
       }
+      }, 100);
     } finally {
       setIsSubmittingComment(false);
     }
@@ -147,12 +189,49 @@ export function TicketDetails({
             <div className="space-y-1 flex-1 min-w-0">
               <DialogTitle className="text-lg sm:text-xl line-clamp-2">{ticket.title}</DialogTitle>
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
-                <span className="font-mono truncate">{ticket.id}</span>
+                <span className="font-mono truncate text-primary font-semibold">
+                  #{ticket.ticketNumber || ticket.id.substring(0, 8)}
+                </span>
                 <span className="hidden sm:inline">•</span>
                 <span className="truncate">Oluşturulma: {formatDate(ticket.createdAt)}</span>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportTicket}
+                title="Ticket Raporunu İndir"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+              {canDeleteTicket() && onDeleteTicket && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Ticket'ı Silmek İstediğinize Emin misiniz?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        <span className="font-semibold text-foreground">{ticket.title}</span> ticket'ını silmek üzeresiniz. 
+                        Bu işlem geri alınamaz ve tüm yorumlar da silinecektir.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>İptal</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteClick}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Evet, Sil
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Badge variant="outline" className={cn("text-xs", getPriorityColor(ticket.priority))}>
                 <AlertTriangle className="w-3 h-3 mr-1" />
                 <span className="hidden sm:inline">{TICKET_PRIORITIES[ticket.priority]}</span>
@@ -243,6 +322,9 @@ export function TicketDetails({
 
           {/* Sidebar */}
           <div className="space-y-4 sm:space-y-6">
+            {/* SLA Status */}
+            <TicketSLA ticket={ticket} />
+
             {/* Ticket Info */}
             <div className="space-y-4">
               <h3 className="font-semibold">Ticket Bilgileri</h3>

@@ -13,7 +13,8 @@ import {
   Bell,
   LogOut,
   Calendar,
-  Shield
+  Shield,
+  Building2
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -26,6 +27,7 @@ const menuItems = [
   { id: '/notifications', label: 'Bildirimler', icon: Bell, showBadge: true },
   { id: '/kpi', label: 'KPI Takip', icon: Target },
   { id: '/tickets', label: 'Ticket Yönetimi', icon: Ticket },
+  { id: '/meeting-rooms', label: 'Toplantı Odaları', icon: Building2 },
   { id: '/analytics', label: 'Analitik', icon: TrendingUp },
   { id: '/reports', label: 'Raporlar', icon: FileText },
   { id: '/admin', label: 'Yönetici Paneli', icon: Shield },
@@ -33,16 +35,20 @@ const menuItems = [
   { id: '/settings', label: 'Ayarlar', icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export function Sidebar({ onClose }: SidebarProps = {}) {
   const location = useLocation();
   const navigate = useNavigate();
   const activeTab = location.pathname;
-  const { user, profile, logout, hasPermission, hasRole } = useAuth();
+  const { user, logout, hasPermission, hasRole } = useAuth();
   const { unreadCount } = useNotifications();
 
   const getUserInitials = () => {
-    if (!profile) return 'U';
-    return `${profile.first_name.charAt(0)}${profile.last_name.charAt(0)}`.toUpperCase();
+    if (!user) return 'U';
+    return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
   };
 
   const getVisibleMenuItems = () => {
@@ -91,7 +97,10 @@ export function Sidebar() {
                 "w-full justify-start text-left font-medium transition-smooth",
                 activeTab === item.id && "bg-gradient-primary text-white shadow-elevated"
               )}
-              onClick={() => navigate(item.id)}
+              onClick={() => {
+                navigate(item.id);
+                onClose?.();
+              }}
             >
               <Icon className="w-4 h-4 mr-3" />
               {item.label}
@@ -111,12 +120,12 @@ export function Sidebar() {
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
-              {profile ? `${profile.first_name} ${profile.last_name}` : 'Kullanıcı'}
+              {user ? `${user.firstName} ${user.lastName}` : 'Kullanıcı'}
             </p>
             <p className="text-xs text-muted-foreground truncate">
               {user?.email || 'email@company.com'}
             </p>
-            {profile && (
+            {user && (
               <p className="text-xs font-medium text-primary">
                 {hasRole('admin') ? 'Sistem Yöneticisi' : 
                  hasRole('department_manager') ? 'Departman Yöneticisi' : 

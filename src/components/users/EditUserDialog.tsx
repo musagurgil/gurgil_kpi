@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuth } from "@/hooks/useAuth";
 import { DEPARTMENTS, ROLES } from "@/types/user";
 import { toast } from "@/hooks/use-toast";
+import { apiClient } from "@/lib/api";
 
 interface User {
   id: string;
@@ -78,16 +79,27 @@ export function EditUserDialog({ user, open, onOpenChange, onUserUpdated }: Edit
     setLoading(true);
 
     try {
-      // Use API client instead of Supabase
-      
+      console.log('[EditUserDialog] Updating profile:', {
+        id: user.id,
+        data: {
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          department: formData.department,
+          roles: [formData.role]
+        }
+      });
+
       // Use API client to update user
-      await apiClient.updateProfile(user.id, {
+      const updatedProfile = await apiClient.updateProfile(user.id, {
         email: formData.email,
         firstName: formData.firstName,
         lastName: formData.lastName,
         department: formData.department,
         roles: [formData.role]
       });
+
+      console.log('[EditUserDialog] Profile updated successfully:', updatedProfile);
 
       toast({
         title: "Başarılı",
@@ -101,8 +113,29 @@ export function EditUserDialog({ user, open, onOpenChange, onUserUpdated }: Edit
       
       onUserUpdated();
       onOpenChange(false);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Kullanıcı güncellenemedi');
+    } catch (error: any) {
+      console.error('[EditUserDialog] Error updating profile:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response,
+        status: error.status
+      });
+      
+      let errorMessage = 'Kullanıcı güncellenemedi';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.error) {
+        errorMessage = error.response.error;
+      } else if (error.response?.details) {
+        errorMessage = error.response.details;
+      }
+      
+      setError(errorMessage);
+      toast({
+        title: "Hata",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }

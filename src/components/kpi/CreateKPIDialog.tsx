@@ -213,13 +213,22 @@ export function CreateKPIDialog({
                   department: value,
                   assignedTo: [] // Reset assigned users when department changes
                 }))}
+                disabled={currentUser?.role === 'department_manager'}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Departman seçin" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableDepartments.length > 0 ? (
-                    availableDepartments.map(dept => (
+                    currentUser?.role === 'admin' 
+                      ? availableDepartments.map(dept => (
+                          <SelectItem key={dept} value={dept}>
+                            {dept}
+                          </SelectItem>
+                        ))
+                      : availableDepartments
+                          .filter(dept => dept === currentUser?.department)
+                          .map(dept => (
                       <SelectItem key={dept} value={dept}>
                         {dept}
                       </SelectItem>
@@ -231,6 +240,11 @@ export function CreateKPIDialog({
                   )}
                 </SelectContent>
               </Select>
+              {currentUser?.role === 'department_manager' && (
+                <p className="text-xs text-muted-foreground">
+                  Departman yöneticileri sadece kendi departmanları için KPI oluşturabilir
+                </p>
+              )}
             </div>
 
             {/* Period */}
@@ -333,9 +347,17 @@ export function CreateKPIDialog({
           </div>
 
           {/* Assigned Users */}
-          {formData.department && departmentUsers.length > 0 && (
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Atanan Kişiler *</Label>
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Atanan Kişiler *</Label>
+            {!formData.department ? (
+              <div className="border rounded-md p-4 text-center text-sm text-muted-foreground">
+                Önce bir departman seçin
+              </div>
+            ) : departmentUsers.length === 0 ? (
+              <div className="border rounded-md p-4 text-center text-sm text-muted-foreground">
+                Bu departmanda kullanıcı bulunamadı
+              </div>
+            ) : (
               <div className="max-h-32 sm:max-h-40 overflow-y-auto border rounded-md p-3 space-y-2">
                 {departmentUsers.map(user => (
                   <div key={user.id} className="flex items-center space-x-2">
@@ -356,8 +378,13 @@ export function CreateKPIDialog({
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+            {formData.assignedTo.length === 0 && formData.department && departmentUsers.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                En az bir kişi seçmelisiniz
+              </p>
+            )}
+          </div>
 
           <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-4">
             <Button

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
 import { CreateTicketData, TICKET_PRIORITIES } from "@/types/ticket";
-import { DEPARTMENTS } from "@/types/user";
 import { useAuth } from "@/hooks/useAuth";
+import { apiClient } from "@/lib/api";
 
 interface CreateTicketDialogProps {
   onCreateTicket: (data: CreateTicketData) => Promise<void>;
@@ -18,6 +18,7 @@ export function CreateTicketDialog({ onCreateTicket }: CreateTicketDialogProps) 
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [availableDepartments, setAvailableDepartments] = useState<string[]>([]);
   const [formData, setFormData] = useState<CreateTicketData>({
     title: '',
     description: '',
@@ -25,6 +26,27 @@ export function CreateTicketDialog({ onCreateTicket }: CreateTicketDialogProps) 
     targetDepartment: '',
     tags: []
   });
+
+  // Load departments from API
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const departments = await apiClient.getDepartments();
+        const departmentNames = departments.map((d: any) => d.name);
+        // Filter out current user's department (can't send ticket to yourself)
+        const filtered = departmentNames.filter((dept: string) => dept !== user?.department);
+        setAvailableDepartments(filtered);
+      } catch (error) {
+        console.error('Error loading departments:', error);
+        // Fallback to empty array
+        setAvailableDepartments([]);
+      }
+    };
+
+    if (open) {
+      loadDepartments();
+    }
+  }, [open, user?.department]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,10 +70,6 @@ export function CreateTicketDialog({ onCreateTicket }: CreateTicketDialogProps) 
     } finally {
       setLoading(false);
     }
-  };
-
-  const getAvailableDepartments = () => {
-    return DEPARTMENTS.filter(dept => dept !== user?.department);
   };
 
   return (
@@ -119,9 +137,15 @@ export function CreateTicketDialog({ onCreateTicket }: CreateTicketDialogProps) 
                   <SelectValue placeholder="Departman seçin" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getAvailableDepartments().map((dept) => (
+                  {availableDepartments.length > 0 ? (
+                    availableDepartments.map((dept) => (
                     <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
+                    ))
+                  ) : (
+                    <SelectItem value="loading" disabled>
+                      Departmanlar yükleniyor...
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

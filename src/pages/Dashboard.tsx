@@ -3,6 +3,9 @@ import { StatsOverview } from "@/components/dashboard/StatsOverview";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { TicketOverview } from "@/components/dashboard/TicketOverview";
 import { DepartmentPerformance } from "@/components/dashboard/DepartmentPerformance";
+import { TodaySummary } from "@/components/dashboard/TodaySummary";
+import { UpcomingDeadlines } from "@/components/dashboard/UpcomingDeadlines";
+import { RecentActivities } from "@/components/dashboard/RecentActivities";
 import { Footer } from "@/components/common/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/useDashboard";
@@ -14,9 +17,16 @@ export default function Dashboard() {
     <div className="flex-1 bg-dashboard-bg min-h-screen flex flex-col">
       <DashboardHeader />
       
-      <main className="p-6 space-y-6 flex-1">
+      <main className="p-4 sm:p-6 space-y-6 flex-1">
         {/* Stats Overview */}
         <StatsOverview />
+        
+        {/* Today Summary and Upcoming Deadlines */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <TodaySummary />
+          <UpcomingDeadlines />
+          <RecentActivities />
+        </div>
         
         {/* KPI Cards */}
         <div>
@@ -48,7 +58,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              Henüz KPI verisi bulunmamaktadır.
+              Henüz kritik KPI verisi bulunmamaktadır.
             </div>
           )}
         </div>

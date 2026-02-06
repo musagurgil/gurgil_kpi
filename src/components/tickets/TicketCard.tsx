@@ -110,7 +110,9 @@ export function TicketCard({
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
           <div className="space-y-1 flex-1 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <span className="font-mono text-xs sm:text-sm text-muted-foreground truncate">{ticket.id}</span>
+              <span className="font-mono text-xs sm:text-sm text-primary font-semibold truncate">
+                #{ticket.ticketNumber || ticket.id.substring(0, 8)}
+              </span>
               <Badge variant="outline" className={cn("text-xs w-fit", getPriorityColor(ticket.priority))}>
                 {getPriorityIcon(ticket.priority)}
                 <span className="ml-1 hidden sm:inline">{TICKET_PRIORITIES[ticket.priority]}</span>
@@ -172,18 +174,24 @@ export function TicketCard({
             </div>
           </div>
 
-          {assignedUser && (
+          {(assignedUser || ticket.assignedToName) && (
             <div className="flex items-center space-x-2 min-w-0">
               <span className="text-xs text-muted-foreground hidden sm:inline">Atanan:</span>
               <span className="text-xs text-muted-foreground sm:hidden">A:</span>
               <div className="flex items-center space-x-1 min-w-0">
                 <Avatar className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0">
                   <AvatarFallback className="text-xs bg-primary/10">
-                    {`${assignedUser.firstName.charAt(0)}${assignedUser.lastName.charAt(0)}`}
+                    {assignedUser 
+                      ? `${assignedUser.firstName.charAt(0)}${assignedUser.lastName.charAt(0)}`
+                      : ticket.assignedToName?.split(' ').map(n => n.charAt(0)).join('') || 'U'
+                    }
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-xs font-medium truncate">
-                  {`${assignedUser.firstName} ${assignedUser.lastName}`}
+                  {assignedUser 
+                    ? `${assignedUser.firstName} ${assignedUser.lastName}`
+                    : ticket.assignedToName || ticket.assignedTo
+                  }
                 </span>
               </div>
             </div>

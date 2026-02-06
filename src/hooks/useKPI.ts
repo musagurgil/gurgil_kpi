@@ -25,7 +25,7 @@ export const useKPI = () => {
     const remainingDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     
     // Get current value from all progress records (sum of all progress values)
-    const currentValue = kpi.progress?.reduce((sum, p) => sum + (p.value || 0), 0) || 0;
+    const currentValue = kpi.progress?.reduce((sum: number, p: any) => sum + (p.value || 0), 0) || 0;
     
     // Calculate progress percentage
     const progressPercentage = kpi.targetValue > 0 ? (currentValue / kpi.targetValue) * 100 : 0;
@@ -41,16 +41,37 @@ export const useKPI = () => {
     }
     
     // Calculate velocity (daily progress rate)
-    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    const velocity = totalDays > 0 ? currentValue / totalDays : 0;
+    // Velocity should be based on elapsed days, not total days
+    const elapsedDays = Math.max(1, Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+    const velocity = elapsedDays > 0 ? currentValue / elapsedDays : 0;
     
     // Estimate completion date
     let estimatedCompletion = null;
     if (velocity > 0 && currentValue < kpi.targetValue) {
       const remainingValue = kpi.targetValue - currentValue;
       const daysToComplete = Math.ceil(remainingValue / velocity);
-      estimatedCompletion = new Date(now.getTime() + (daysToComplete * 24 * 60 * 60 * 1000));
+      const estimatedDate = new Date(now.getTime() + (daysToComplete * 24 * 60 * 60 * 1000));
+      
+      // Limit estimated completion to maximum 2x the original end date to prevent unrealistic dates
+      const maxEstimatedDate = new Date(endDate.getTime() + (30 * 24 * 60 * 60 * 1000)); // End date + 30 days
+      
+      if (estimatedDate > maxEstimatedDate) {
+        // If estimated date is too far, use the original end date
+        estimatedCompletion = endDate;
+      } else {
+        estimatedCompletion = estimatedDate;
+      }
+    } else if (currentValue === 0) {
+      // If no progress has been made, estimate based on remaining days and target
+      // Assume linear progress from now to end date
+      const remainingDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (remainingDays > 0) {
+        estimatedCompletion = endDate; // Use original end date as estimate
+      }
     }
+    
+    // Transform assignments array to assignedUsers array (user IDs)
+    const assignedUsers = kpi.assignments?.map((assignment: any) => assignment.userId) || [];
     
     return {
       ...kpi,
@@ -61,7 +82,9 @@ export const useKPI = () => {
       status,
       velocity,
       estimatedCompletion: estimatedCompletion?.toISOString(),
-      recentProgress: kpi.progress || []
+      recentProgress: kpi.progress || [],
+      assignedUsers, // assignments array'ini assignedUsers'a dönüştür
+      comments: kpi.comments || []
     };
   };
 
@@ -108,10 +131,11 @@ export const useKPI = () => {
       const processedData = data.map(calculateKPIStats);
       setKpiStats(processedData);
       
+      toast.success('✅ KPI başarıyla oluşturuldu!');
       return processedData[0]; // Return the newly created KPI
     } catch (err: any) {
       console.error('Error creating KPI:', err);
-      toast.error(err.message || 'KPI oluşturulurken hata oluştu');
+      toast.error('❌ ' + (err.message || 'KPI oluşturulurken hata oluştu'));
       throw err;
     }
   };
@@ -125,10 +149,11 @@ export const useKPI = () => {
       const processedData = data.map(calculateKPIStats);
       setKpiStats(processedData);
       
+      toast.success('✅ KPI başarıyla güncellendi!');
       return processedData.find(kpi => kpi.kpiId === id);
     } catch (err: any) {
       console.error('Error updating KPI:', err);
-      toast.error(err.message || 'KPI güncellenirken hata oluştu');
+      toast.error('❌ ' + (err.message || 'KPI güncellenirken hata oluştu'));
       throw err;
     }
   };
@@ -141,9 +166,11 @@ export const useKPI = () => {
       const data = await apiClient.getKPIs();
       const processedData = data.map(calculateKPIStats);
       setKpiStats(processedData);
+      
+      toast.success('✅ KPI başarıyla silindi!');
     } catch (err: any) {
       console.error('Error deleting KPI:', err);
-      toast.error(err.message || 'KPI silinirken hata oluştu');
+      toast.error('❌ ' + (err.message || 'KPI silinirken hata oluştu'));
       throw err;
     }
   };
@@ -156,9 +183,11 @@ export const useKPI = () => {
       const data = await apiClient.getKPIs();
       const processedData = data.map(calculateKPIStats);
       setKpiStats(processedData);
+      
+      toast.success(`✅ İlerleme kaydedildi: +${value}`);
     } catch (err: any) {
       console.error('Error recording progress:', err);
-      toast.error(err.message || 'İlerleme kaydedilirken hata oluştu');
+      toast.error('❌ ' + (err.message || 'İlerleme kaydedilirken hata oluştu'));
       throw err;
     }
   };
@@ -171,9 +200,11 @@ export const useKPI = () => {
       const data = await apiClient.getKPIs();
       const processedData = data.map(calculateKPIStats);
       setKpiStats(processedData);
+      
+      toast.success('✅ Yorum başarıyla eklendi!');
     } catch (err: any) {
       console.error('Error adding comment:', err);
-      toast.error(err.message || 'Yorum eklenirken hata oluştu');
+      toast.error('❌ ' + (err.message || 'Yorum eklenirken hata oluştu'));
       throw err;
     }
   };

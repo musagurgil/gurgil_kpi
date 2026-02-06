@@ -13,6 +13,69 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 app.use(cors());
 app.use(express.json());
 
+// Helper function to create notifications
+async function createNotification(userId, category, priority, title, message, link = null) {
+  try {
+    await prisma.notification.create({
+      data: {
+        userId,
+        category,
+        priority,
+        title,
+        message,
+        link,
+        isRead: false
+      }
+    });
+  } catch (error) {
+    console.error('Error creating notification:', error);
+  }
+}
+
+// Helper function to check KPI deadline and create notifications
+async function checkKPIDeadlineAndNotify(kpi) {
+  const now = new Date();
+  const endDate = new Date(kpi.endDate);
+  const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Notify if deadline is approaching (7 days or less)
+  if (daysRemaining > 0 && daysRemaining <= 7) {
+    // Notify all assigned users
+    const assignments = await prisma.kpiAssignment.findMany({
+      where: { kpiId: kpi.id }
+    });
+    
+    for (const assignment of assignments) {
+      await createNotification(
+        assignment.userId,
+        'kpi',
+        'high',
+        `⏰ KPI Deadline Yaklaşıyor: ${kpi.title}`,
+        `"${kpi.title}" KPI'sının bitiş tarihine ${daysRemaining} gün kaldı. Hedefin %${((kpi.currentValue / kpi.targetValue) * 100).toFixed(1)}'i tamamlandı.`,
+        `/kpi`
+      );
+    }
+  }
+  
+  // Notify if deadline passed
+  if (daysRemaining < 0 && kpi.status === 'active') {
+    const assignments = await prisma.kpiAssignment.findMany({
+      where: { kpiId: kpi.id }
+    });
+    
+    for (const assignment of assignments) {
+      await createNotification(
+        assignment.userId,
+        'kpi',
+        'critical',
+        `🚨 KPI Süresi Doldu: ${kpi.title}`,
+        `"${kpi.title}" KPI'sının bitiş tarihi ${Math.abs(daysRemaining)} gün önce geçti. Lütfen durumu güncelleyin.`,
+        `/kpi`
+      );
+    }
+  }
+}
+
 // Auth middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -169,6 +232,41 @@ app.put('/api/admin/profiles/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { email, firstName, lastName, department, roles } = req.body;
 
+    console.log(`[UPDATE PROFILE] User: ${req.user.email}, Profile ID: ${id}`);
+    console.log(`[UPDATE PROFILE] Data:`, { email, firstName, lastName, department, roles });
+
+    // Check if user has admin role
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      console.log(`[UPDATE PROFILE] Unauthorized: User is not admin`);
+      return res.status(403).json({ error: 'Only admins can update profiles' });
+    }
+
+    // Check if department exists, if not create it
+    if (department) {
+      const existingDept = await prisma.department.findUnique({
+        where: { name: department }
+      });
+
+      if (!existingDept) {
+        console.log(`[UPDATE PROFILE] Creating new department: ${department}`);
+        await prisma.department.create({
+          data: { name: department }
+        });
+      }
+    }
+
+    // Check if profile exists
+    const existingProfile = await prisma.profile.findUnique({
+      where: { id },
+      include: { userRoles: true }
+    });
+
+    if (!existingProfile) {
+      console.log(`[UPDATE PROFILE] Profile not found: ${id}`);
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
     // Update profile
     const profile = await prisma.profile.update({
       where: { id },
@@ -181,27 +279,42 @@ app.put('/api/admin/profiles/:id', authenticateToken, async (req, res) => {
       include: { userRoles: true }
     });
 
+    console.log(`[UPDATE PROFILE] Profile updated successfully`);
+
     // Update roles
     await prisma.userRole.deleteMany({
       where: { userId: id }
     });
 
-    await prisma.userRole.createMany({
-      data: roles.map(role => ({
-        userId: id,
-        role
-      }))
-    });
+    if (roles && roles.length > 0) {
+      await prisma.userRole.createMany({
+        data: roles.map(role => ({
+          userId: id,
+          role
+        }))
+      });
+      console.log(`[UPDATE PROFILE] Roles updated:`, roles);
+    }
 
     const updatedProfile = await prisma.profile.findUnique({
       where: { id },
       include: { userRoles: true }
     });
 
+    console.log(`[UPDATE PROFILE] Success: Profile ${id} updated`);
     res.json(updatedProfile);
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      meta: error.meta
+    });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
   }
 });
 
@@ -269,7 +382,11 @@ app.get('/api/kpis', authenticateToken, async (req, res) => {
     const kpis = await prisma.kpiTarget.findMany({
       where: whereClause,
       include: {
-        progress: true,
+        progress: {
+          include: {
+            recorder: true // Include user who recorded the progress
+          }
+        },
         comments: true,
         assignments: {
           include: {
@@ -280,7 +397,16 @@ app.get('/api/kpis', authenticateToken, async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    res.json(kpis);
+    // Transform progress records to include user names
+    const kpisWithUserNames = kpis.map(kpi => ({
+      ...kpi,
+      progress: kpi.progress.map(p => ({
+        ...p,
+        recordedByName: `${p.recorder?.firstName || ''} ${p.recorder?.lastName || ''}`.trim() || p.recordedBy
+      }))
+    }));
+
+    res.json(kpisWithUserNames);
   } catch (error) {
     console.error('Get KPIs error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -328,7 +454,11 @@ app.post('/api/kpis', authenticateToken, async (req, res) => {
         }
       },
       include: {
-        progress: true,
+        progress: {
+          include: {
+            recorder: true
+          }
+        },
         comments: true,
         assignments: {
           include: {
@@ -338,8 +468,32 @@ app.post('/api/kpis', authenticateToken, async (req, res) => {
       }
     });
     
+    // Transform progress records to include user names
+    const kpiWithUserNames = {
+      ...kpi,
+      progress: kpi.progress.map(p => ({
+        ...p,
+        recordedByName: `${p.recorder?.firstName || ''} ${p.recorder?.lastName || ''}`.trim() || p.recordedBy
+      }))
+    };
+    
+    // Check deadline and create notifications
+    await checkKPIDeadlineAndNotify(kpi);
+    
+    // Notify assigned users about new KPI
+    for (const userId of assignedTo) {
+      await createNotification(
+        userId,
+        'kpi',
+        'medium',
+        `📊 Yeni KPI Ataması: ${kpi.title}`,
+        `Size "${kpi.title}" KPI'sı atandı. Hedef: ${kpi.targetValue} ${kpi.unit}, Bitiş: ${new Date(kpi.endDate).toLocaleDateString('tr-TR')}`,
+        `/kpi`
+      );
+    }
+    
     console.log(`[KPI CREATE] Successfully created KPI:`, { id: kpi.id, title: kpi.title });
-    res.json(kpi);
+    res.json(kpiWithUserNames);
   } catch (error) {
     console.error('Create KPI error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -414,7 +568,11 @@ app.put('/api/kpis/:id', authenticateToken, async (req, res) => {
       where: { id: kpiId },
       data: updateData,
       include: {
-        progress: true,
+        progress: {
+          include: {
+            recorder: true
+          }
+        },
         comments: true,
         assignments: {
           include: {
@@ -424,8 +582,17 @@ app.put('/api/kpis/:id', authenticateToken, async (req, res) => {
       }
     });
     
+    // Transform progress records to include user names
+    const kpiWithUserNames = {
+      ...updatedKpi,
+      progress: updatedKpi.progress.map(p => ({
+        ...p,
+        recordedByName: `${p.recorder?.firstName || ''} ${p.recorder?.lastName || ''}`.trim() || p.recordedBy
+      }))
+    };
+    
     console.log(`[KPI UPDATE] Successfully updated KPI:`, { id: updatedKpi.id, title: updatedKpi.title });
-    res.json(updatedKpi);
+    res.json(kpiWithUserNames);
   } catch (error) {
     console.error('Update KPI error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -512,7 +679,60 @@ app.post('/api/kpis/:id/progress', authenticateToken, async (req, res) => {
       }
     });
 
-    res.json(progress);
+    // Update KPI current value
+    const updatedKpi = await prisma.kpiTarget.findUnique({
+      where: { id: kpiId },
+      include: { 
+        progress: true,
+        assignments: true
+      }
+    });
+
+    if (updatedKpi) {
+      // Calculate new total
+      const totalProgress = updatedKpi.progress.reduce((sum, p) => sum + p.value, 0);
+      const progressPercentage = (totalProgress / updatedKpi.targetValue) * 100;
+
+      // Check if KPI is completed
+      if (progressPercentage >= 100) {
+        // Notify all assigned users about completion
+        for (const assignment of updatedKpi.assignments) {
+          await createNotification(
+            assignment.userId,
+            'kpi',
+            'high',
+            `🎉 KPI Tamamlandı: ${updatedKpi.title}`,
+            `"${updatedKpi.title}" KPI'sı %100 tamamlandı! ${user.firstName} ${user.lastName} son ilerlemeyi kaydetti.`,
+            `/kpi`
+          );
+        }
+      } else if (progressPercentage >= 75) {
+        // Notify about significant progress
+        for (const assignment of updatedKpi.assignments) {
+          if (assignment.userId !== user.id) { // Don't notify the person who recorded
+            await createNotification(
+              assignment.userId,
+              'kpi',
+              'medium',
+              `📈 KPI İlerlemesi: ${updatedKpi.title}`,
+              `"${updatedKpi.title}" KPI'sında %${progressPercentage.toFixed(1)} ilerleme kaydedildi. ${user.firstName} ${user.lastName} +${value} ${updatedKpi.unit} ekledi.`,
+              `/kpi`
+            );
+          }
+        }
+      }
+      
+      // Check deadline
+      await checkKPIDeadlineAndNotify(updatedKpi);
+    }
+
+    // Add user name to the response
+    const progressWithUser = {
+      ...progress,
+      recordedByName: `${user.firstName} ${user.lastName}`
+    };
+
+    res.json(progressWithUser);
   } catch (error) {
     console.error('Record KPI progress error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -582,12 +802,27 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
         ]
       },
       include: {
-        comments: true
+        comments: true,
+        assignee: true // Include assigned user details
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    res.json(tickets);
+    // Add ticket numbers and transform assigned user
+    const ticketsWithNumbers = tickets.map((ticket, index) => {
+      const departmentPrefix = ticket.targetDepartment.substring(0, 2).toUpperCase();
+      const ticketNumber = `${departmentPrefix}${String(index + 1).padStart(7, '0')}`;
+      
+      return {
+        ...ticket,
+        ticketNumber,
+        assignedToName: ticket.assignee 
+          ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}` 
+          : null
+      };
+    });
+
+    res.json(ticketsWithNumbers);
   } catch (error) {
     console.error('Get tickets error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -597,6 +832,16 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
 app.post('/api/tickets', authenticateToken, async (req, res) => {
   try {
     const { title, description, priority, targetDepartment } = req.body;
+
+    // Generate ticket number based on target department
+    const departmentPrefix = targetDepartment.substring(0, 2).toUpperCase();
+    
+    // Count existing tickets for this department to generate sequential number
+    const ticketCount = await prisma.ticket.count({
+      where: { targetDepartment }
+    });
+    
+    const ticketNumber = `${departmentPrefix}${String(ticketCount + 1).padStart(7, '0')}`;
 
     const ticket = await prisma.ticket.create({
       data: {
@@ -614,7 +859,43 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
       }
     });
 
-    res.json(ticket);
+    // Add ticket number to response (computed field)
+    const ticketWithNumber = {
+      ...ticket,
+      ticketNumber
+    };
+
+    // Notify all users in target department
+    const targetDepartmentUsers = await prisma.profile.findMany({
+      where: { department: targetDepartment },
+      include: { userRoles: true }
+    });
+
+    const priorityLabels = {
+      'low': 'Düşük',
+      'medium': 'Orta',
+      'high': 'Yüksek',
+      'urgent': 'Acil'
+    };
+
+    for (const user of targetDepartmentUsers) {
+      // Notify department managers and admins
+      const isManager = user.userRoles.some(r => r.role === 'department_manager');
+      const isAdmin = user.userRoles.some(r => r.role === 'admin');
+      
+      if (isManager || isAdmin) {
+        await createNotification(
+          user.id,
+          'ticket',
+          priority === 'urgent' ? 'high' : 'medium',
+          `📨 Yeni Ticket: ${ticketNumber}`,
+          `${req.user.firstName} ${req.user.lastName} (${req.user.department}) tarafından yeni bir ticket oluşturuldu. Öncelik: ${priorityLabels[priority]}`,
+          `/tickets`
+        );
+      }
+    }
+
+    res.json(ticketWithNumber);
   } catch (error) {
     console.error('Create ticket error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -636,10 +917,18 @@ app.put('/api/tickets/:id', authenticateToken, async (req, res) => {
     }
 
     // Check if user has permission to update this ticket
-    // Only the target department can update the ticket status
-    if (ticket.targetDepartment !== req.user.department) {
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    const isTargetDepartment = ticket.targetDepartment === req.user.department;
+    const isSourceDepartment = ticket.sourceDepartment === req.user.department;
+    const isCreator = ticket.createdBy === req.user.id;
+    const isAssigned = ticket.assignedTo === req.user.id;
+    
+    // Admin, target department, or assigned user can update
+    const canUpdate = isAdmin || isTargetDepartment || (isSourceDepartment && isCreator) || isAssigned;
+    
+    if (!canUpdate) {
       return res.status(403).json({ 
-        error: 'Bu ticket\'ın durumunu sadece hedef departman değiştirebilir' 
+        error: 'Bu ticket\'ı güncelleme yetkiniz bulunmuyor' 
       });
     }
 
@@ -656,9 +945,63 @@ app.put('/api/tickets/:id', authenticateToken, async (req, res) => {
       }
     });
 
+    // Notify assigned user about status change
+    if (status && status !== ticket.status && updatedTicket.assignedTo) {
+      const statusLabels = {
+        'open': 'Açık',
+        'in_progress': 'Devam Ediyor',
+        'resolved': 'Çözüldü',
+        'closed': 'Kapatıldı'
+      };
+      await createNotification(
+        updatedTicket.assignedTo,
+        'ticket',
+        'medium',
+        `🎫 Ticket Durumu Güncellendi: ${ticket.title}`,
+        `"${ticket.title}" ticket'ının durumu "${statusLabels[status] || status}" olarak güncellendi.`,
+        `/tickets`
+      );
+    }
+
     res.json(updatedTicket);
   } catch (error) {
     console.error('Update ticket error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete ticket endpoint
+app.delete('/api/tickets/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get the ticket to check permissions
+    const ticket = await prisma.ticket.findUnique({
+      where: { id }
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    // Only admin or creator can delete
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    const isCreator = ticket.createdBy === req.user.id;
+    
+    if (!isAdmin && !isCreator) {
+      return res.status(403).json({ 
+        error: 'Sadece admin veya ticket oluşturan kişi silebilir' 
+      });
+    }
+
+    // Delete the ticket (comments will be cascade deleted)
+    await prisma.ticket.delete({
+      where: { id }
+    });
+
+    res.json({ message: 'Ticket başarıyla silindi' });
+  } catch (error) {
+    console.error('Delete ticket error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -960,6 +1303,107 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
   }
 });
 
+app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`[MARK AS READ] User: ${req.user.id}, Notification ID: ${id}`);
+    
+    // Verify notification belongs to user
+    const notification = await prisma.notification.findFirst({
+      where: { 
+        id,
+        userId: req.user.id
+      }
+    });
+
+    if (!notification) {
+      console.log(`[MARK AS READ] Notification not found or doesn't belong to user`);
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+
+    // If already read, just return success
+    if (notification.isRead) {
+      console.log(`[MARK AS READ] Notification already read`);
+      return res.json(notification);
+    }
+
+    const updated = await prisma.notification.update({
+      where: { id },
+      data: { isRead: true }
+    });
+
+    console.log(`[MARK AS READ] Success: Notification ${id} marked as read`);
+    res.json(updated);
+  } catch (error) {
+    console.error('Mark notification as read error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
+app.put('/api/notifications/read-all', authenticateToken, async (req, res) => {
+  try {
+    await prisma.notification.updateMany({
+      where: { 
+        userId: req.user.id,
+        isRead: false
+      },
+      data: { isRead: true }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Mark all notifications as read error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/api/notifications/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Verify notification belongs to user
+    const notification = await prisma.notification.findFirst({
+      where: { 
+        id,
+        userId: req.user.id
+      }
+    });
+
+    if (!notification) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+
+    await prisma.notification.delete({
+      where: { id }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete notification error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/api/notifications', authenticateToken, async (req, res) => {
+  try {
+    await prisma.notification.deleteMany({
+      where: { userId: req.user.id }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete all notifications error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Dashboard stats
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
@@ -1015,6 +1459,12 @@ app.post('/api/departments', authenticateToken, async (req, res) => {
   try {
     const { name } = req.body;
 
+    // Check if user has admin role
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can create departments' });
+    }
+
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Department name is required' });
     }
@@ -1035,6 +1485,912 @@ app.post('/api/departments', authenticateToken, async (req, res) => {
     res.json(department);
   } catch (error) {
     console.error('Create department error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.put('/api/departments/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+
+    // Check if user has admin role
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can update departments' });
+    }
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Department name is required' });
+    }
+
+    // Check if department exists
+    const existingDepartment = await prisma.department.findUnique({
+      where: { id }
+    });
+
+    if (!existingDepartment) {
+      return res.status(404).json({ error: 'Department not found' });
+    }
+
+    // Check if new name already exists
+    const duplicateDepartment = await prisma.department.findUnique({
+      where: { name: name.trim() }
+    });
+
+    if (duplicateDepartment && duplicateDepartment.id !== id) {
+      return res.status(400).json({ error: 'Department name already exists' });
+    }
+
+    // Check if department has users
+    const usersCount = await prisma.profile.count({
+      where: { department: existingDepartment.name }
+    });
+
+    if (usersCount > 0) {
+      // Update all users' department field
+      await prisma.profile.updateMany({
+        where: { department: existingDepartment.name },
+        data: { department: name.trim() }
+      });
+    }
+
+    const updatedDepartment = await prisma.department.update({
+      where: { id },
+      data: { name: name.trim() }
+    });
+
+    res.json(updatedDepartment);
+  } catch (error) {
+    console.error('Update department error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/api/departments/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user has admin role
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can delete departments' });
+    }
+
+    // Check if department exists
+    const department = await prisma.department.findUnique({
+      where: { id }
+    });
+
+    if (!department) {
+      return res.status(404).json({ error: 'Department not found' });
+    }
+
+    // Check if department has users
+    const usersCount = await prisma.profile.count({
+      where: { department: department.name }
+    });
+
+    if (usersCount > 0) {
+      return res.status(400).json({ 
+        error: 'Cannot delete department with users. Please move users to another department first.' 
+      });
+    }
+
+    await prisma.department.delete({
+      where: { id }
+    });
+
+    res.json({ success: true, message: 'Department deleted successfully' });
+  } catch (error) {
+    console.error('Delete department error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ==================== MEETING ROOMS API ====================
+
+// Get all meeting rooms
+app.get('/api/meeting-rooms', authenticateToken, async (req, res) => {
+  try {
+    const rooms = await prisma.meetingRoom.findMany({
+      include: {
+        reservations: {
+          // Include all reservations (pending, approved, rejected) for calendar view
+          // Only show future reservations (or current day)
+          where: {
+            startTime: {
+              gte: new Date(new Date().setHours(0, 0, 0, 0)) // Start of today
+            }
+          },
+          include: {
+            requester: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                department: true
+              }
+            }
+          },
+          orderBy: {
+            startTime: 'asc'
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    res.json(rooms);
+  } catch (error) {
+    console.error('Get meeting rooms error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create meeting room (admin only)
+app.post('/api/meeting-rooms', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    const isAdmin = user.roles && user.roles.includes('admin');
+
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can create meeting rooms' });
+    }
+
+    const { name, capacity, location, description } = req.body;
+
+    if (!name || !capacity || !location) {
+      return res.status(400).json({ error: 'Name, capacity, and location are required' });
+    }
+
+    // Check if room with same name exists
+    const existingRoom = await prisma.meetingRoom.findUnique({
+      where: { name: name.trim() }
+    });
+
+    if (existingRoom) {
+      return res.status(400).json({ error: 'Meeting room with this name already exists' });
+    }
+
+    const room = await prisma.meetingRoom.create({
+      data: {
+        name: name.trim(),
+        capacity: parseInt(capacity),
+        location: location.trim(),
+        description: description?.trim() || null
+      }
+    });
+
+    res.json(room);
+  } catch (error) {
+    console.error('Create meeting room error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete meeting room (admin only)
+app.delete('/api/meeting-rooms/:id', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    const isAdmin = user.roles && user.roles.includes('admin');
+
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can delete meeting rooms' });
+    }
+
+    const { id } = req.params;
+
+    // Check for existing reservations
+    const reservations = await prisma.meetingReservation.findMany({
+      where: { roomId: id, status: 'approved' }
+    });
+
+    if (reservations.length > 0) {
+      return res.status(400).json({ 
+        error: 'Cannot delete room with approved reservations. Please cancel or reject all reservations first.' 
+      });
+    }
+
+    await prisma.meetingRoom.delete({
+      where: { id }
+    });
+
+    res.json({ message: 'Meeting room deleted successfully' });
+  } catch (error) {
+    console.error('Delete meeting room error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get meeting reservations
+app.get('/api/meeting-reservations', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    const isAdmin = user.roles && user.roles.includes('admin');
+    const isDepartmentManager = user.roles && user.roles.includes('department_manager');
+
+    let reservations;
+
+    if (isAdmin) {
+      // Admin can see all reservations
+      reservations = await prisma.meetingReservation.findMany({
+        include: {
+          room: true,
+          requester: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              department: true
+            }
+          },
+          approver: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+    } else if (isDepartmentManager) {
+      // Department managers can see reservations from their department
+      const userProfile = await prisma.profile.findUnique({
+        where: { id: user.id }
+      });
+
+      reservations = await prisma.meetingReservation.findMany({
+        where: {
+          requester: {
+            department: userProfile.department
+          }
+        },
+        include: {
+          room: true,
+          requester: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              department: true
+            }
+          },
+          approver: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+    } else {
+      // Employees can only see their own reservations
+      reservations = await prisma.meetingReservation.findMany({
+        where: { requestedBy: user.id },
+        include: {
+          room: true,
+          requester: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              department: true
+            }
+          },
+          approver: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+    }
+
+    res.json(reservations);
+  } catch (error) {
+    console.error('Get meeting reservations error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create meeting reservation request
+app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
+  try {
+    const { roomId, startTime, endTime, notes } = req.body;
+    const user = req.user;
+
+    if (!roomId || !startTime || !endTime) {
+      return res.status(400).json({ error: 'Room ID, start time, and end time are required' });
+    }
+
+    // Validate ISO 8601 datetime format
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    // Check if dates are valid
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ error: 'Invalid date/time format. Please use ISO 8601 format (YYYY-MM-DDTHH:mm:ss)' });
+    }
+
+    // Validate 24-hour format (ensure hours are between 00:00 and 23:59)
+    const startHours = start.getHours();
+    const startMinutes = start.getMinutes();
+    const endHours = end.getHours();
+    const endMinutes = end.getMinutes();
+
+    if (startHours < 0 || startHours > 23 || startMinutes < 0 || startMinutes > 59) {
+      return res.status(400).json({ error: 'Start time must be in 24-hour format (00:00 - 23:59)' });
+    }
+
+    if (endHours < 0 || endHours > 23 || endMinutes < 0 || endMinutes > 59) {
+      return res.status(400).json({ error: 'End time must be in 24-hour format (00:00 - 23:59)' });
+    }
+
+    if (start >= end) {
+      return res.status(400).json({ error: 'End time must be after start time' });
+    }
+
+    if (start < new Date()) {
+      return res.status(400).json({ error: 'Cannot create reservation for past dates' });
+    }
+
+    // Check for overlapping reservations
+    const overlapping = await prisma.meetingReservation.findFirst({
+      where: {
+        roomId,
+        status: {
+          in: ['pending', 'approved']
+        },
+        OR: [
+          {
+            AND: [
+              { startTime: { lte: start } },
+              { endTime: { gt: start } }
+            ]
+          },
+          {
+            AND: [
+              { startTime: { lt: end } },
+              { endTime: { gte: end } }
+            ]
+          },
+          {
+            AND: [
+              { startTime: { gte: start } },
+              { endTime: { lte: end } }
+            ]
+          }
+        ]
+      }
+    });
+
+    if (overlapping) {
+      return res.status(400).json({ 
+        error: 'This time slot is already reserved. Please choose another time.' 
+      });
+    }
+
+    const reservation = await prisma.meetingReservation.create({
+      data: {
+        roomId,
+        requestedBy: user.id,
+        startTime: start,
+        endTime: end,
+        notes: notes?.trim() || null,
+        status: 'pending'
+      },
+      include: {
+        room: true,
+        requester: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            department: true
+          }
+        }
+      }
+    });
+
+    // Notify department manager
+    const requesterProfile = await prisma.profile.findUnique({
+      where: { id: user.id },
+      include: { userRoles: true }
+    });
+
+    if (requesterProfile) {
+      // Find department manager
+      const departmentManagers = await prisma.profile.findMany({
+        where: {
+          department: requesterProfile.department,
+          userRoles: {
+            some: {
+              role: 'department_manager'
+            }
+          }
+        }
+      });
+
+      for (const manager of departmentManagers) {
+        await createNotification(
+          manager.id,
+          'system',
+          'medium',
+          '📅 Yeni Toplantı Odası Talebi',
+          `${requesterProfile.firstName} ${requesterProfile.lastName} "${reservation.room.name}" odası için ${new Date(start).toLocaleString('tr-TR')} - ${new Date(end).toLocaleString('tr-TR')} tarihlerinde rezervasyon talep etti.`,
+          '/meeting-rooms'
+        );
+      }
+    }
+
+    res.json(reservation);
+  } catch (error) {
+    console.error('Create meeting reservation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Approve meeting reservation (manager only)
+app.put('/api/meeting-reservations/:id/approve', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    const isAdmin = user.roles && user.roles.includes('admin');
+    const isDepartmentManager = user.roles && user.roles.includes('department_manager');
+
+    if (!isAdmin && !isDepartmentManager) {
+      return res.status(403).json({ error: 'Only managers can approve reservations' });
+    }
+
+    const { id } = req.params;
+
+    const reservation = await prisma.meetingReservation.findUnique({
+      where: { id },
+      include: {
+        room: true,
+        requester: true
+      }
+    });
+
+    if (!reservation) {
+      return res.status(404).json({ error: 'Reservation not found' });
+    }
+
+    // Check if user can approve (admin or same department manager)
+    if (!isAdmin) {
+      const userProfile = await prisma.profile.findUnique({
+        where: { id: user.id }
+      });
+
+      if (userProfile.department !== reservation.requester.department) {
+        return res.status(403).json({ 
+          error: 'You can only approve reservations from your own department' 
+        });
+      }
+    }
+
+    if (reservation.status !== 'pending') {
+      return res.status(400).json({ error: `Reservation is already ${reservation.status}` });
+    }
+
+    // Check for overlapping approved reservations
+    const overlapping = await prisma.meetingReservation.findFirst({
+      where: {
+        roomId: reservation.roomId,
+        id: { not: id },
+        status: 'approved',
+        OR: [
+          {
+            AND: [
+              { startTime: { lte: reservation.startTime } },
+              { endTime: { gt: reservation.startTime } }
+            ]
+          },
+          {
+            AND: [
+              { startTime: { lt: reservation.endTime } },
+              { endTime: { gte: reservation.endTime } }
+            ]
+          },
+          {
+            AND: [
+              { startTime: { gte: reservation.startTime } },
+              { endTime: { lte: reservation.endTime } }
+            ]
+          }
+        ]
+      }
+    });
+
+    if (overlapping) {
+      return res.status(400).json({ 
+        error: 'This time slot is already reserved by another approved meeting.' 
+      });
+    }
+
+    const updatedReservation = await prisma.meetingReservation.update({
+      where: { id },
+      data: {
+        status: 'approved',
+        approvedBy: user.id,
+        updatedAt: new Date()
+      },
+      include: {
+        room: true,
+        requester: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            department: true
+          }
+        },
+        approver: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      }
+    });
+
+    // Create calendar activity for the requester
+    try {
+      // Get or create "Meeting" category
+      let meetingCategory = await prisma.calendarCategory.findFirst({
+        where: { name: 'Toplantı' }
+      });
+
+      if (!meetingCategory) {
+        meetingCategory = await prisma.calendarCategory.create({
+          data: {
+            name: 'Toplantı',
+            color: '#3b82f6'
+          }
+        });
+      }
+
+      const startDate = new Date(reservation.startTime);
+      const endDate = new Date(reservation.endTime);
+      const dateStr = startDate.toISOString().split('T')[0];
+      const startTimeStr = startDate.toTimeString().slice(0, 5);
+      const endTimeStr = endDate.toTimeString().slice(0, 5);
+      const duration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+
+      await prisma.calendarActivity.create({
+        data: {
+          title: `Toplantı: ${reservation.room.name}`,
+          description: reservation.notes || `Toplantı odası rezervasyonu - ${reservation.room.location}`,
+          categoryId: meetingCategory.id,
+          date: dateStr,
+          startTime: startDate.toISOString(),
+          endTime: endDate.toISOString(),
+          duration: duration,
+          userId: reservation.requestedBy
+        }
+      });
+    } catch (calendarError) {
+      console.error('Error creating calendar activity:', calendarError);
+      // Don't fail the approval if calendar sync fails
+    }
+
+    // Notify requester
+    await createNotification(
+      reservation.requestedBy,
+      'system',
+      'low',
+      '✅ Toplantı Rezervasyonu Onaylandı',
+      `"${reservation.room.name}" odası için ${new Date(reservation.startTime).toLocaleString('tr-TR')} - ${new Date(reservation.endTime).toLocaleString('tr-TR')} tarihlerindeki rezervasyonunuz onaylandı.`,
+      '/meeting-rooms'
+    );
+
+    res.json(updatedReservation);
+  } catch (error) {
+    console.error('Approve meeting reservation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Reject meeting reservation (manager only)
+app.put('/api/meeting-reservations/:id/reject', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    const isAdmin = user.roles && user.roles.includes('admin');
+    const isDepartmentManager = user.roles && user.roles.includes('department_manager');
+
+    if (!isAdmin && !isDepartmentManager) {
+      return res.status(403).json({ error: 'Only managers can reject reservations' });
+    }
+
+    const { id } = req.params;
+
+    const reservation = await prisma.meetingReservation.findUnique({
+      where: { id },
+      include: {
+        room: true,
+        requester: true
+      }
+    });
+
+    if (!reservation) {
+      return res.status(404).json({ error: 'Reservation not found' });
+    }
+
+    // Check if user can reject (admin or same department manager)
+    if (!isAdmin) {
+      const userProfile = await prisma.profile.findUnique({
+        where: { id: user.id }
+      });
+
+      if (userProfile.department !== reservation.requester.department) {
+        return res.status(403).json({ 
+          error: 'You can only reject reservations from your own department' 
+        });
+      }
+    }
+
+    if (reservation.status !== 'pending') {
+      return res.status(400).json({ error: `Reservation is already ${reservation.status}` });
+    }
+
+    const updatedReservation = await prisma.meetingReservation.update({
+      where: { id },
+      data: {
+        status: 'rejected',
+        approvedBy: user.id,
+        updatedAt: new Date()
+      },
+      include: {
+        room: true,
+        requester: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            department: true
+          }
+        },
+        approver: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      }
+    });
+
+    // Notify requester
+    await createNotification(
+      reservation.requestedBy,
+      'system',
+      'medium',
+      '❌ Toplantı Rezervasyonu Reddedildi',
+      `"${reservation.room.name}" odası için ${new Date(reservation.startTime).toLocaleString('tr-TR')} - ${new Date(reservation.endTime).toLocaleString('tr-TR')} tarihlerindeki rezervasyon talebiniz reddedildi.`,
+      '/meeting-rooms'
+    );
+
+    res.json(updatedReservation);
+  } catch (error) {
+    console.error('Reject meeting reservation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update meeting reservation
+app.put('/api/meeting-reservations/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { startTime, endTime, notes } = req.body;
+    const user = req.user;
+
+    // Get the reservation
+    const reservation = await prisma.meetingReservation.findUnique({
+      where: { id },
+      include: {
+        room: true,
+        requester: true
+      }
+    });
+
+    if (!reservation) {
+      return res.status(404).json({ error: 'Reservation not found' });
+    }
+
+    // Check permissions: only requester or admin can update
+    const isAdmin = user.roles && user.roles.includes('admin');
+    const isRequester = reservation.requestedBy === user.id;
+
+    if (!isAdmin && !isRequester) {
+      return res.status(403).json({ error: 'You can only update your own reservations' });
+    }
+
+    // If reservation is approved, only admin can update
+    if (reservation.status === 'approved' && !isAdmin) {
+      return res.status(403).json({ error: 'Approved reservations can only be updated by admin' });
+    }
+
+    // Validate dates if provided
+    let start = reservation.startTime;
+    let end = reservation.endTime;
+
+    if (startTime || endTime) {
+      if (startTime) {
+        start = new Date(startTime);
+        if (isNaN(start.getTime())) {
+          return res.status(400).json({ error: 'Invalid start time format' });
+        }
+      }
+      if (endTime) {
+        end = new Date(endTime);
+        if (isNaN(end.getTime())) {
+          return res.status(400).json({ error: 'Invalid end time format' });
+        }
+      }
+
+      if (start >= end) {
+        return res.status(400).json({ error: 'End time must be after start time' });
+      }
+
+      if (start < new Date()) {
+        return res.status(400).json({ error: 'Cannot update reservation to past dates' });
+      }
+
+      // Check for overlapping reservations (excluding current reservation)
+      const overlapping = await prisma.meetingReservation.findFirst({
+        where: {
+          roomId: reservation.roomId,
+          id: { not: id },
+          status: {
+            in: ['pending', 'approved']
+          },
+          OR: [
+            {
+              AND: [
+                { startTime: { lte: start } },
+                { endTime: { gt: start } }
+              ]
+            },
+            {
+              AND: [
+                { startTime: { lt: end } },
+                { endTime: { gte: end } }
+              ]
+            },
+            {
+              AND: [
+                { startTime: { gte: start } },
+                { endTime: { lte: end } }
+              ]
+            }
+          ]
+        }
+      });
+
+      if (overlapping) {
+        return res.status(400).json({ 
+          error: 'This time slot is already reserved. Please choose another time.' 
+        });
+      }
+    }
+
+    // Update reservation
+    const updatedReservation = await prisma.meetingReservation.update({
+      where: { id },
+      data: {
+        ...(startTime && { startTime: start }),
+        ...(endTime && { endTime: end }),
+        ...(notes !== undefined && { notes: notes?.trim() || null }),
+        updatedAt: new Date()
+      },
+      include: {
+        room: true,
+        requester: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            department: true
+          }
+        },
+        approver: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      }
+    });
+
+    // If reservation was approved and time changed, notify approver
+    if (reservation.status === 'approved' && (startTime || endTime) && reservation.approvedBy) {
+      await createNotification(
+        reservation.approvedBy,
+        'system',
+        'medium',
+        '⚠️ Rezervasyon Güncellendi',
+        `"${reservation.room.name}" odası için onayladığınız rezervasyon güncellendi.`,
+        '/meeting-rooms'
+      );
+    }
+
+    res.json(updatedReservation);
+  } catch (error) {
+    console.error('Update meeting reservation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete meeting reservation
+app.delete('/api/meeting-reservations/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    // Get the reservation
+    const reservation = await prisma.meetingReservation.findUnique({
+      where: { id },
+      include: {
+        room: true,
+        requester: true,
+        approver: true
+      }
+    });
+
+    if (!reservation) {
+      return res.status(404).json({ error: 'Reservation not found' });
+    }
+
+    // Check permissions: only requester or admin can delete
+    const isAdmin = user.roles && user.roles.includes('admin');
+    const isRequester = reservation.requestedBy === user.id;
+
+    if (!isAdmin && !isRequester) {
+      return res.status(403).json({ error: 'You can only delete your own reservations' });
+    }
+
+    // If reservation is approved, notify approver
+    if (reservation.status === 'approved' && reservation.approvedBy) {
+      await createNotification(
+        reservation.approvedBy,
+        'system',
+        'medium',
+        '❌ Rezervasyon İptal Edildi',
+        `"${reservation.room.name}" odası için onayladığınız rezervasyon iptal edildi.`,
+        '/meeting-rooms'
+      );
+    }
+
+    // Delete reservation
+    await prisma.meetingReservation.delete({
+      where: { id }
+    });
+
+    res.json({ success: true, message: 'Reservation deleted successfully' });
+  } catch (error) {
+    console.error('Delete meeting reservation error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

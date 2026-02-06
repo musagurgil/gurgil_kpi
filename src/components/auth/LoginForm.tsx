@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 interface LoginFormProps {
@@ -13,15 +14,57 @@ interface LoginFormProps {
   onSwitchToSignup?: () => void;
 }
 
+const REMEMBER_ME_KEY = 'remembered_email';
+const LAST_LOGIN_KEY = 'last_login_info';
+
 export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
   const navigate = useNavigate();
   const { login, loading } = useAuth();
+  
+  // Get remembered email from localStorage
+  const rememberedEmail = localStorage.getItem(REMEMBER_ME_KEY) || '';
+  const lastLoginInfo = localStorage.getItem(LAST_LOGIN_KEY);
+  
   const [credentials, setCredentials] = useState({
-    email: '',
+    email: rememberedEmail,
     password: ''
   });
+  const [rememberMe, setRememberMe] = useState(!!rememberedEmail);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+
+  const getLastLoginMessage = () => {
+    if (!lastLoginInfo || !credentials.email) return null;
+    try {
+      const info = JSON.parse(lastLoginInfo);
+      if (info.email === credentials.email) {
+        const lastLogin = new Date(info.timestamp);
+        const now = new Date();
+        const diffMs = now.getTime() - lastLogin.getTime();
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) {
+          const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+          if (diffHours === 0) {
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            return diffMins < 5 ? 'Az önce giriş yaptınız' : `${diffMins} dakika önce giriş yaptınız`;
+          }
+          return `${diffHours} saat önce giriş yaptınız`;
+        } else if (diffDays === 1) {
+          return 'Dün giriş yaptınız';
+        } else if (diffDays < 7) {
+          return `${diffDays} gün önce giriş yaptınız`;
+        } else {
+          return `${diffDays} gün önce giriş yaptınız`;
+        }
+      }
+    } catch (e) {
+      // Ignore parse errors
+    }
+    return null;
+  };
+
+  const lastLoginMessage = getLastLoginMessage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +78,20 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
     try {
       const success = await login(credentials.email, credentials.password);
       if (success) {
+        // Save email if "Remember Me" is checked
+        if (rememberMe) {
+          localStorage.setItem(REMEMBER_ME_KEY, credentials.email);
+        } else {
+          localStorage.removeItem(REMEMBER_ME_KEY);
+        }
+        
+        // Save last login info
+        const loginInfo = {
+          email: credentials.email,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(LAST_LOGIN_KEY, JSON.stringify(loginInfo));
+        
         console.log('Login successful, navigating to /');
         // Force page reload to ensure state is properly updated
         window.location.href = '/';
@@ -101,6 +158,28 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
+          </div>
+
+          {/* Remember Me & Last Login Info */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="remember"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+              />
+              <Label
+                htmlFor="remember"
+                className="text-sm font-normal cursor-pointer"
+              >
+                Beni Hatırla
+              </Label>
+            </div>
+            {lastLoginMessage && (
+              <span className="text-xs text-muted-foreground">
+                {lastLoginMessage}
+              </span>
+            )}
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

@@ -46,6 +46,8 @@ model Profile {
   ticketComments TicketComment[]
   calendarActivities CalendarActivity[]
   notifications Notification[]
+  meetingReservationsRequested MeetingReservation[] @relation("MeetingReservationRequester")
+  meetingReservationsApproved MeetingReservation[] @relation("MeetingReservationApprover")
   
   @@map("profiles")
 }
@@ -217,4 +219,37 @@ model Notification {
   user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@map("notifications")
+}
+
+model MeetingRoom {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  capacity    Int
+  location    String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  
+  reservations MeetingReservation[]
+  
+  @@map("meeting_rooms")
+}
+
+model MeetingReservation {
+  id          String   @id @default(cuid())
+  roomId      String
+  requestedBy String
+  approvedBy  String?
+  startTime   DateTime
+  endTime     DateTime
+  status      String   @default("pending") // pending, approved, rejected
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  
+  room        MeetingRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  requester   Profile     @relation("MeetingReservationRequester", fields: [requestedBy], references: [id])
+  approver    Profile?    @relation("MeetingReservationApprover", fields: [approvedBy], references: [id])
+  
+  @@map("meeting_reservations")
 }

@@ -40,12 +40,16 @@ import {
   Plus,
   AlertTriangle,
   CheckCircle,
-  User
+  User,
+  Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KPIStats, KPI_PERIODS, KPI_PRIORITIES, CreateKPIData, KPIComment, KPIProgress } from '@/types/kpi';
 import { User as UserType } from '@/types/user';
 import { toast } from '@/hooks/use-toast';
+import { KPIProgressChart } from './KPIProgressChart';
+import { exportKPIDetailToCSV } from '@/lib/export';
+import { toast as sonnerToast } from 'sonner';
 
 interface KPIDetailDialogProps {
   kpiStats: KPIStats;
@@ -151,16 +155,9 @@ export function KPIDetailDialog({
     try {
       await onUpdateKPI(kpiStats.kpiId, editForm);
       setIsEditing(false);
-      toast({
-        title: "Başarılı",
-        description: "KPI başarıyla güncellendi"
-      });
+      // Toast useKPI hook'undan gösterilecek
     } catch (error) {
-      toast({
-        title: "Hata",
-        description: "KPI güncellenirken bir hata oluştu",
-        variant: "destructive"
-      });
+      // Error toast useKPI hook'undan gösterilecek
     }
   };
 
@@ -168,36 +165,52 @@ export function KPIDetailDialog({
     try {
       await onDeleteKPI(kpiStats.kpiId);
       onOpenChange(false);
-      toast({
-        title: "Başarılı",
-        description: "KPI başarıyla silindi"
-      });
+      // Toast useKPI hook'undan gösterilecek
     } catch (error) {
-      toast({
-        title: "Hata",
-        description: "KPI silinirken bir hata oluştu",
-        variant: "destructive"
-      });
+      // Error toast useKPI hook'undan gösterilecek
     }
   };
 
   const handleRecordProgress = async () => {
-    if (!progressValue) return;
-    
-    try {
-      await onRecordProgress(kpiStats.kpiId, Number(progressValue), progressNote || undefined);
-      setProgressValue('');
-      setProgressNote('');
-      toast({
-        title: "Başarılı",
-        description: "İlerleme başarıyla kaydedildi"
-      });
-    } catch (error) {
+    if (!progressValue) {
       toast({
         title: "Hata",
-        description: "İlerleme kaydedilirken bir hata oluştu",
+        description: "Lütfen ilerleme değeri girin",
         variant: "destructive"
       });
+      return;
+    }
+    
+    const value = Number(progressValue);
+    
+    // Negatif değer kontrolü
+    if (value <= 0) {
+      toast({
+        title: "Hata",
+        description: "İlerleme değeri 0'dan büyük olmalıdır",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Hedeften fazla olma kontrolü (warning)
+    const newCurrentValue = (kpiStats.currentValue || 0) + value;
+    if (newCurrentValue > kpiStats.targetValue) {
+      toast({
+        title: "Uyarı",
+        description: `Bu ilerleme ile toplam değer (${newCurrentValue} ${kpiStats.unit}) hedefi (${kpiStats.targetValue} ${kpiStats.unit}) aşacak. Devam etmek istiyor musunuz?`,
+        variant: "default"
+      });
+      // Kullanıcı devam edebilir, sadece uyarı veriyoruz
+    }
+    
+    try {
+      await onRecordProgress(kpiStats.kpiId, value, progressNote || undefined);
+      setProgressValue('');
+      setProgressNote('');
+      // Toast useKPI hook'undan gösterilecek
+    } catch (error) {
+      // Error toast useKPI hook'undan gösterilecek
     }
   };
 
@@ -207,16 +220,18 @@ export function KPIDetailDialog({
     try {
       await onAddComment(kpiStats.kpiId, newComment);
       setNewComment('');
-      toast({
-        title: "Başarılı",
-        description: "Yorum başarıyla eklendi"
-      });
+      // Toast useKPI hook'undan gösterilecek
     } catch (error) {
-      toast({
-        title: "Hata",
-        description: "Yorum eklenirken bir hata oluştu",
-        variant: "destructive"
-      });
+      // Error toast useKPI hook'undan gösterilecek
+    }
+  };
+
+  const handleExportKPI = () => {
+    try {
+      exportKPIDetailToCSV(kpiStats);
+      sonnerToast.success('✅ KPI raporu Excel dosyasına aktarıldı!');
+    } catch (error: any) {
+      sonnerToast.error('❌ Export işlemi başarısız: ' + error.message);
     }
   };
 
@@ -240,6 +255,14 @@ export function KPIDetailDialog({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportKPI}
+                title="KPI Raporunu İndir"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
               {canEdit && (
                 <Button
                   variant={isEditing ? "secondary" : "outline"}
@@ -396,6 +419,16 @@ export function KPIDetailDialog({
           </TabsContent>
 
           <TabsContent value="progress" className="space-y-4 mt-4">
+            {/* Progress Chart */}
+            {(kpiStats.recentProgress || []).length > 0 && (
+              <KPIProgressChart
+                progress={kpiStats.recentProgress || []}
+                targetValue={kpiStats.targetValue}
+                unit={kpiStats.unit}
+                title="İlerleme Grafiği"
+              />
+            )}
+
             {/* Record New Progress */}
             {canRecordProgress && !isCompleted && (
               <Card>
@@ -412,6 +445,8 @@ export function KPIDetailDialog({
                       <Input
                         id="progress-value"
                         type="number"
+                        min="0.01"
+                        step="0.01"
                         value={progressValue}
                         onChange={(e) => setProgressValue(e.target.value)}
                         placeholder="İlerleme değeri girin"
@@ -456,7 +491,7 @@ export function KPIDetailDialog({
                           </span>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Kaydeden: {progress.recordedBy}
+                          Kaydeden: {progress.recordedByName || progress.recordedBy}
                         </div>
                         {progress.note && (
                           <div className="text-sm text-muted-foreground mt-1">

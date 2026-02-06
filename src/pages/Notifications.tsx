@@ -46,21 +46,21 @@ export default function Notifications() {
   const hasNotifications = notifications.length > 0;
 
   return (
-    <div className="flex-1 bg-dashboard-bg min-h-screen p-6">
+    <div className="flex-1 bg-dashboard-bg min-h-screen p-4 sm:p-6">
       <div className="space-y-6">
         {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Bell className="h-8 w-8" />
-            Bildirimler
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <Bell className="h-6 w-6 sm:h-8 sm:w-8 shrink-0" />
+            <span className="truncate">Bildirimler</span>
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Tüm bildirimlerinizi buradan takip edebilirsiniz
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           {unreadCount > 0 && (
             <Button
               onClick={markAllAsRead}

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Target, TrendingUp, AlertTriangle, Users, Plus, BarChart3 } from "lucide-react";
+import { Target, TrendingUp, AlertTriangle, Users, Plus, BarChart3, Download } from "lucide-react";
 import { useKPI } from '@/hooks/useKPI';
 import { KPIFiltersComponent } from '@/components/kpi/KPIFilters';
 import { CreateKPIDialog } from '@/components/kpi/CreateKPIDialog';
@@ -10,6 +10,8 @@ import { KPIStatsCard } from '@/components/kpi/KPIStatsCard';
 import { KPIDetailDialog } from '@/components/kpi/KPIDetailDialog';
 import { toast } from '@/hooks/use-toast';
 import { KPIStats } from '@/types/kpi';
+import { exportKPIsToCSV } from '@/lib/export';
+import { toast as sonnerToast } from 'sonner';
 
 export default function KPITracking() {
   const {
@@ -117,7 +119,10 @@ export default function KPITracking() {
     if (!currentUser) return false;
     if (currentUser.role === 'admin') return true;
     if (currentUser.role === 'department_manager' && currentUser.department === kpiStat.department) return true;
-    return kpiStat.department === currentUser.department;
+    // Employee can record progress if assigned to the KPI OR if it's their department's KPI
+    const isAssigned = kpiStat.assignedUsers?.includes(currentUser.id);
+    const isSameDepartment = kpiStat.department === currentUser.department;
+    return isAssigned || isSameDepartment;
   };
 
   const canEditKPI = (kpiStat: KPIStats) => {
@@ -133,9 +138,30 @@ export default function KPITracking() {
     return false;
   };
 
+  const handleExportKPIs = () => {
+    try {
+      exportKPIsToCSV(filteredKPIs, 'kpi-raporu');
+      sonnerToast.success(`✅ ${filteredKPIs.length} KPI Excel dosyasına aktarıldı!`);
+    } catch (error: any) {
+      sonnerToast.error('❌ Export işlemi başarısız: ' + error.message);
+    }
+  };
+
+  // Filter KPIs based on filters
+  const filteredKPIs = kpiStats.filter(kpi => {
+    if (filters.department && kpi.department !== filters.department) return false;
+    if (filters.status && kpi.status !== filters.status) return false;
+    if (filters.priority && kpi.priority !== filters.priority) return false;
+    if (filters.period && kpi.period !== filters.period) return false;
+    if (filters.assignedTo && !kpi.assignedUsers?.includes(filters.assignedTo)) return false;
+    if (filters.startDate && new Date(kpi.startDate) < new Date(filters.startDate)) return false;
+    if (filters.endDate && new Date(kpi.endDate) > new Date(filters.endDate)) return false;
+    return true;
+  });
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-dashboard-bg p-6">
+      <div className="min-h-screen bg-dashboard-bg p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <div className="text-center space-y-2">
@@ -150,30 +176,49 @@ export default function KPITracking() {
 
   const totalKPIs = kpiStats.length;
   const completedKPIs = kpiStats.filter(kpi => kpi.progressPercentage >= 100).length;
-  const atRiskKPIs = kpiStats.filter(kpi => kpi.status === 'danger').length;
-  const onTrackKPIs = kpiStats.filter(kpi => kpi.status === 'success').length;
+  // At risk: danger status or warning status with low progress
+  const atRiskKPIs = kpiStats.filter(kpi => 
+    kpi.status === 'danger' || (kpi.status === 'warning' && kpi.progressPercentage < 50)
+  ).length;
+  // On track: success status (completed) or normal status with good progress and time remaining
+  const onTrackKPIs = kpiStats.filter(kpi => 
+    kpi.status === 'success' || (kpi.status === 'normal' && kpi.progressPercentage >= 50 && kpi.remainingDays > 7)
+  ).length;
 
   return (
-    <div className="min-h-screen bg-dashboard-bg p-6">
+    <div className="min-h-screen bg-dashboard-bg p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-              <Target className="w-8 h-8 text-primary" />
-              KPI Takip Sistemi
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+              <Target className="w-6 h-6 sm:w-8 sm:h-8 text-primary shrink-0" />
+              <span className="truncate">KPI Takip Sistemi</span>
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               Departman bazlı performans hedeflerini takip edin ve ilerlemelerinizi kaydedin
             </p>
           </div>
           
-          <div className="flex items-center gap-2">
-          <CreateKPIDialog
-            onCreateKPI={handleCreateKPI}
-            availableDepartments={availableDepartments}
-            availableUsers={availableUsers}
-            currentUser={currentUser as any}
-          />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            onClick={handleExportKPIs}
+            disabled={filteredKPIs.length === 0}
+            className="gap-2 w-full sm:w-auto justify-center"
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Excel'e Aktar</span>
+            <span className="sm:hidden">Aktar</span>
+            <span className="hidden sm:inline">({filteredKPIs.length})</span>
+          </Button>
+          <div className="w-full sm:w-auto">
+            <CreateKPIDialog
+              onCreateKPI={handleCreateKPI}
+              availableDepartments={availableDepartments}
+              availableUsers={availableUsers}
+              currentUser={currentUser as any}
+            />
+          </div>
           </div>
         </div>
 
@@ -230,22 +275,24 @@ export default function KPITracking() {
         <KPIFiltersComponent
           filters={filters}
           onFiltersChange={setFilters}
-          availableDepartments={[]}
-          availableUsers={[]}
+          availableDepartments={availableDepartments}
+          availableUsers={availableUsers}
           currentUser={currentUser as any}
         />
 
-        {kpiStats.length === 0 ? (
+        {filteredKPIs.length === 0 ? (
           <Card className="shadow-card">
             <CardContent className="p-8 text-center">
               <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">
-                Henüz KPI hedefi bulunmuyor
+                {kpiStats.length === 0 ? 'Henüz KPI hedefi bulunmuyor' : 'Filtrelerinize uygun KPI bulunamadı'}
               </h3>
               <p className="text-muted-foreground mb-4">
-                İlk KPI hedefinizi oluşturarak performans takibine başlayın
+                {kpiStats.length === 0 
+                  ? 'İlk KPI hedefinizi oluşturarak performans takibine başlayın' 
+                  : 'Farklı filtreler deneyebilir veya filtreleri temizleyebilirsiniz'}
               </p>
-              {(currentUser?.role === 'admin' || currentUser?.role === 'department_manager') && (
+              {kpiStats.length === 0 && (currentUser?.role === 'admin' || currentUser?.role === 'department_manager') && (
               <CreateKPIDialog
                 onCreateKPI={handleCreateKPI}
                 availableDepartments={availableDepartments}
@@ -257,7 +304,7 @@ export default function KPITracking() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {kpiStats.map((kpiStat) => (
+            {filteredKPIs.map((kpiStat) => (
               <KPIStatsCard
                 key={kpiStat.kpiId}
                 kpiStats={kpiStat}

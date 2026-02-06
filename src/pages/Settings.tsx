@@ -138,17 +138,17 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-dashboard-bg p-6">
+    <div className="min-h-screen bg-dashboard-bg p-4 sm:p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Ayarlar</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Ayarlar</h1>
           <p className="text-muted-foreground mt-2">
             Hesap ayarlarınızı ve tercihlerinizi yönetin
           </p>
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="profile">Profil</TabsTrigger>
             <TabsTrigger value="security">Güvenlik</TabsTrigger>
             <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
@@ -177,7 +177,7 @@ export default function Settings() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">Ad</Label>
                     <Input

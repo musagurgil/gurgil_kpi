@@ -70,7 +70,9 @@ export function DepartmentManagement() {
         current.userCount++;
         
         // Check if user is admin or department_manager
-        const isManager = profile.roles?.some(role => role === 'admin' || role === 'department_manager');
+        // Backend returns userRoles array with role objects
+        const roles = profile.userRoles?.map((ur: any) => ur.role) || [];
+        const isManager = roles.some(role => role === 'admin' || role === 'department_manager');
         if (isManager) {
           current.managerCount++;
         }
@@ -162,8 +164,7 @@ export function DepartmentManagement() {
     }
 
     try {
-      // Mock department update
-      console.log('Updating department:', editingDepartment.id, 'to', departmentName);
+      await apiClient.updateDepartment(editingDepartment.id, departmentName.trim());
 
       setDepartmentName('');
       setEditingDepartment(null);
@@ -173,10 +174,11 @@ export function DepartmentManagement() {
         title: "Başarılı",
         description: "Departman başarıyla güncellendi"
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error updating department:', error);
       toast({
         title: "Hata",
-        description: "Departman güncellenemedi",
+        description: error.message || "Departman güncellenemedi",
         variant: "destructive"
       });
     }
@@ -194,8 +196,7 @@ export function DepartmentManagement() {
 
     if (window.confirm(`"${department.name}" departmanını silmek istediğinizden emin misiniz?`)) {
       try {
-        // Mock department deletion
-        console.log('Deleting department:', department.id);
+        await apiClient.deleteDepartment(department.id);
 
         loadData();
         
@@ -203,10 +204,11 @@ export function DepartmentManagement() {
           title: "Başarılı",
           description: "Departman başarıyla silindi"
         });
-      } catch (error) {
+      } catch (error: any) {
+        console.error('Error deleting department:', error);
         toast({
           title: "Hata",
-          description: "Departman silinemedi",
+          description: error.message || "Departman silinemedi",
           variant: "destructive"
         });
       }
@@ -289,7 +291,9 @@ export function DepartmentManagement() {
             <div>
               <p className="text-sm text-muted-foreground">Ortalama Çalışan/Departman</p>
               <p className="text-xl font-bold">
-                {departments.length > 0 ? Math.round(departments.reduce((sum, dept) => sum + dept.userCount, 0) / departments.length) : 0}
+                {departments.length > 0 
+                  ? (departments.reduce((sum, dept) => sum + dept.userCount, 0) / departments.length).toFixed(2)
+                  : '0.00'}
               </p>
             </div>
           </CardContent>
@@ -297,7 +301,7 @@ export function DepartmentManagement() {
       </div>
 
       {/* Departments Table */}
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle className="text-lg">Departman Listesi</CardTitle>
         </CardHeader>

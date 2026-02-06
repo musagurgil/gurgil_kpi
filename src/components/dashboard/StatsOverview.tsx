@@ -4,40 +4,55 @@ import { TrendingUp, Target, Users, Ticket } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
 
 export function StatsOverview() {
-  const { stats: dashboardStats, loading } = useDashboard();
+  const { stats: dashboardStats, loading, currentUser } = useDashboard();
 
+  // Calculate user-specific percentages
+  const userKPIProgressPercentage = dashboardStats?.userKPIs > 0 
+    ? (dashboardStats?.userCompletedKPIs / dashboardStats?.userKPIs) * 100 
+    : 0;
+
+  const isAdmin = currentUser?.role === 'admin';
+  
   const stats = [
     {
-      title: "Toplam KPI",
-      value: dashboardStats?.totalKPIs?.toString() || "0",
-      change: `${(dashboardStats?.totalKPIsChange || 0) >= 0 ? '+' : ''}${dashboardStats?.totalKPIsChange || 0}%`,
-      changeType: (dashboardStats?.totalKPIsChange || 0) >= 0 ? "increase" as const : "decrease" as const,
+      title: isAdmin ? "Toplam KPI'lar" : "Benim KPI'larım",
+      value: dashboardStats?.userKPIs?.toString() || "0",
+      change: `${userKPIProgressPercentage >= 0 ? '+' : ''}${userKPIProgressPercentage.toFixed(1)}%`,
+      changeType: userKPIProgressPercentage >= 50 ? "increase" as const : "decrease" as const,
       icon: Target,
-      color: "primary"
+      color: "primary",
+      description: isAdmin ? "Sistemdeki tüm KPI'lar" : "Size atanan KPI'lar"
     },
     {
-      title: "Aktif Ticket",
-      value: dashboardStats?.openTickets?.toString() || "0",
-      change: `${(dashboardStats?.ticketCompletionPercentage || 0) >= 0 ? '+' : ''}${(dashboardStats?.ticketCompletionPercentage || 0).toFixed(1)}%`,
-      changeType: (dashboardStats?.ticketCompletionPercentage || 0) >= 0 ? "increase" as const : "decrease" as const,
+      title: "Atanan Ticket'lar",
+      value: dashboardStats?.userAssignedTickets?.toString() || "0",
+      change: dashboardStats?.userTickets > 0 
+        ? `${((dashboardStats?.userAssignedTickets / dashboardStats?.userTickets) * 100).toFixed(0)}%`
+        : "0%",
+      changeType: "increase" as const,
       icon: Ticket,
-      color: "warning"
+      color: "warning",
+      description: "Size atanan ticket'lar"
     },
     {
       title: "Tamamlanan KPI",
-      value: dashboardStats?.completedKPIs?.toString() || "0",
-      change: `${(dashboardStats?.kpiProgressPercentage || 0) >= 0 ? '+' : ''}${(dashboardStats?.kpiProgressPercentage || 0).toFixed(1)}%`,
-      changeType: (dashboardStats?.kpiProgressPercentage || 0) >= 0 ? "increase" as const : "decrease" as const,
+      value: dashboardStats?.userCompletedKPIs?.toString() || "0",
+      change: `${userKPIProgressPercentage >= 0 ? '+' : ''}${userKPIProgressPercentage.toFixed(1)}%`,
+      changeType: userKPIProgressPercentage >= 50 ? "increase" as const : "decrease" as const,
       icon: Users,
-      color: "success"
+      color: "success",
+      description: isAdmin ? "Tamamlanan KPI'lar" : "Tamamlanan KPI'larınız"
     },
     {
       title: "Aktif KPI",
-      value: dashboardStats?.activeKPIs?.toString() || "0",
-      change: `${(dashboardStats?.kpiProgressPercentage || 0) >= 0 ? '+' : ''}${(dashboardStats?.kpiProgressPercentage || 0).toFixed(1)}%`,
-      changeType: (dashboardStats?.kpiProgressPercentage || 0) >= 0 ? "increase" as const : "decrease" as const,
+      value: dashboardStats?.userActiveKPIs?.toString() || "0",
+      change: dashboardStats?.userKPIs > 0
+        ? `${((dashboardStats?.userActiveKPIs / dashboardStats?.userKPIs) * 100).toFixed(0)}%`
+        : "0%",
+      changeType: "increase" as const,
       icon: TrendingUp,
-      color: "primary"
+      color: "primary",
+      description: isAdmin ? "Devam eden KPI'lar" : "Devam eden KPI'larınız"
     }
   ];
 

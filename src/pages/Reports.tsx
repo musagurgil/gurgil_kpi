@@ -101,12 +101,12 @@ export default function Reports() {
   const userPerformanceData = getUserPerformanceData();
 
   return (
-    <div className="flex-1 bg-dashboard-bg min-h-screen p-6">
+    <div className="flex-1 bg-dashboard-bg min-h-screen p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Departman Raporları</h1>
-            <p className="text-muted-foreground mt-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Departman Raporları</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">
               {profile?.department} departmanı performans raporları
             </p>
           </div>

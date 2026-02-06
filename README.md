@@ -73,3 +73,52 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+---
+
+## 🚀 Yerel Kurulum ve Çalıştırma
+
+```bash
+# 1. Bağımlılıkları yükle
+npm install
+
+# 2. Prisma veritabanını oluştur
+npx prisma generate
+npx prisma db push
+
+# 3. Seed data'yı yükle (test kullanıcıları)
+npm run db:seed
+
+# 4. Geliştirme ortamını başlat
+npm run dev:full
+
+# Backend: http://localhost:3001
+# Frontend: http://localhost:5173
+```
+
+---
+
+## 🔑 Test Kullanıcıları
+
+Sistem seed data ile birlikte 4 test kullanıcısı oluşturur:
+
+| Rol | Email | Şifre | Departman | Açıklama |
+|-----|-------|-------|-----------|----------|
+| **Admin** | admin@gurgil.com | 123456 | İnsan Kaynakları | Tüm yetkilere sahip |
+| **Department Manager** | manager@gurgil.com | 123456 | Bilgi İşlem | Bilgi İşlem yöneticisi |
+| **Department Manager** | musa@gurgil.com | 123456 | IT | IT departman yöneticisi |
+| **Employee** | employee@gurgil.com | 123456 | Bilgi İşlem | Normal çalışan |
+
+---
+
+## 📚 Geliştirici Dokümantasyonu
+
+Detaylı geliştirici dokümantasyonu için: [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)
+
+**Dokümantasyon İçeriği:**
+- 🏗️ Mimari yapı
+- 🗄️ Veritabanı şeması
+- 🔐 Yetkilendirme sistemi
+- 🔌 API endpoints
+- 🎨 UI bileşenleri
+- 🔧 Geliştirme notları

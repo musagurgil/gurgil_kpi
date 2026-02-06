@@ -14,9 +14,9 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string> || {}),
     };
 
     // Get fresh token from localStorage
@@ -32,7 +32,11 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(error.error || 'Request failed');
+      const errorMessage = error.error || error.details || 'Request failed';
+      const customError = new Error(errorMessage);
+      (customError as any).status = response.status;
+      (customError as any).response = error;
+      throw customError;
     }
 
     return response.json();
@@ -170,6 +174,30 @@ class ApiClient {
     });
   }
 
+  async updateTicket(id: string, data: any) {
+    return this.request<any>(`/tickets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTicket(id: string) {
+    return this.request<{ message: string }>(`/tickets/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getTicketComments(ticketId: string) {
+    return this.request<any[]>(`/tickets/${ticketId}/comments`);
+  }
+
+  async addTicketComment(ticketId: string, content: string, isInternal?: boolean) {
+    return this.request<any>(`/tickets/${ticketId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content, isInternal }),
+    });
+  }
+
   // Calendar methods
   async getActivities() {
     return this.request<any[]>('/calendar/activities');
@@ -215,6 +243,30 @@ class ApiClient {
     return this.request<any[]>('/notifications');
   }
 
+  async markNotificationAsRead(id: string) {
+    return this.request<any>(`/notifications/${id}/read`, {
+      method: 'PUT',
+    });
+  }
+
+  async markAllNotificationsAsRead() {
+    return this.request<{ success: boolean }>('/notifications/read-all', {
+      method: 'PUT',
+    });
+  }
+
+  async deleteNotification(id: string) {
+    return this.request<{ success: boolean }>(`/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async deleteAllNotifications() {
+    return this.request<{ success: boolean }>('/notifications', {
+      method: 'DELETE',
+    });
+  }
+
   // Dashboard methods
   async getDashboardStats() {
     return this.request<any>('/dashboard/stats');
@@ -229,6 +281,88 @@ class ApiClient {
     return this.request<any>('/departments', {
       method: 'POST',
       body: JSON.stringify({ name }),
+    });
+  }
+
+  async updateDepartment(id: string, name: string) {
+    return this.request<any>(`/departments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async deleteDepartment(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/departments/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Meeting Room methods
+  async getMeetingRooms() {
+    return this.request<any[]>('/meeting-rooms');
+  }
+
+  async createMeetingRoom(data: {
+    name: string;
+    capacity: number;
+    location: string;
+    description?: string;
+  }) {
+    return this.request<any>('/meeting-rooms', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteMeetingRoom(id: string) {
+    return this.request<{ message: string }>(`/meeting-rooms/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Meeting Reservation methods
+  async getMeetingReservations() {
+    return this.request<any[]>('/meeting-reservations');
+  }
+
+  async createMeetingReservation(data: {
+    roomId: string;
+    startTime: string;
+    endTime: string;
+    notes?: string;
+  }) {
+    return this.request<any>('/meeting-reservations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async approveMeetingReservation(id: string) {
+    return this.request<any>(`/meeting-reservations/${id}/approve`, {
+      method: 'PUT',
+    });
+  }
+
+  async rejectMeetingReservation(id: string) {
+    return this.request<any>(`/meeting-reservations/${id}/reject`, {
+      method: 'PUT',
+    });
+  }
+
+  async updateMeetingReservation(id: string, data: {
+    startTime?: string;
+    endTime?: string;
+    notes?: string;
+  }) {
+    return this.request<any>(`/meeting-reservations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteMeetingReservation(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/meeting-reservations/${id}`, {
+      method: 'DELETE',
     });
   }
 }

@@ -79,8 +79,8 @@ export const CalendarStats = () => {
           {stats?.categoryStats && Object.keys(stats.categoryStats).length > 0 ? (
             <div className="space-y-3">
               {Object.entries(stats.categoryStats).map(([categoryId, hours]) => {
-                const totalHours = stats.monthlyTotalHours || 1;
-                const percentage = (hours / totalHours) * 100;
+                const totalHours = stats.monthlyTotalHours || 0;
+                const percentage = totalHours > 0 ? Math.min((hours / totalHours) * 100, 100) : 0;
                 
                 return (
                   <div key={categoryId} className="space-y-1">

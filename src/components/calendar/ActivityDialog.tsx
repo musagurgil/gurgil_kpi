@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -156,18 +167,13 @@ export const ActivityDialog = ({
 
   const handleDelete = async () => {
     if (!editingActivity) return;
-    
-    if (!confirm('Bu aktiviteyi silmek istediğinizden emin misiniz?')) {
-      return;
-    }
 
     try {
       await deleteActivity(editingActivity.id);
-      toast.success('Aktivite başarıyla silindi');
+      // Toast useCalendar hook'undan gösterilecek
       onClose();
     } catch (error: any) {
-      console.error('ActivityDialog: Error deleting activity:', error);
-      toast.error('Aktivite silinirken bir hata oluştu');
+      // Error toast useCalendar hook'undan gösterilecek
     }
   };
 
@@ -177,7 +183,7 @@ export const ActivityDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <LucideIcons.Calendar className="w-5 h-5" />
@@ -280,15 +286,37 @@ export const ActivityDialog = ({
           <div className="flex justify-between pt-4">
             <div>
               {editingActivity && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
                 <Button
                   type="button"
                   variant="destructive"
                   size="sm"
-                  onClick={handleDelete}
                   disabled={isSubmitting}
                 >
+                      <LucideIcons.Trash2 className="w-4 h-4 mr-2" />
                   Sil
                 </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Aktiviteyi Silmek İstediğinize Emin misiniz?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        <span className="font-semibold text-foreground">{editingActivity.title}</span> aktivitesini silmek üzeresiniz. 
+                        Bu işlem geri alınamaz.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>İptal</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Evet, Sil
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
             </div>
             

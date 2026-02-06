@@ -42,11 +42,13 @@ export const useCalendar = () => {
     try {
       const newActivity = await apiClient.createActivity(activityData);
       setActivities(prev => [newActivity, ...prev]);
-      toast.success('Aktivite başarıyla oluşturuldu');
+      const hours = Math.floor(activityData.duration / 60);
+      const minutes = activityData.duration % 60;
+      toast.success(`✅ Aktivite başarıyla oluşturuldu! (${hours}s ${minutes}dk)`);
       return newActivity;
     } catch (err: any) {
       console.error('Error creating activity:', err);
-      toast.error(err.message || 'Aktivite oluşturulurken hata oluştu');
+      toast.error('❌ ' + (err.message || 'Aktivite oluşturulurken hata oluştu'));
       throw err;
     }
   };
@@ -55,11 +57,11 @@ export const useCalendar = () => {
     try {
       const updatedActivity = await apiClient.updateActivity(id, activityData);
       setActivities(prev => prev.map(a => a.id === id ? updatedActivity : a));
-      toast.success('Aktivite başarıyla güncellendi');
+      toast.success('✅ Aktivite başarıyla güncellendi!');
       return updatedActivity;
     } catch (err: any) {
       console.error('Error updating activity:', err);
-      toast.error(err.message || 'Aktivite güncellenirken hata oluştu');
+      toast.error('❌ ' + (err.message || 'Aktivite güncellenirken hata oluştu'));
       throw err;
     }
   };
@@ -68,10 +70,10 @@ export const useCalendar = () => {
     try {
       await apiClient.deleteActivity(id);
       setActivities(prev => prev.filter(a => a.id !== id));
-      toast.success('Aktivite başarıyla silindi');
+      toast.success('✅ Aktivite başarıyla silindi!');
     } catch (err: any) {
       console.error('Error deleting activity:', err);
-      toast.error(err.message || 'Aktivite silinirken hata oluştu');
+      toast.error('❌ ' + (err.message || 'Aktivite silinirken hata oluştu'));
       throw err;
     }
   };
@@ -164,7 +166,22 @@ export const useCalendar = () => {
 
     const categoryStats = monthlyActivities.reduce((acc, activity) => {
       const categoryId = activity.categoryId?.toString() || 'unknown';
-      acc[categoryId] = (acc[categoryId] || 0) + 1;
+      try {
+        const startTime = activity.startTime?.includes('T') 
+          ? new Date(activity.startTime)
+          : new Date(`2000-01-01T${activity.startTime || '00:00'}`);
+        
+        const endTime = activity.endTime?.includes('T')
+          ? new Date(activity.endTime)
+          : new Date(`2000-01-01T${activity.endTime || '00:00'}`);
+        
+        if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
+          const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+          acc[categoryId] = (acc[categoryId] || 0) + hours;
+        }
+      } catch (error) {
+        console.warn('Error calculating category hours for activity:', activity, error);
+      }
       return acc;
     }, {} as Record<string, number>);
 

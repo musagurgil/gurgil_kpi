@@ -2,19 +2,75 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Building2 } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useAuth } from "@/hooks/useAuth";
+import { useKPI } from "@/hooks/useKPI";
 
 export function DepartmentPerformance() {
-  const { stats, loading } = useDashboard();
+  const { stats, loading, currentUser } = useDashboard();
+  const { user } = useAuth();
+  const { kpiStats } = useKPI();
   
-  // Mock department performance data
-  const departmentPerformance = [
-    { name: 'Satış', performance: 85, change: 12 },
-    { name: 'IT', performance: 92, change: 8 },
-    { name: 'Pazarlama', performance: 78, change: -5 },
-    { name: 'İnsan Kaynakları', performance: 88, change: 15 }
-  ];
+  // Filter KPIs by user's department or show all for admin
+  const isAdmin = user?.roles.includes('admin');
+  const userDepartment = user?.department || '';
+  
+  // Calculate department performance from actual KPI data
+  const departmentPerformanceMap = new Map<string, {
+    name: string;
+    totalKPIs: number;
+    completedKPIs: number;
+    totalProgress: number;
+  }>();
+
+  kpiStats.forEach(kpi => {
+    // Filter based on user role
+    if (!isAdmin && kpi.department !== userDepartment) {
+      return; // Skip departments not matching user's department
+    }
+
+    if (!departmentPerformanceMap.has(kpi.department)) {
+      departmentPerformanceMap.set(kpi.department, {
+        name: kpi.department,
+        totalKPIs: 0,
+        completedKPIs: 0,
+        totalProgress: 0
+      });
+    }
+
+    const dept = departmentPerformanceMap.get(kpi.department)!;
+    dept.totalKPIs++;
+    if (kpi.status === 'success' || kpi.progressPercentage >= 100) {
+      dept.completedKPIs++;
+    }
+    dept.totalProgress += kpi.progressPercentage;
+  });
+
+  // Convert to array and calculate performance percentage
+  const departmentPerformance = Array.from(departmentPerformanceMap.values())
+    .map(dept => {
+      const performance = dept.totalKPIs > 0 
+        ? Math.round(dept.totalProgress / dept.totalKPIs)
+        : 0;
+      
+      // Calculate change (mock for now, can be enhanced with historical data)
+      const change = performance > 80 ? 10 : performance > 60 ? 5 : -5;
+      
+      const changeType: 'increase' | 'decrease' = change >= 0 ? 'increase' : 'decrease';
+      
+      return {
+        name: dept.name,
+        performance,
+        change,
+        target: 100,
+        completedKPIs: dept.completedKPIs,
+        kpiCount: dept.totalKPIs,
+        changeType
+      };
+    })
+    .sort((a, b) => b.performance - a.performance)
+    .slice(0, isAdmin ? 10 : 1); // Show all for admin, only user's department for others
 
   if (loading) {
     return (
@@ -49,12 +105,18 @@ export function DepartmentPerformance() {
     return (
       <Card className="shadow-card">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Departman Performansı</CardTitle>
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-primary" />
+            {isAdmin ? 'Departman Performansı' : `${userDepartment} Performansı`}
+          </CardTitle>
         </CardHeader>
         
         <CardContent>
           <p className="text-muted-foreground text-center py-8">
-            Henüz departman verisi bulunmamaktadır.
+            {isAdmin 
+              ? 'Henüz departman performans verisi bulunmamaktadır.'
+              : `${userDepartment} departmanı için henüz KPI verisi bulunmamaktadır.`
+            }
           </p>
         </CardContent>
       </Card>
@@ -64,7 +126,10 @@ export function DepartmentPerformance() {
   return (
     <Card className="shadow-card">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Departman Performansı</CardTitle>
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <Building2 className="w-5 h-5 text-primary" />
+          {isAdmin ? 'Departman Performansı' : `${userDepartment} Performansı`}
+        </CardTitle>
       </CardHeader>
       
       <CardContent className="space-y-4">

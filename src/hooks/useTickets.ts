@@ -41,11 +41,11 @@ export const useTickets = () => {
     try {
       const newTicket = await apiClient.createTicket(ticketData);
       setTickets(prev => [newTicket, ...prev]);
-      toast.success('Ticket başarıyla oluşturuldu');
+      toast.success(`✅ Ticket başarıyla oluşturuldu! (${ticketData.targetDepartment} departmanına gönderildi)`);
       return newTicket;
     } catch (err: any) {
       console.error('Error creating ticket:', err);
-      toast.error(err.message || 'Ticket oluşturulurken hata oluştu');
+      toast.error('❌ ' + (err.message || 'Ticket oluşturulurken hata oluştu'));
       throw err;
     }
   };
@@ -53,21 +53,18 @@ export const useTickets = () => {
   const updateTicket = async (id: string, ticketData: any) => {
     try {
       console.log('Update ticket:', id, ticketData);
-      const updatedTicket = await apiClient.request(`/tickets/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(ticketData),
-      });
+      const updatedTicket = await apiClient.updateTicket(id, ticketData);
       
       // Update the ticket in the local state
       setTickets(prev => prev.map(ticket => 
         ticket.id === id ? updatedTicket : ticket
       ));
       
-      toast.success('Ticket başarıyla güncellendi');
+      toast.success('✅ Ticket başarıyla güncellendi!');
       return updatedTicket;
     } catch (err: any) {
       console.error('Error updating ticket:', err);
-      const errorMessage = err.message || 'Ticket güncellenirken hata oluştu';
+      const errorMessage = '❌ ' + (err.message || 'Ticket güncellenirken hata oluştu');
       toast.error(errorMessage);
       throw err;
     }
@@ -75,13 +72,12 @@ export const useTickets = () => {
 
   const deleteTicket = async (id: string) => {
     try {
-      // This would need to be implemented in the API
-      console.log('Delete ticket:', id);
+      await apiClient.deleteTicket(id);
       setTickets(prev => prev.filter(ticket => ticket.id !== id));
-      toast.success('Ticket başarıyla silindi');
+      toast.success('✅ Ticket başarıyla silindi!');
     } catch (err: any) {
       console.error('Error deleting ticket:', err);
-      toast.error(err.message || 'Ticket silinirken hata oluştu');
+      toast.error('❌ ' + (err.message || 'Ticket silinirken hata oluştu'));
       throw err;
     }
   };
@@ -117,18 +113,20 @@ export const useTickets = () => {
 
   const assignTicket = async (ticketId: string, assignedTo: string) => {
     try {
-      // This would need to be implemented in the API
-      console.log('Assign ticket:', ticketId, assignedTo);
+      const updatedTicket = await apiClient.updateTicket(ticketId, {
+        assignedTo,
+        status: 'in_progress'
+      });
+      
       setTickets(prev => prev.map(ticket => 
-        ticket.id === ticketId 
-          ? { ...ticket, assignedTo, status: 'in_progress' }
-          : ticket
+        ticket.id === ticketId ? updatedTicket : ticket
       ));
-      toast.success('Ticket başarıyla atandı');
+      
+      toast.success('✅ Ticket başarıyla atandı!');
       return true;
     } catch (err: any) {
       console.error('Error assigning ticket:', err);
-      toast.error(err.message || 'Ticket atanırken hata oluştu');
+      toast.error('❌ ' + (err.message || 'Ticket atanırken hata oluştu'));
       return false;
     }
   };
@@ -138,10 +136,7 @@ export const useTickets = () => {
       console.log('Add comment:', ticketId, content, isInternal);
       
       // Send comment to backend
-      const newComment = await apiClient.request(`/tickets/${ticketId}/comments`, {
-        method: 'POST',
-        body: JSON.stringify({ content, isInternal }),
-      });
+      const newComment = await apiClient.addTicketComment(ticketId, content, isInternal);
       
       // Update the ticket in local state
       setTickets(prev => prev.map(ticket => 
@@ -150,11 +145,11 @@ export const useTickets = () => {
           : ticket
       ));
       
-      toast.success('Yorum başarıyla eklendi');
+      toast.success('✅ Yorum başarıyla eklendi!');
       return true;
     } catch (err: any) {
       console.error('Error adding comment:', err);
-      const errorMessage = err.message || 'Yorum eklenirken hata oluştu';
+      const errorMessage = '❌ ' + (err.message || 'Yorum eklenirken hata oluştu');
       toast.error(errorMessage);
       return false;
     }

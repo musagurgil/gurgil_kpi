@@ -163,9 +163,10 @@ async function main() {
   }
 
   console.log('✅ Database seeded successfully!');
-  console.log('👤 Admin: admin@gurgil.com');
-  console.log('👤 Manager: manager@gurgil.com');
-  console.log('👤 Employee: employee@gurgil.com');
+  console.log('👤 Admin: admin@gurgil.com (İnsan Kaynakları)');
+  console.log('👤 Manager: manager@gurgil.com (Bilgi İşlem)');
+  console.log('👤 IT Manager: musa@gurgil.com (IT)');
+  console.log('👤 Employee: employee@gurgil.com (Bilgi İşlem)');
   console.log('🔑 Password for all users: 123456');
 }
 

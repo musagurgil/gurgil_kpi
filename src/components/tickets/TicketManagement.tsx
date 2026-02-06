@@ -12,7 +12,8 @@ import {
   CheckCircle, 
   XCircle, 
   AlertTriangle,
-  Users
+  Users,
+  Download
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTickets } from "@/hooks/useTickets";
@@ -20,8 +21,11 @@ import { CreateTicketDialog } from "./CreateTicketDialog";
 import { TicketCard } from "./TicketCard";
 import { TicketFilters } from "./TicketFilters";
 import { TicketDetails } from "./TicketDetails";
+import { TicketCharts } from "./TicketCharts";
 import { Ticket as TicketType, TicketFilter, CreateTicketData } from "@/types/ticket";
 import { User } from "@/types/user";
+import { exportTicketsToCSV } from "@/lib/export";
+import { toast as sonnerToast } from 'sonner';
 
 export function TicketManagement() {
   const { user } = useAuth();
@@ -45,6 +49,7 @@ export function TicketManagement() {
     loading, 
     createTicket, 
     updateTicket, 
+    deleteTicket, 
     assignTicket, 
     addComment,
     getTicketStats,
@@ -133,11 +138,37 @@ export function TicketManagement() {
 
   const handleAddComment = async (ticketId: string, content: string, isInternal?: boolean) => {
     const success = await addComment(ticketId, content, isInternal);
+    
+    // Force update selected ticket with latest data from tickets state
     if (success && selectedTicket) {
+      // Use setTimeout to ensure state has updated
+      setTimeout(() => {
       const updatedTicket = tickets.find(t => t.id === ticketId);
       if (updatedTicket) {
         setSelectedTicket(updatedTicket);
       }
+      }, 50);
+    }
+    
+    return success;
+  };
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    try {
+      await deleteTicket(ticketId);
+      setSelectedTicket(null);
+    } catch (error) {
+      // Error toast already shown by useTickets
+    }
+  };
+
+  const handleExportTickets = () => {
+    try {
+      const ticketsToExport = getTicketsByTab(activeTab);
+      exportTicketsToCSV(ticketsToExport, 'ticket-raporu');
+      sonnerToast.success(`✅ ${ticketsToExport.length} ticket Excel dosyasına aktarıldı!`);
+    } catch (error: any) {
+      sonnerToast.error('❌ Export işlemi başarısız: ' + error.message);
     }
   };
 
@@ -166,7 +197,18 @@ export function TicketManagement() {
             Departmanlar arası destek talepleri ve çözüm süreçleri
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExportTickets}
+            disabled={getTicketsByTab(activeTab).length === 0}
+            className="gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Excel'e Aktar ({getTicketsByTab(activeTab).length})
+          </Button>
         <CreateTicketDialog onCreateTicket={handleCreateTicket} />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4">
@@ -247,6 +289,11 @@ export function TicketManagement() {
         users={users}
       />
 
+      {/* Ticket Charts */}
+      {tickets.length > 0 && (
+        <TicketCharts tickets={filteredTickets} />
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
           <TabsTrigger value="all" className="text-xs sm:text-sm">Tüm Ticketlar</TabsTrigger>
@@ -292,6 +339,7 @@ export function TicketManagement() {
         onUpdateTicket={handleUpdateTicket}
         onAssignTicket={handleAssignTicket}
         onAddComment={handleAddComment}
+        onDeleteTicket={handleDeleteTicket}
         onRefreshTicket={() => {
           // Refresh the selected ticket by finding it in the updated tickets list
           if (selectedTicket) {

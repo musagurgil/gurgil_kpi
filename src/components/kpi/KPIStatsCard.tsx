@@ -1,7 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   TrendingUp, 
   Target, 
@@ -35,6 +46,8 @@ export function KPIStatsCard({
   canDelete = false,
   onDelete
 }: KPIStatsCardProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
   const getStatusColor = () => {
     switch (kpiStats.status) {
       case 'success': return 'kpi-success';
@@ -129,16 +142,43 @@ export function KPIStatsCard({
               <span className="sm:hidden">{getStatusText().charAt(0)}</span>
             </Badge>
             {canDelete && onDelete && (
+              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogTrigger asChild>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete();
                 }}
                 className="p-1 hover:bg-destructive/10 rounded-md transition-colors text-destructive hover:text-destructive/80"
                 title="KPI'yı Sil"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>KPI'yı Silmek İstediğinize Emin misiniz?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      <span className="font-semibold text-foreground">{kpiStats.title}</span> KPI'sını silmek üzeresiniz. 
+                      Bu işlem geri alınamaz ve tüm ilerleme kayıtları, yorumlar ve atamalar da silinecektir.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
+                      İptal
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                        setShowDeleteDialog(false);
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Evet, Sil
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         </div>
@@ -263,6 +303,9 @@ export function KPIStatsCard({
                     <span className="text-muted-foreground">
                       {formatDateTime(progress.recordedAt)}
                     </span>
+                  </div>
+                  <div className="text-muted-foreground mt-1">
+                    {progress.recordedByName || progress.recordedBy}
                   </div>
                   {progress.note && (
                     <div className="text-muted-foreground mt-1 line-clamp-1">
