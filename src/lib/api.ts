@@ -48,7 +48,7 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    
+
     this.token = response.token;
     localStorage.setItem('auth_token', response.token);
     return response;
@@ -59,7 +59,7 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ email, password, firstName, lastName, department }),
     });
-    
+
     this.token = response.token;
     localStorage.setItem('auth_token', response.token);
     return response;
@@ -257,6 +257,12 @@ class ApiClient {
 
   async deleteNotification(id: string) {
     return this.request<{ success: boolean }>(`/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async deleteReadNotifications() {
+    return this.request<any>('/notifications/read', {
       method: 'DELETE',
     });
   }

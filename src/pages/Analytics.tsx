@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,125 +22,173 @@ import {
   Target,
   Activity,
   Award,
-  Clock,
   CheckCircle2,
-  AlertCircle
 } from "lucide-react";
-// Mock data for analytics
+import { useKPI } from "@/hooks/useKPI";
+import { useTickets } from "@/hooks/useTickets";
+import { apiClient } from "@/lib/api";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--kpi-success))', 'hsl(var(--kpi-warning))', 'hsl(var(--kpi-danger))', 'hsl(var(--accent))'];
 
 export default function Analytics() {
+  const { kpiStats, loading: kpiLoading } = useKPI();
+  const { tickets, loading: ticketsLoading } = useTickets();
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [kpiData, setKpiData] = useState<any[]>([]);
-  const [departmentStats, setDepartmentStats] = useState<any[]>([]);
-  const [topPerformers, setTopPerformers] = useState<any[]>([]);
 
+  // Load auxiliary data (Departments, Users)
   useEffect(() => {
-    loadAnalytics();
+    const loadData = async () => {
+      try {
+        const [deptsData, profilesData] = await Promise.all([
+          apiClient.getDepartments(),
+          apiClient.getProfiles()
+        ]);
+        setDepartments(deptsData);
+        setProfiles(profilesData);
+      } catch (error) {
+        console.error("Error loading analytics auxiliary data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
-  const loadAnalytics = async () => {
-    try {
-      // Mock data for analytics
-      const kpis = [
-        { id: '1', title: 'Aylık Satış Hedefi', department: 'Satış', targetValue: 100000, currentValue: 75000, status: 'active', kpi_progress: [] },
-        { id: '2', title: 'Müşteri Memnuniyeti', department: 'Müşteri Hizmetleri', targetValue: 90, currentValue: 85, status: 'active', kpi_progress: [] }
-      ];
+  const isLoading = loading || kpiLoading || ticketsLoading;
 
-      const departments = [
-        { id: '1', name: 'Satış' },
-        { id: '2', name: 'Pazarlama' },
-        { id: '3', name: 'IT' },
-        { id: '4', name: 'İnsan Kaynakları' }
-      ];
-
-      const profiles = [
-        { id: '1', department: 'Satış', first_name: 'John', last_name: 'Doe' },
-        { id: '2', department: 'Pazarlama', first_name: 'Jane', last_name: 'Smith' },
-        { id: '3', department: 'IT', first_name: 'Bob', last_name: 'Johnson' }
-      ];
-
-      // No error handling needed for mock data
-
-      // Calculate department stats
-      const deptStats = departments?.map(dept => {
-        const deptKPIs = kpis?.filter(k => k.department === dept.name) || [];
-        const deptUsers = profiles?.filter(p => p.department === dept.name) || [];
-        const completedKPIs = deptKPIs.filter(k => k.status === 'completed').length;
-        const activeKPIs = deptKPIs.filter(k => k.status === 'active').length;
-        
-        return {
-          name: dept.name,
-          users: deptUsers.length,
-          activeKPIs,
-          completedKPIs,
-          totalKPIs: deptKPIs.length
-        };
-      }) || [];
-
-      setDepartmentStats(deptStats);
-      setKpiData(kpis || []);
-
-      // Calculate top performers (users with most completed KPIs)
-      const userProgress = new Map();
-      kpis?.forEach(kpi => {
-        if (kpi.kpi_progress && Array.isArray(kpi.kpi_progress)) {
-          kpi.kpi_progress.forEach((progress: any) => {
-            const current = userProgress.get(progress.user_id) || { count: 0, totalValue: 0 };
-            current.count++;
-            current.totalValue += Number(progress.value);
-            userProgress.set(progress.user_id, current);
-          });
-        }
-      });
-
-      const performers = Array.from(userProgress.entries())
-        .map(([userId, stats]: [string, any]) => {
-          const user = profiles?.find(p => p.id === userId);
-          return {
-            id: userId,
-            name: user ? `${user.first_name} ${user.last_name}` : 'Unknown',
-            department: user?.department || 'N/A',
-            progressCount: stats.count,
-            totalValue: stats.totalValue
-          };
-        })
-        .sort((a, b) => b.progressCount - a.progressCount)
-        .slice(0, 5);
-
-      setTopPerformers(performers);
-    } catch (error) {
-      console.error('Analytics loading error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getKPIStatusDistribution = () => {
-    const statusCounts = kpiData.reduce((acc, kpi) => {
-      acc[kpi.status] = (acc[kpi.status] || 0) + 1;
+  // 1. KPI Status Distribution
+  const statusDistribution = useMemo(() => {
+    const counts = kpiStats.reduce((acc: any, kpi: any) => {
+      const status = kpi.status || 'active'; // Default to active if undefined
+      acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {});
 
-    return Object.entries(statusCounts).map(([status, count]) => ({
-      name: status === 'active' ? 'Aktif' : status === 'completed' ? 'Tamamlandı' : 'Beklemede',
-      value: count
-    }));
-  };
+    return [
+      { name: 'Başarılı', value: counts['success'] || 0, color: 'hsl(var(--kpi-success))' },
+      { name: 'Aktif/Normal', value: (counts['active'] || 0) + (counts['normal'] || 0), color: 'hsl(var(--primary))' },
+      { name: 'Uyarı', value: counts['warning'] || 0, color: 'hsl(var(--kpi-warning))' },
+      { name: 'Kritik', value: counts['danger'] || 0, color: 'hsl(var(--kpi-danger))' }
+    ].filter(item => item.value > 0);
+  }, [kpiStats]);
 
-  const getTrendData = () => {
-    // Mock trend data - in real app, calculate from historical data
-    const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz'];
-    return months.map((month, index) => ({
-      month,
-      kpis: Math.floor(Math.random() * 20) + 10,
-      completed: Math.floor(Math.random() * 15) + 5,
-      users: Math.floor(Math.random() * 30) + 20
-    }));
-  };
+  // 2. Department Performance
+  const departmentStats = useMemo(() => {
+    if (!departments.length) return [];
 
-  if (loading) {
+    return departments.map(dept => {
+      const deptKPIs = kpiStats.filter(k => k.department === dept.name);
+
+      // Calculate completion rate
+      const totalKPIs = deptKPIs.length;
+      const completedKPIs = deptKPIs.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
+      const activeKPIs = totalKPIs - completedKPIs;
+
+      const deptUsers = profiles.filter(p => p.department === dept.name).length;
+
+      return {
+        name: dept.name,
+        users: deptUsers,
+        totalKPIs,
+        activeKPIs,
+        completedKPIs,
+        successRate: totalKPIs > 0 ? (completedKPIs / totalKPIs) * 100 : 0
+      };
+    }).sort((a, b) => b.totalKPIs - a.totalKPIs); // Sort by activity volume
+  }, [departments, kpiStats, profiles]);
+
+  // 3. Top Performers (Calculated from KPI completion and Ticket resolution)
+  const topPerformers = useMemo(() => {
+    const userScores = new Map();
+
+    // Score from KPIs
+    kpiStats.forEach(kpi => {
+      if (kpi.progressPercentage >= 100) {
+        // Give points to assigned users
+        kpi.assignedUsers?.forEach((userId: string) => {
+          const current = userScores.get(userId) || { kpiCount: 0, ticketCount: 0 };
+          current.kpiCount += 1;
+          userScores.set(userId, current);
+        });
+      }
+    });
+
+    // Score from Tickets
+    tickets.forEach(ticket => {
+      if (ticket.status === 'resolved' || ticket.status === 'closed') {
+        const userId = ticket.assignedTo;
+        if (userId) {
+          const current = userScores.get(userId) || { kpiCount: 0, ticketCount: 0 };
+          current.ticketCount += 1;
+          userScores.set(userId, current);
+        }
+      }
+    });
+
+    return Array.from(userScores.entries())
+      .map(([userId, scores]: [string, any]) => {
+        const profile = profiles.find(p => p.id === userId);
+        if (!profile) return null;
+
+        return {
+          id: userId,
+          name: `${profile.firstName} ${profile.lastName}`,
+          department: profile.department,
+          kpiCount: scores.kpiCount,
+          ticketCount: scores.ticketCount,
+          totalScore: scores.kpiCount * 10 + scores.ticketCount * 5 // Weighted score
+        };
+      })
+      .filter(Boolean) // Remove nulls (users not found)
+      .sort((a: any, b: any) => b.totalScore - a.totalScore)
+      .slice(0, 5);
+  }, [kpiStats, tickets, profiles]);
+
+  // 4. Trend Data (Simulated based on KPI Start Dates for distribution over time)
+  // Since we don't have historical snapshots, we'll visualize "New KPIs vs Completed KPIs" over the last 6 months
+  const trendData = useMemo(() => {
+    const months: any = {};
+    const now = new Date();
+
+    // Initialize last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toLocaleString('tr-TR', { month: 'short' });
+      months[key] = { month: key, newKPIs: 0, completedKPIs: 0, tickets: 0 };
+    }
+
+    // Populate with KPI data
+    kpiStats.forEach(kpi => {
+      const startDate = new Date(kpi.startDate);
+      const key = startDate.toLocaleString('tr-TR', { month: 'short' });
+      if (months[key]) {
+        months[key].newKPIs += 1;
+      }
+
+      if (kpi.status === 'success' || kpi.progressPercentage >= 100) {
+        // Use endDate as proxy for completion time if actual completion log missing
+        const endDate = new Date(kpi.endDate);
+        const endKey = endDate.toLocaleString('tr-TR', { month: 'short' });
+        if (months[endKey]) {
+          months[endKey].completedKPIs += 1;
+        }
+      }
+    });
+
+    // Populate with Ticket data (created vs resolved)
+    tickets.forEach(ticket => {
+      const createdDate = new Date(ticket.createdAt);
+      const key = createdDate.toLocaleString('tr-TR', { month: 'short' });
+      if (months[key]) months[key].tickets += 1;
+    });
+
+    return Object.values(months);
+  }, [kpiStats, tickets]);
+
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -148,11 +196,10 @@ export default function Analytics() {
     );
   }
 
-  const statusDistribution = getKPIStatusDistribution();
-  const trendData = getTrendData();
-  const totalKPIs = kpiData.length;
-  const completedKPIs = kpiData.filter(k => k.status === 'completed').length;
-  const activeKPIs = kpiData.filter(k => k.status === 'active').length;
+  const totalKPIs = kpiStats.length;
+  const completedKPIs = kpiStats.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
+  const successRate = totalKPIs > 0 ? Math.round((completedKPIs / totalKPIs) * 100) : 0;
+  const activeKPIs = totalKPIs - completedKPIs;
 
   return (
     <div className="flex-1 bg-dashboard-bg min-h-screen p-4 sm:p-6">
@@ -162,8 +209,14 @@ export default function Analytics() {
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Şirket Analitik</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              Tüm şirket genelinde performans metrikleri ve trendler
+              Gerçek zamanlı performans metrikleri ve departman analizleri
             </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge variant="outline" className="px-3 py-1">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse mr-2"></div>
+              Canlı Veri
+            </Badge>
           </div>
         </div>
 
@@ -211,7 +264,7 @@ export default function Analytics() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Başarı Oranı</p>
                   <p className="text-2xl font-bold text-foreground">
-                    {totalKPIs > 0 ? Math.round((completedKPIs / totalKPIs) * 100) : 0}%
+                    %{successRate}
                   </p>
                 </div>
                 <Award className="h-8 w-8 text-kpi-success" />
@@ -243,8 +296,8 @@ export default function Analytics() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {statusDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {statusDistribution.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -266,12 +319,12 @@ export default function Analytics() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={departmentStats}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
+                  <XAxis dataKey="name" fontSize={12} />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="activeKPIs" name="Aktif KPI" fill="hsl(var(--kpi-warning))" />
-                  <Bar dataKey="completedKPIs" name="Tamamlanan" fill="hsl(var(--kpi-success))" />
+                  <Bar dataKey="activeKPIs" name="Aktif KPI" fill="hsl(var(--kpi-warning))" stackId="a" />
+                  <Bar dataKey="completedKPIs" name="Tamamlanan" fill="hsl(var(--kpi-success))" stackId="a" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -285,7 +338,7 @@ export default function Analytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
-                6 Aylık Trend
+                Veri Akış Trendi (Son 6 Ay)
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -296,8 +349,9 @@ export default function Analytics() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="kpis" name="Toplam KPI" stroke="hsl(var(--primary))" />
-                  <Line type="monotone" dataKey="completed" name="Tamamlanan" stroke="hsl(var(--kpi-success))" />
+                  <Line type="monotone" dataKey="newKPIs" name="Yeni KPI" stroke="hsl(var(--primary))" strokeWidth={2} />
+                  <Line type="monotone" dataKey="completedKPIs" name="Tamamlanan" stroke="hsl(var(--kpi-success))" strokeWidth={2} />
+                  <Line type="monotone" dataKey="tickets" name="Yeni Ticket" stroke="hsl(var(--accent))" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -308,15 +362,16 @@ export default function Analytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Award className="w-5 h-5" />
-                En İyi Performans
+                En İyi Performans Gösterenler
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {topPerformers.map((performer, index) => (
+                {topPerformers.map((performer: any, index: number) => (
                   <div key={performer.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-primary text-white font-bold">
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-white
+                        ${index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : index === 2 ? 'bg-amber-700' : 'bg-primary'}`}>
                         {index + 1}
                       </div>
                       <div>
@@ -324,14 +379,19 @@ export default function Analytics() {
                         <p className="text-xs text-muted-foreground">{performer.department}</p>
                       </div>
                     </div>
-                    <Badge variant="secondary">
-                      {performer.progressCount} kayıt
-                    </Badge>
+                    <div className="flex gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {performer.kpiCount} KPI
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {performer.ticketCount} Ticket
+                      </Badge>
+                    </div>
                   </div>
                 ))}
                 {topPerformers.length === 0 && (
                   <p className="text-center text-muted-foreground py-4">
-                    Henüz performans verisi bulunmuyor
+                    Henüz yeterli performans verisi bulunmuyor.
                   </p>
                 )}
               </div>
@@ -346,13 +406,13 @@ export default function Analytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {departmentStats.map((dept) => (
-                <div key={dept.name} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+              {departmentStats.map((dept: any) => (
+                <div key={dept.name} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
                   <div>
                     <h3 className="font-medium text-foreground">{dept.name}</h3>
                     <p className="text-sm text-muted-foreground">{dept.users} çalışan</p>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 sm:gap-8">
                     <div className="text-right">
                       <p className="text-sm font-medium text-foreground">{dept.totalKPIs}</p>
                       <p className="text-xs text-muted-foreground">Toplam KPI</p>
@@ -365,9 +425,18 @@ export default function Analytics() {
                       <p className="text-sm font-medium text-kpi-success">{dept.completedKPIs}</p>
                       <p className="text-xs text-muted-foreground">Tamamlandı</p>
                     </div>
+                    <div className="text-right hidden sm:block">
+                      <p className="text-sm font-bold text-foreground">%{Math.round(dept.successRate)}</p>
+                      <p className="text-xs text-muted-foreground">Başarı</p>
+                    </div>
                   </div>
                 </div>
               ))}
+              {departmentStats.length === 0 && (
+                <p className="text-center text-muted-foreground py-4">
+                  Henüz departman verisi bulunmuyor.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -58,6 +58,9 @@ export function RecentActivities() {
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
     const time = new Date(timestamp);
+
+    if (isNaN(time.getTime())) return 'Tarih bilinmiyor';
+
     const diffMs = now.getTime() - time.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -68,7 +71,7 @@ export function RecentActivities() {
     if (diffHours < 24) return `${diffHours} saat önce`;
     if (diffDays === 1) return 'Dün';
     if (diffDays < 7) return `${diffDays} gün önce`;
-    
+
     // Format date for older activities
     return time.toLocaleDateString('tr-TR', {
       day: 'numeric',

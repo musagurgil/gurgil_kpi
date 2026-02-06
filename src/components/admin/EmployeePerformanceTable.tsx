@@ -1,75 +1,79 @@
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useKPI } from '@/hooks/useKPI';
+import { useTickets } from '@/hooks/useTickets';
+import { useCalendar } from '@/hooks/useCalendar';
+import { useCategories } from '@/hooks/useCategories';
 import { Users, Clock, TrendingUp } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 export const EmployeePerformanceTable = () => {
-  const { profiles, loading, error } = useAdmin();
-  
-  // Mock employee stats data
-  const getEmployeeStats = () => [
-    {
-      userId: '1',
-      name: 'Admin User',
-      department: 'Yönetim',
-      kpiCount: 5,
-      completedKPIs: 3,
-      performance: 85,
-      lastActivity: '2025-10-08T10:00:00Z',
-      totalHours: 40,
-      categoryDistribution: {
-        'meeting': 15,
-        'project': 20,
-        'training': 5
-      },
-      averageDailyHours: 8.0,
-      entryCount: 5
-    },
-    {
-      userId: '2',
-      name: 'Manager User',
-      department: 'Satış',
-      kpiCount: 8,
-      completedKPIs: 6,
-      performance: 92,
-      lastActivity: '2025-10-08T11:00:00Z',
-      totalHours: 45,
-      categoryDistribution: {
-        'meeting': 10,
-        'project': 25,
-        'administrative': 10
-      },
-      averageDailyHours: 9.0,
-      entryCount: 8
-    },
-    {
-      userId: '3',
-      name: 'Employee User',
-      department: 'IT',
-      kpiCount: 3,
-      completedKPIs: 2,
-      performance: 78,
-      lastActivity: '2025-10-08T09:30:00Z',
-      totalHours: 35,
-      categoryDistribution: {
-        'project': 20,
-        'training': 10,
-        'administrative': 5
-      },
-      averageDailyHours: 7.0,
-      entryCount: 3
-    }
-  ];
-  
-  const categories = [
-    { id: 'meeting', name: 'Toplantı', color: 'hsl(217, 91%, 60%)' },
-    { id: 'project', name: 'Proje', color: 'hsl(142, 71%, 45%)' },
-    { id: 'training', name: 'Eğitim', color: 'hsl(38, 92%, 50%)' },
-    { id: 'administrative', name: 'İdari', color: 'hsl(262, 83%, 58%)' }
-  ];
-  
-  const employeeStats = getEmployeeStats();
+  const { profiles, loading: adminLoading, error } = useAdmin();
+  const { kpiStats, loading: kpiLoading } = useKPI();
+  const { tickets, loading: ticketsLoading } = useTickets();
+  const { activities, loading: calendarLoading } = useCalendar();
+  const { categories } = useCategories();
+
+  const loading = adminLoading || kpiLoading || ticketsLoading || calendarLoading;
+
+  const employeeStats = useMemo(() => {
+    if (!profiles || profiles.length === 0) return [];
+
+    return profiles.map(profile => {
+      // KPI Stats
+      const userKPIs = kpiStats.filter(k => k.assignedToId === profile.id);
+      const kpiCount = userKPIs.length;
+      const completedKPIs = userKPIs.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
+
+      // Activity Stats
+      const userActivities = activities.filter(a => a.userId === profile.id);
+      const totalHours = userActivities.reduce((acc, a) => acc + (a.duration || 0) / 60, 0);
+      const entryCount = userActivities.length;
+
+      // Calculate average daily hours (assuming activity over last 30 days roughly, or just simple avg per entry for now if no date range)
+      // Ideally we filter by date range, but here we take all time avg per entry or similar metric
+      const averageDailyHours = entryCount > 0 ? totalHours / entryCount : 0; // Simplified metric for now
+
+      // Category Distribution
+      const categoryDistribution: Record<string, number> = {};
+      userActivities.forEach(a => {
+        const catId = a.categoryId;
+        categoryDistribution[catId] = (categoryDistribution[catId] || 0) + (a.duration || 0) / 60;
+      });
+
+      // Performance Score (Simple weighted algo)
+      // 40% KPI completion rate
+      // 40% Activity hours (capped at 160h/month ~ 100%)
+      // 20% Ticket resolution (if applicable) -> Skipping for now as tickets might not be assigned to everyone
+
+      const kpiScore = kpiCount > 0 ? (completedKPIs / kpiCount) * 100 : 0;
+      const hoursScore = Math.min((totalHours / 20) * 100, 100); // Dummy baseline: 20 hours = 100% for demo
+      const performance = (kpiScore * 0.6) + (hoursScore * 0.4);
+
+      const lastActivity = userActivities.length > 0
+        ? userActivities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date
+        : null;
+
+      return {
+        userId: profile.id,
+        name: `${profile.firstName} ${profile.lastName}`,
+        department: profile.department,
+        kpiCount,
+        completedKPIs,
+        performance,
+        lastActivity,
+        totalHours,
+        averageDailyHours,
+        entryCount,
+        categoryDistribution
+      };
+    }).sort((a, b) => b.performance - a.performance);
+
+  }, [profiles, kpiStats, activities]);
 
   if (loading) {
     return (
@@ -97,14 +101,14 @@ export const EmployeePerformanceTable = () => {
 
   const getTopCategory = (categoryDistribution: { [categoryId: string]: number } | null | undefined) => {
     if (!categoryDistribution || Object.keys(categoryDistribution).length === 0) return null;
-    
+
     const topCategoryId = Object.entries(categoryDistribution)
       .reduce((a, b) => a[1] > b[1] ? a : b)[0];
-    
+
     return (categories || []).find(cat => cat.id === topCategoryId);
   };
 
-  const maxHours = employeeStats && employeeStats.length > 0 
+  const maxHours = employeeStats && employeeStats.length > 0
     ? Math.max(...employeeStats.map(emp => emp.totalHours || 0), 1)
     : 1;
 
@@ -125,8 +129,8 @@ export const EmployeePerformanceTable = () => {
           <div className="space-y-4">
             {employeeStats.map(employee => {
               const topCategory = getTopCategory(employee.categoryDistribution || {});
-              const performancePercentage = ((employee.totalHours || 0) / maxHours) * 100;
-              
+              const performancePercentage = employee.performance;
+
               return (
                 <div key={employee.userId || Math.random()} className="p-4 border border-border rounded-lg">
                   <div className="flex items-start justify-between mb-3">
@@ -135,11 +139,11 @@ export const EmployeePerformanceTable = () => {
                       <p className="text-sm text-muted-foreground">{employee.department || 'Departman Yok'}</p>
                     </div>
                     {topCategory && (
-                      <Badge 
+                      <Badge
                         variant="outline"
-                        style={{ 
-                          borderColor: topCategory.color || '#ccc', 
-                          color: topCategory.color || '#ccc' 
+                        style={{
+                          borderColor: topCategory.color || '#ccc',
+                          color: topCategory.color || '#ccc'
                         }}
                       >
                         En Çok: {topCategory.name || 'Kategori'}
@@ -155,7 +159,7 @@ export const EmployeePerformanceTable = () => {
                         {(employee.totalHours || 0).toFixed(1)}h
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-success" />
                       <span className="text-sm text-muted-foreground">Ortalama:</span>
@@ -163,7 +167,7 @@ export const EmployeePerformanceTable = () => {
                         {(employee.averageDailyHours || 0).toFixed(1)}h/gün
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-warning" />
                       <span className="text-sm text-muted-foreground">Giriş:</span>
@@ -175,7 +179,7 @@ export const EmployeePerformanceTable = () => {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Performans</span>
+                      <span className="text-sm text-muted-foreground">Performans Skoru</span>
                       <span className="text-sm font-medium text-foreground">
                         {(performancePercentage || 0).toFixed(1)}%
                       </span>
@@ -190,11 +194,11 @@ export const EmployeePerformanceTable = () => {
                       {(categories || []).map(category => {
                         const hours = (employee.categoryDistribution || {})[category.id] || 0;
                         if (hours === 0) return null;
-                        
+
                         return (
                           <div key={category.id || Math.random()} className="flex items-center gap-2">
-                            <div 
-                              className="w-2 h-2 rounded-full flex-shrink-0" 
+                            <div
+                              className="w-2 h-2 rounded-full flex-shrink-0"
                               style={{ backgroundColor: category.color || '#ccc' }}
                             />
                             <span className="text-xs text-muted-foreground truncate">

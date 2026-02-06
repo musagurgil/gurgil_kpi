@@ -18,6 +18,8 @@ import AdminPanel from "./pages/AdminPanel";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 import MeetingRooms from "./pages/MeetingRooms";
+import { SocketProvider } from "./contexts/SocketContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import React from "react";
 
 const queryClient = new QueryClient();
@@ -25,56 +27,60 @@ const queryClient = new QueryClient();
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/auth" element={<AuthPage />} />
-            
-            {/* Protected Routes with Layout (Sidebar) */}
-            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/calendar" element={<Calendar />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/kpi" element={<KPITracking />} />
-              <Route path="/tickets" element={<Tickets />} />
-              <Route path="/meeting-rooms" element={<MeetingRooms />} />
-              
-              {/* Manager+ Routes */}
-              <Route path="/analytics" element={
-                <ProtectedRoute requiredRole="department_manager">
-                  <Analytics />
-                </ProtectedRoute>
-              } />
-              <Route path="/reports" element={
-                <ProtectedRoute requiredRole="department_manager">
-                  <Reports />
-                </ProtectedRoute>
-              } />
-              
-              {/* Admin Only Routes */}
-              <Route path="/admin" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminPanel />
-                </ProtectedRoute>
-              } />
-              <Route path="/users" element={
-                <ProtectedRoute requiredRole="admin">
-                  <Users />
-                </ProtectedRoute>
-              } />
-              
-              {/* Settings */}
-              <Route path="/settings" element={<Settings />} />
-            </Route>
-            
-            {/* 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <SocketProvider>
+        <NotificationProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/auth" element={<AuthPage />} />
+
+                {/* Protected Routes with Layout (Sidebar) */}
+                <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/calendar" element={<Calendar />} />
+                  <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/kpi" element={<KPITracking />} />
+                  <Route path="/tickets" element={<Tickets />} />
+                  <Route path="/meeting-rooms" element={<MeetingRooms />} />
+
+                  {/* Manager+ Routes */}
+                  <Route path="/analytics" element={
+                    <ProtectedRoute requiredRole="department_manager">
+                      <Analytics />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/reports" element={
+                    <ProtectedRoute requiredRole="department_manager">
+                      <Reports />
+                    </ProtectedRoute>
+                  } />
+
+                  {/* Admin Only Routes */}
+                  <Route path="/admin" element={
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminPanel />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/users" element={
+                    <ProtectedRoute requiredRole="admin">
+                      <Users />
+                    </ProtectedRoute>
+                  } />
+
+                  {/* Settings */}
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
+
+                {/* 404 */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </NotificationProvider>
+      </SocketProvider>
     </QueryClientProvider>
   );
 };

@@ -16,16 +16,21 @@ import { toast } from 'sonner';
 type ViewType = 'weekly' | 'monthly';
 
 const Calendar = () => {
-  const { 
-    selectedDate, 
-    setSelectedDate, 
+  const {
+    selectedDate,
+    setSelectedDate,
     activities,
-    filters, 
-    updateFilters, 
+    filters,
+    updateFilters,
     clearFilters,
-    loading 
+    loading,
+    getActivitiesForDate,
+    createActivity,
+    updateActivity,
+    deleteActivity,
+    getMonthlyStats
   } = useCalendar();
-  
+
   const [currentView, setCurrentView] = useState<ViewType>(() => {
     return (localStorage.getItem('calendar-view') as ViewType) || 'weekly';
   });
@@ -64,10 +69,10 @@ const Calendar = () => {
       const day = startOfWeek.getDay();
       const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
       startOfWeek.setDate(diff);
-      
+
       const endOfWeek = new Date(startOfWeek);
       endOfWeek.setDate(startOfWeek.getDate() + 6);
-      
+
       return `${format(startOfWeek, 'd MMM', { locale: tr })} - ${format(endOfWeek, 'd MMM yyyy', { locale: tr })}`;
     } else {
       return format(selectedDate, 'MMMM yyyy', { locale: tr });
@@ -98,7 +103,7 @@ const Calendar = () => {
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground">Günlük aktivitelerinizi takip edin ve yönetin</p>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
               {/* Export Button */}
               <Button
@@ -112,29 +117,29 @@ const Calendar = () => {
                 <span className="sm:hidden">Aktar</span>
                 <span className="hidden sm:inline">({activities.length})</span>
               </Button>
-            
-            {/* View Toggle */}
-            <div className="flex items-center gap-2 bg-muted p-1 rounded-lg w-full sm:w-auto justify-center">
-              <Button
-                variant={currentView === 'weekly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setCurrentView('weekly')}
-                className="flex items-center gap-2 flex-1 sm:flex-none"
-              >
-                <LucideIcons.CalendarDays className="w-4 h-4" />
-                <span className="hidden sm:inline">Haftalık</span>
-                <span className="sm:hidden">Hafta</span>
-              </Button>
-              <Button
-                variant={currentView === 'monthly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setCurrentView('monthly')}
-                className="flex items-center gap-2 flex-1 sm:flex-none"
-              >
-                <LucideIcons.Calendar className="w-4 h-4" />
-                <span className="hidden sm:inline">Aylık</span>
-                <span className="sm:hidden">Ay</span>
-              </Button>
+
+              {/* View Toggle */}
+              <div className="flex items-center gap-2 bg-muted p-1 rounded-lg w-full sm:w-auto justify-center">
+                <Button
+                  variant={currentView === 'weekly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentView('weekly')}
+                  className="flex items-center gap-2 flex-1 sm:flex-none"
+                >
+                  <LucideIcons.CalendarDays className="w-4 h-4" />
+                  <span className="hidden sm:inline">Haftalık</span>
+                  <span className="sm:hidden">Hafta</span>
+                </Button>
+                <Button
+                  variant={currentView === 'monthly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentView('monthly')}
+                  className="flex items-center gap-2 flex-1 sm:flex-none"
+                >
+                  <LucideIcons.Calendar className="w-4 h-4" />
+                  <span className="hidden sm:inline">Aylık</span>
+                  <span className="sm:hidden">Ay</span>
+                </Button>
               </div>
             </div>
           </div>
@@ -151,11 +156,11 @@ const Calendar = () => {
                 <LucideIcons.ChevronLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">Önceki</span>
               </Button>
-              
+
               <div className="text-sm sm:text-base font-semibold text-foreground min-w-[150px] sm:min-w-[200px] text-center px-2 sm:px-4">
                 {formatDateRange()}
               </div>
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -177,7 +182,7 @@ const Calendar = () => {
               </Button>
             </div>
 
-            <CalendarFilters 
+            <CalendarFilters
               filters={filters}
               onFiltersChange={updateFilters}
               onClearFilters={clearFilters}
@@ -193,16 +198,28 @@ const Calendar = () => {
           <div className="lg:col-span-3">
             <Card className="overflow-hidden">
               {currentView === 'weekly' ? (
-                <WeeklyCalendarGrid selectedDate={selectedDate} />
+                <WeeklyCalendarGrid
+                  selectedDate={selectedDate}
+                  getActivitiesForDate={getActivitiesForDate}
+                  onCreateActivity={createActivity}
+                  onUpdateActivity={updateActivity}
+                  onDeleteActivity={deleteActivity}
+                />
               ) : (
-                <EnhancedCalendarGrid selectedDate={selectedDate} />
+                <EnhancedCalendarGrid
+                  selectedDate={selectedDate}
+                  getActivitiesForDate={getActivitiesForDate}
+                  onCreateActivity={createActivity}
+                  onUpdateActivity={updateActivity}
+                  onDeleteActivity={deleteActivity}
+                />
               )}
             </Card>
           </div>
 
           {/* Stats Sidebar */}
           <div className="lg:col-span-1">
-            <CalendarStats />
+            <CalendarStats stats={getMonthlyStats(selectedDate)} />
           </div>
         </div>
 

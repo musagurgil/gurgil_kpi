@@ -1,15 +1,15 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { useCalendar } from '@/hooks/useCalendar';
 import { useCategories } from '@/hooks/useCategories';
 import * as LucideIcons from 'lucide-react';
 
-export const CalendarStats = () => {
-  const { selectedDate, getMonthlyStats } = useCalendar();
+interface CalendarStatsProps {
+  stats: any;
+}
+
+export const CalendarStats = ({ stats }: CalendarStatsProps) => {
   const { categories } = useCategories();
-  
-  const stats = getMonthlyStats(selectedDate);
 
   const getCategoryName = (categoryId: string) => {
     const category = categories?.find(cat => cat.id === categoryId);
@@ -81,13 +81,13 @@ export const CalendarStats = () => {
               {Object.entries(stats.categoryStats).map(([categoryId, hours]) => {
                 const totalHours = stats.monthlyTotalHours || 0;
                 const percentage = totalHours > 0 ? Math.min((hours / totalHours) * 100, 100) : 0;
-                
+
                 return (
                   <div key={categoryId} className="space-y-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
+                        <div
+                          className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: getCategoryColor(categoryId) }}
                         />
                         <span className="text-sm font-medium">
@@ -98,8 +98,8 @@ export const CalendarStats = () => {
                         {hours.toFixed(1)}h ({percentage.toFixed(0)}%)
                       </span>
                     </div>
-                    <Progress 
-                      value={percentage} 
+                    <Progress
+                      value={percentage}
                       className="h-2"
                       style={{
                         '--progress-background': getCategoryColor(categoryId)
@@ -134,7 +134,7 @@ export const CalendarStats = () => {
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Ortalama Süre</span>
             <span className="font-medium">
-              {stats?.entryCount > 0 
+              {stats?.entryCount > 0
                 ? `${((stats.monthlyTotalHours || 0) / (stats.entryCount || 1)).toFixed(1)}h`
                 : '-'
               }
@@ -145,10 +145,10 @@ export const CalendarStats = () => {
             <span className="font-medium">
               {stats?.categoryStats && Object.keys(stats.categoryStats).length > 0
                 ? getCategoryName(
-                    Object.entries(stats.categoryStats).reduce((a, b) => 
-                      stats.categoryStats[a[0]] > stats.categoryStats[b[0]] ? a : b
-                    )[0]
-                  )
+                  Object.entries(stats.categoryStats).reduce((a, b) =>
+                    stats.categoryStats[a[0]] > stats.categoryStats[b[0]] ? a : b
+                  )[0]
+                )
                 : '-'
               }
             </span>

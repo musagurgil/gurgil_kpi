@@ -28,6 +28,8 @@ export interface DashboardStats {
     dueToday: number;
     dueThisWeek: number;
   };
+  ticketsByStatus: { name: string; value: number; color: string }[];
+  ticketsByDepartment: { name: string; value: number }[];
 }
 
 export const useDashboard = () => {
@@ -44,6 +46,8 @@ export const useDashboard = () => {
     completedTickets: 0,
     kpiProgressPercentage: 0,
     ticketCompletionPercentage: 0,
+    ticketsByStatus: [],
+    ticketsByDepartment: [],
     criticalKPIs: [],
     recentActivities: [],
     userKPIs: 0,
@@ -63,24 +67,24 @@ export const useDashboard = () => {
   useEffect(() => {
     const loadDashboardStats = async () => {
       if (!user) return;
-      
+
       try {
         setLoading(true);
         const data = await apiClient.getDashboardStats();
-        
+
         // Calculate percentages
-        const kpiProgressPercentage = data.totalKPIs > 0 
-          ? (data.completedKPIs / data.totalKPIs) * 100 
+        const kpiProgressPercentage = data.totalKPIs > 0
+          ? (data.completedKPIs / data.totalKPIs) * 100
           : 0;
-        
-        const ticketCompletionPercentage = data.totalTickets > 0 
-          ? (data.completedTickets / data.totalTickets) * 100 
+
+        const ticketCompletionPercentage = data.totalTickets > 0
+          ? (data.completedTickets / data.totalTickets) * 100
           : 0;
 
         // Filter KPIs based on user role and assignments
         const isAdmin = user.roles.includes('admin');
         const isDepartmentManager = user.roles.includes('department_manager');
-        
+
         // User-specific KPIs: assigned to user or from user's department
         const userKPIsList = kpiStats.filter(kpi => {
           if (isAdmin) return true; // Admin sees all
@@ -92,18 +96,18 @@ export const useDashboard = () => {
         });
 
         const userKPIs = userKPIsList.length;
-        const userCompletedKPIs = userKPIsList.filter(kpi => 
+        const userCompletedKPIs = userKPIsList.filter(kpi =>
           kpi.status === 'success' || kpi.progressPercentage >= 100
         ).length;
-        const userActiveKPIs = userKPIsList.filter(kpi => 
+        const userActiveKPIs = userKPIsList.filter(kpi =>
           kpi.status !== 'success' && kpi.progressPercentage < 100
         ).length;
 
         // Filter critical KPIs from user's KPIs
         const criticalKPIs = userKPIsList
-          .filter(kpi => 
-            kpi.priority === 'critical' || 
-            kpi.status === 'danger' || 
+          .filter(kpi =>
+            kpi.priority === 'critical' ||
+            kpi.status === 'danger' ||
             (kpi.status === 'warning' && kpi.progressPercentage < 50)
           )
           .sort((a, b) => {
@@ -189,7 +193,7 @@ export const useDashboard = () => {
 
         // Recent activities from user's KPIs and tickets
         const recentActivities: any[] = [];
-        
+
         // Add KPI progress activities
         userKPIsList.forEach(kpi => {
           if (kpi.recentProgress && kpi.recentProgress.length > 0) {
@@ -271,7 +275,9 @@ export const useDashboard = () => {
             completedToday: 0,
             dueToday: 0,
             dueThisWeek: 0,
-          }
+          },
+          ticketsByStatus: [],
+          ticketsByDepartment: [],
         });
       } finally {
         setLoading(false);
@@ -288,7 +294,7 @@ export const useDashboard = () => {
     currentUser: user ? {
       id: user.id,
       role: user.roles.includes('admin') ? 'admin' :
-            user.roles.includes('department_manager') ? 'department_manager' : 'employee',
+        user.roles.includes('department_manager') ? 'department_manager' : 'employee',
       department: user.department
     } : null
   };

@@ -30,16 +30,16 @@ interface ActivityDialogProps {
   editingActivity?: any;
 }
 
-export const ActivityDialog = ({ 
-  date, 
-  isOpen, 
-  onClose, 
-  initialHour, 
-  editingActivity 
+export const ActivityDialog = ({
+  date,
+  isOpen,
+  onClose,
+  initialHour,
+  editingActivity
 }: ActivityDialogProps) => {
   const { createActivity, updateActivity, deleteActivity } = useCalendar();
   const { categories, loading: categoriesLoading } = useCategories();
-  
+
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -47,7 +47,7 @@ export const ActivityDialog = ({
     startTime: '',
     endTime: '',
   });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Initialize form when dialog opens or editing activity changes
@@ -55,10 +55,10 @@ export const ActivityDialog = ({
     if (isOpen) {
       if (editingActivity) {
         // Editing existing activity
-        const startTime = editingActivity.startTime?.includes('T') 
+        const startTime = editingActivity.startTime?.includes('T')
           ? new Date(editingActivity.startTime).toTimeString().slice(0, 5)
           : editingActivity.startTime?.slice(0, 5) || '';
-        
+
         const endTime = editingActivity.endTime?.includes('T')
           ? new Date(editingActivity.endTime).toTimeString().slice(0, 5)
           : editingActivity.endTime?.slice(0, 5) || '';
@@ -75,7 +75,7 @@ export const ActivityDialog = ({
         const hour = initialHour || new Date().getHours();
         const startTime = `${hour.toString().padStart(2, '0')}:00`;
         const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
-        
+
         setForm({
           title: '',
           description: '',
@@ -89,17 +89,17 @@ export const ActivityDialog = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!form.title.trim()) {
       toast.error('Aktivite başlığı gereklidir');
       return;
     }
-    
+
     if (!form.categoryId) {
       toast.error('Kategori seçimi gereklidir');
       return;
     }
-    
+
     if (!form.startTime || !form.endTime) {
       toast.error('Başlangıç ve bitiş saati gereklidir');
       return;
@@ -117,16 +117,19 @@ export const ActivityDialog = ({
     const [endHour, endMin] = form.endTime.split(':').map(Number);
     const startMinutes = startHour * 60 + startMin;
     const endMinutes = endHour * 60 + endMin;
-    
+
     if (startMinutes >= endMinutes) {
       toast.error('Bitiş saati başlangıç saatinden sonra olmalıdır');
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
-      const dateStr = date.toISOString().split('T')[0];
+      // Use local date string (YYYY-MM-DD)
+      const offset = date.getTimezoneOffset();
+      const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+      const dateStr = localDate.toISOString().split('T')[0];
       const duration = endMinutes - startMinutes;
 
       if (editingActivity) {
@@ -144,13 +147,13 @@ export const ActivityDialog = ({
         });
         toast.success('Aktivite başarıyla oluşturuldu');
       }
-      
+
       onClose();
     } catch (error: any) {
       console.error('ActivityDialog: Error saving activity:', error);
-      
+
       let errorMessage = "Aktivite kaydedilirken bir hata oluştu.";
-      
+
       if (error?.message?.includes('Internal server error')) {
         errorMessage = "Sunucu hatası. Lütfen daha sonra tekrar deneyin.";
       } else if (error?.message?.includes('Failed to fetch')) {
@@ -158,7 +161,7 @@ export const ActivityDialog = ({
       } else if (error?.message) {
         errorMessage = error.message;
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -237,8 +240,8 @@ export const ActivityDialog = ({
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
+                      <div
+                        className="w-3 h-3 rounded-full"
                         style={{ backgroundColor: category.color }}
                       />
                       {category.name}
@@ -258,7 +261,7 @@ export const ActivityDialog = ({
               placeholder="HH:MM"
               required
             />
-            
+
             <TimePicker
               value={form.endTime}
               onChange={(value) => handleTimeChange('endTime', value)}
@@ -288,21 +291,21 @@ export const ActivityDialog = ({
               {editingActivity && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  disabled={isSubmitting}
-                >
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      disabled={isSubmitting}
+                    >
                       <LucideIcons.Trash2 className="w-4 h-4 mr-2" />
-                  Sil
-                </Button>
+                      Sil
+                    </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Aktiviteyi Silmek İstediğinize Emin misiniz?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        <span className="font-semibold text-foreground">{editingActivity.title}</span> aktivitesini silmek üzeresiniz. 
+                        <span className="font-semibold text-foreground">{editingActivity.title}</span> aktivitesini silmek üzeresiniz.
                         Bu işlem geri alınamaz.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -319,7 +322,7 @@ export const ActivityDialog = ({
                 </AlertDialog>
               )}
             </div>
-            
+
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -333,8 +336,8 @@ export const ActivityDialog = ({
                 type="submit"
                 disabled={isSubmitting}
               >
-                {isSubmitting 
-                  ? (editingActivity ? 'Güncelleniyor...' : 'Oluşturuluyor...') 
+                {isSubmitting
+                  ? (editingActivity ? 'Güncelleniyor...' : 'Oluşturuluyor...')
                   : (editingActivity ? 'Güncelle' : 'Oluştur')
                 }
               </Button>

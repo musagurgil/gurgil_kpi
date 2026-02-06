@@ -1,99 +1,70 @@
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useCalendar } from '@/hooks/useCalendar';
+import { useCategories } from '@/hooks/useCategories';
+import { useKPI } from '@/hooks/useKPI';
 import { Building2, Users, Clock, BarChart3 } from 'lucide-react';
 
 export const DepartmentAnalytics = () => {
-  const { profiles, loading, error } = useAdmin();
-  
-  // Mock department stats data
-  const getDepartmentStats = () => [
-    {
-      id: '1',
-      name: 'Satış',
-      department: 'Satış',
-      employeeCount: 12,
-      totalEmployees: 12,
-      kpiCount: 8,
-      completedKPIs: 6,
-      performance: 85,
-      avgResponseTime: '2.5 saat',
-      totalHours: 120,
-      averageHours: 10.0,
-      categoryDistribution: {
-        'meeting': 20,
-        'project': 60,
-        'training': 15,
-        'administrative': 25
-      }
-    },
-    {
-      id: '2',
-      name: 'IT',
-      department: 'IT',
-      employeeCount: 8,
-      totalEmployees: 8,
-      kpiCount: 5,
-      completedKPIs: 4,
-      performance: 92,
-      avgResponseTime: '1.2 saat',
-      totalHours: 100,
-      averageHours: 12.5,
-      categoryDistribution: {
-        'project': 70,
-        'training': 20,
-        'administrative': 10
-      }
-    },
-    {
-      id: '3',
-      name: 'Pazarlama',
-      department: 'Pazarlama',
-      employeeCount: 6,
-      totalEmployees: 6,
-      kpiCount: 4,
-      completedKPIs: 3,
-      performance: 78,
-      avgResponseTime: '3.1 saat',
-      totalHours: 80,
-      averageHours: 13.3,
-      categoryDistribution: {
-        'meeting': 25,
-        'project': 40,
-        'training': 10,
-        'administrative': 5
-      }
-    },
-    {
-      id: '4',
-      name: 'İnsan Kaynakları',
-      department: 'İnsan Kaynakları',
-      employeeCount: 4,
-      totalEmployees: 4,
-      kpiCount: 3,
-      completedKPIs: 2,
-      performance: 88,
-      avgResponseTime: '1.8 saat',
-      totalHours: 60,
-      averageHours: 15.0,
-      categoryDistribution: {
-        'meeting': 15,
-        'project': 20,
-        'training': 15,
-        'administrative': 10
-      }
-    }
-  ];
-  
-  const departmentStats = getDepartmentStats();
+  const { profiles, loading: adminLoading, error } = useAdmin();
+  const { activities, loading: calendarLoading } = useCalendar();
+  const { categories } = useCategories();
+  const { kpiStats, loading: kpiLoading } = useKPI();
 
-  // Categories for department analytics
-  const categories = [
-    { id: 'meeting', name: 'Toplantı', color: 'hsl(217, 91%, 60%)' },
-    { id: 'project', name: 'Proje', color: 'hsl(142, 71%, 45%)' },
-    { id: 'training', name: 'Eğitim', color: 'hsl(38, 92%, 50%)' },
-    { id: 'administrative', name: 'İdari', color: 'hsl(262, 83%, 58%)' }
-  ];
+  const loading = adminLoading || calendarLoading || kpiLoading;
+
+  const departmentStats = useMemo(() => {
+    if (!profiles || profiles.length === 0) return [];
+
+    const statsMap = new Map();
+
+    profiles.forEach(profile => {
+      const dept = profile.department || 'Diğer';
+
+      if (!statsMap.has(dept)) {
+        statsMap.set(dept, {
+          id: dept,
+          name: dept,
+          department: dept,
+          employeeCount: 0,
+          totalEmployees: 0,
+          totalHours: 0,
+          categoryDistribution: {},
+          kpiCount: 0,
+          completedKPIs: 0
+        });
+      }
+
+      const deptStats = statsMap.get(dept);
+      deptStats.employeeCount += 1;
+      deptStats.totalEmployees += 1;
+
+      // Add user hours
+      const userActivities = activities.filter(a => a.userId === profile.id);
+      const userHours = userActivities.reduce((acc, a) => acc + (a.duration || 0) / 60, 0);
+      deptStats.totalHours += userHours;
+
+      // Add category hours
+      userActivities.forEach(a => {
+        const catId = a.categoryId;
+        deptStats.categoryDistribution[catId] = (deptStats.categoryDistribution[catId] || 0) + (a.duration || 0) / 60;
+      });
+
+      // Add KPI stats
+      const userKPIs = kpiStats.filter(k => k.assignedToId === profile.id);
+      deptStats.kpiCount += userKPIs.length;
+      deptStats.completedKPIs += userKPIs.filter(k => k.status === 'success').length;
+    });
+
+    return Array.from(statsMap.values()).map((d: any) => ({
+      ...d,
+      averageHours: d.totalEmployees > 0 ? d.totalHours / d.totalEmployees : 0,
+      performance: d.kpiCount > 0 ? (d.completedKPIs / d.kpiCount) * 100 : 0 // Simple KPI based perf for dept
+    })).sort((a, b) => b.totalHours - a.totalHours);
+
+  }, [profiles, activities, kpiStats]);
 
   if (loading) {
     return (
@@ -119,7 +90,7 @@ export const DepartmentAnalytics = () => {
     );
   }
 
-  const maxHours = departmentStats && departmentStats.length > 0 
+  const maxHours = departmentStats && departmentStats.length > 0
     ? Math.max(...departmentStats.map(dept => dept.totalHours || 0), 1)
     : 1;
   const totalEmployees = (departmentStats || []).reduce((sum, dept) => sum + (dept.totalEmployees || 0), 0);
@@ -193,8 +164,8 @@ export const DepartmentAnalytics = () => {
             </div>
           ) : (
             (departmentStats || []).map(department => {
-              const performancePercentage = ((department.totalHours || 0) / maxHours) * 100;
-              const totalCategoryHours = Object.values(department.categoryDistribution || {})
+              const performancePercentage = Math.min((department.totalHours / 100) * 100, 100); // Demo scaling
+              const totalCategoryHours = Object.values<number>(department.categoryDistribution || {})
                 .reduce((sum, hours) => sum + (hours || 0), 0);
 
               return (
@@ -212,7 +183,7 @@ export const DepartmentAnalytics = () => {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Departman Performansı</span>
+                      <span className="text-sm text-muted-foreground">Aktivite Yoğunluğu</span>
                       <span className="text-sm font-medium text-foreground">
                         {(performancePercentage || 0).toFixed(1)}%
                       </span>
@@ -227,15 +198,15 @@ export const DepartmentAnalytics = () => {
                       {categories.map(category => {
                         const hours = department.categoryDistribution[category.id] || 0;
                         const percentage = totalCategoryHours > 0 ? (hours / totalCategoryHours) * 100 : 0;
-                        
+
                         if (hours === 0) return null;
 
                         return (
                           <div key={category.id} className="space-y-1">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <div 
-                                  className="w-3 h-3 rounded-full" 
+                                <div
+                                  className="w-3 h-3 rounded-full"
                                   style={{ backgroundColor: category.color }}
                                 />
                                 <span className="text-sm text-foreground">
@@ -246,8 +217,8 @@ export const DepartmentAnalytics = () => {
                                 {(hours || 0).toFixed(1)}h ({(percentage || 0).toFixed(1)}%)
                               </div>
                             </div>
-                            <Progress 
-                              value={percentage} 
+                            <Progress
+                              value={percentage}
                               className="h-2"
                               style={{
                                 '--progress-foreground': category.color
@@ -274,9 +245,9 @@ export const DepartmentAnalytics = () => {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Verimlilik Oranı:</span>
+                          <span className="text-muted-foreground">KPI Başarısı:</span>
                           <span className="font-medium text-foreground">
-                            {(performancePercentage || 0).toFixed(1)}%
+                            {(department.performance || 0).toFixed(1)}%
                           </span>
                         </div>
                       </div>

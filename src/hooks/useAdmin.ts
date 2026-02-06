@@ -19,27 +19,27 @@ export const useAdmin = () => {
   });
 
   // Load profiles
+  const loadProfiles = async () => {
+    if (!hasRole('admin')) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await apiClient.getProfiles();
+      setProfiles(data);
+    } catch (err: any) {
+      console.error('Error loading profiles:', err);
+      setError(err.message || 'Profiller yüklenirken hata oluştu');
+      toast.error('Profiller yüklenirken hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadProfiles = async () => {
-      if (!hasRole('admin')) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await apiClient.getProfiles();
-        setProfiles(data);
-      } catch (err: any) {
-        console.error('Error loading profiles:', err);
-        setError(err.message || 'Profiller yüklenirken hata oluştu');
-        toast.error('Profiller yüklenirken hata oluştu');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadProfiles();
   }, [hasRole]);
 
@@ -71,7 +71,7 @@ export const useAdmin = () => {
   }) => {
     try {
       const updatedProfile = await apiClient.updateProfile(id, profileData);
-      setProfiles(prev => 
+      setProfiles(prev =>
         prev.map(p => p.id === id ? updatedProfile : p)
       );
       toast.success('Kullanıcı başarıyla güncellendi');
@@ -124,9 +124,10 @@ export const useAdmin = () => {
     deleteProfile,
     currentUser: user ? {
       id: user.id,
-      role: user.roles.includes('admin') ? 'admin' : 
-            user.roles.includes('department_manager') ? 'department_manager' : 'employee',
+      role: user.roles.includes('admin') ? 'admin' :
+        user.roles.includes('department_manager') ? 'department_manager' : 'employee',
       department: user.department
-    } : null
+    } : null,
+    refetch: loadProfiles
   };
 };

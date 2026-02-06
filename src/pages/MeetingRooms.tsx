@@ -12,12 +12,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Calendar as CalendarIcon, 
-  Plus, 
-  Building2, 
-  MapPin, 
-  Users, 
+import {
+  Calendar as CalendarIcon,
+  Plus,
+  Building2,
+  MapPin,
+  Users,
   Clock,
   Search,
   CheckCircle2,
@@ -59,7 +59,7 @@ export default function MeetingRooms() {
   const [selectedReservation, setSelectedReservation] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-  
+
   // Create room form state
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomCapacity, setNewRoomCapacity] = useState('');
@@ -161,7 +161,7 @@ export default function MeetingRooms() {
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(room => 
+      filtered = filtered.filter(room =>
         room.name.toLowerCase().includes(query) ||
         room.location.toLowerCase().includes(query) ||
         room.description?.toLowerCase().includes(query)
@@ -237,7 +237,7 @@ export default function MeetingRooms() {
             </p>
           </div>
           <div className="flex gap-2 w-full sm:w-auto shrink-0">
-            <Button 
+            <Button
               onClick={() => setShowReservationForm(true)}
               className="flex-1 sm:flex-initial"
             >
@@ -246,8 +246,8 @@ export default function MeetingRooms() {
               <span className="sm:hidden">Rezervasyon</span>
             </Button>
             {isAdmin && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setShowCreateRoomDialog(true)}
                 className="shrink-0"
               >
@@ -329,8 +329,8 @@ export default function MeetingRooms() {
                       <div className="flex items-start justify-between gap-2 mb-4">
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base sm:text-lg font-semibold mb-2 truncate">{room.name}</h3>
-                          <Badge 
-                            variant={available ? 'default' : 'secondary'} 
+                          <Badge
+                            variant={available ? 'default' : 'secondary'}
                             className={cn(
                               "text-xs",
                               available ? 'bg-green-500 hover:bg-green-600' : ''
@@ -342,9 +342,9 @@ export default function MeetingRooms() {
                         {isAdmin && (
                           <AlertDialog onClick={(e) => e.stopPropagation()}>
                             <AlertDialogTrigger asChild>
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
+                              <Button
+                                size="sm"
+                                variant="ghost"
                                 className="text-destructive hover:text-destructive shrink-0 h-8 w-8 p-0"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -433,8 +433,8 @@ export default function MeetingRooms() {
                   const room = rooms.find(r => r.id === reservation.roomId);
                   const startDate = new Date(reservation.startTime);
                   const endDate = new Date(reservation.endTime);
-                  const isPastReservation = isPast(endDate);
-                  
+                  const isPastReservation = !isNaN(endDate.getTime()) && isPast(endDate);
+
                   return (
                     <Card
                       key={reservation.id}

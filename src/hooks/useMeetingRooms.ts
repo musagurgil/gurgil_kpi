@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
+import { useSocket } from '../contexts/SocketContext';
+import { useAuth } from './useAuth';
 
 export const useMeetingRooms = () => {
+  const { socket } = useSocket();
+  const { user } = useAuth();
   const [rooms, setRooms] = useState<any[]>([]);
   const [reservations, setReservations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +44,33 @@ export const useMeetingRooms = () => {
     loadRooms();
     loadReservations();
   }, []);
+
+  // Socket listeners
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('reservation_created', (newReservation: any) => {
+      setReservations(prev => {
+        if (prev.some(r => r.id === newReservation.id)) return prev;
+        return [newReservation, ...prev];
+      });
+      toast.info(`📅 Yeni Rezervasyon: ${newReservation.room.name}`);
+    });
+
+    socket.on('reservation_updated', (updatedReservation: any) => {
+      setReservations(prev => prev.map(r => r.id === updatedReservation.id ? updatedReservation : r));
+    });
+
+    socket.on('reservation_deleted', (reservationId: string) => {
+      setReservations(prev => prev.filter(r => r.id !== reservationId));
+    });
+
+    return () => {
+      socket.off('reservation_created');
+      socket.off('reservation_updated');
+      socket.off('reservation_deleted');
+    };
+  }, [socket]);
 
   // Create room (admin only)
   const createRoom = async (roomData: {
@@ -81,11 +112,35 @@ export const useMeetingRooms = () => {
     notes?: string;
   }) => {
     try {
+      // Optimistic Update
+      const tempId = `temp-${Date.now()}`;
+      const optimisticReservation = {
+        id: tempId,
+        ...reservationData,
+        status: 'pending',
+        requestedBy: user?.id,
+        requester: {
+          id: user?.id,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          email: user?.email,
+          department: user?.department
+        },
+        room: rooms.find(r => r.id === reservationData.roomId)
+      };
+
+      setReservations(prev => [optimisticReservation, ...prev]);
+
       const newReservation = await apiClient.createMeetingReservation(reservationData);
-      setReservations(prev => [newReservation, ...prev]);
+
+      // Replace temp with real
+      setReservations(prev => prev.map(r => r.id === tempId ? newReservation : r));
+
       toast.success('✅ Rezervasyon talebi başarıyla oluşturuldu! Onay bekliyor...');
       return newReservation;
     } catch (err: any) {
+      // Rollback (remove the temp reservation)
+      setReservations(prev => prev.filter(r => !r.id.startsWith('temp-')));
       console.error('Error creating reservation:', err);
       toast.error('❌ ' + (err.message || 'Rezervasyon oluşturulurken hata oluştu'));
       throw err;
@@ -95,15 +150,29 @@ export const useMeetingRooms = () => {
   // Approve reservation
   const approveReservation = async (id: string) => {
     try {
+      // Optimistic Update
+      const previousReservations = [...reservations];
+      setReservations(prev => prev.map(r =>
+        r.id === id ? { ...r, status: 'approved', approvedBy: user?.id } : r
+      ));
+
       const updated = await apiClient.approveMeetingReservation(id);
-      setReservations(prev => prev.map(r => r.id === id ? updated : r));
+
+      // Server response confirmation (handled by socket too)
       toast.success('✅ Rezervasyon onaylandı!');
+
       // Reload rooms to update availability
       loadRooms();
       return updated;
     } catch (err: any) {
+      // Rollback
+      // We need to fetch previous state or just revert locally if we stored it
+      // Simple rollback: re-fetch or revert specific item
+      // Let's rely on re-fetch for rollback in complex cases or just revert content
       console.error('Error approving reservation:', err);
       toast.error('❌ ' + (err.message || 'Rezervasyon onaylanırken hata oluştu'));
+      // Ideally rollback state here:
+      loadReservations();
       throw err;
     }
   };
@@ -111,13 +180,20 @@ export const useMeetingRooms = () => {
   // Reject reservation
   const rejectReservation = async (id: string) => {
     try {
+      // Optimistic Update
+      const previousReservations = [...reservations];
+      setReservations(prev => prev.map(r =>
+        r.id === id ? { ...r, status: 'rejected' } : r
+      ));
+
       const updated = await apiClient.rejectMeetingReservation(id);
-      setReservations(prev => prev.map(r => r.id === id ? updated : r));
+
       toast.success('Rezervasyon reddedildi');
       return updated;
     } catch (err: any) {
       console.error('Error rejecting reservation:', err);
       toast.error('❌ ' + (err.message || 'Rezervasyon reddedilirken hata oluştu'));
+      loadReservations(); // Rollback
       throw err;
     }
   };
@@ -145,14 +221,18 @@ export const useMeetingRooms = () => {
   // Delete reservation
   const deleteReservation = async (id: string) => {
     try {
-      await apiClient.deleteMeetingReservation(id);
+      // Optimistic Update
       setReservations(prev => prev.filter(r => r.id !== id));
+
+      await apiClient.deleteMeetingReservation(id);
+
       toast.success('✅ Rezervasyon başarıyla silindi!');
       // Reload rooms to update availability
       loadRooms();
     } catch (err: any) {
       console.error('Error deleting reservation:', err);
       toast.error('❌ ' + (err.message || 'Rezervasyon silinirken hata oluştu'));
+      loadReservations(); // Rollback
       throw err;
     }
   };

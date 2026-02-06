@@ -11,10 +11,19 @@ import * as LucideIcons from 'lucide-react';
 
 interface EnhancedCalendarGridProps {
   selectedDate: Date;
+  getActivitiesForDate: (date: Date) => any[];
+  onDeleteActivity: (id: string) => Promise<void>;
+  onUpdateActivity: (id: string, data: any) => Promise<void>;
+  onCreateActivity: (data: any) => Promise<void>;
 }
 
-export const EnhancedCalendarGrid = ({ selectedDate }: EnhancedCalendarGridProps) => {
-  const { getActivitiesForDate } = useCalendar();
+export const EnhancedCalendarGrid = ({
+  selectedDate,
+  getActivitiesForDate,
+  onDeleteActivity,
+  onUpdateActivity,
+  onCreateActivity
+}: EnhancedCalendarGridProps) => {
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
   const [activityDialog, setActivityDialog] = useState<{
     isOpen: boolean;
@@ -28,14 +37,14 @@ export const EnhancedCalendarGrid = ({ selectedDate }: EnhancedCalendarGridProps
   // Get month boundaries
   const monthStart = startOfMonth(selectedDate);
   const monthEnd = endOfMonth(selectedDate);
-  
+
   // Get all days in the month view (including previous/next month days)
   const startDate = startOfMonth(selectedDate);
   startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Start from Monday
-  
+
   const endDate = new Date(startDate);
   endDate.setDate(endDate.getDate() + 41); // 6 weeks * 7 days - 1
-  
+
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
   const getActivitiesForDateLocal = (date: Date) => {
@@ -63,11 +72,11 @@ export const EnhancedCalendarGrid = ({ selectedDate }: EnhancedCalendarGridProps
     });
   };
 
-  const { deleteActivity } = useCalendar();
+  // useCalendar hook removed, using props instead
 
   const handleDeleteActivity = async (activity: any) => {
     try {
-      await deleteActivity(activity.id);
+      await onDeleteActivity(activity.id);
       setSelectedActivity(null);
     } catch (error) {
       console.error('Error deleting activity:', error);
@@ -128,12 +137,11 @@ export const EnhancedCalendarGrid = ({ selectedDate }: EnhancedCalendarGridProps
               >
                 {/* Day Number */}
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-sm font-medium ${
-                    isTodayDate ? 'text-primary font-bold' : ''
-                  }`}>
+                  <span className={`text-sm font-medium ${isTodayDate ? 'text-primary font-bold' : ''
+                    }`}>
                     {format(day, 'd')}
                   </span>
-                  
+
                   {/* Add Button (visible on hover) */}
                   <Button
                     variant="ghost"
@@ -160,7 +168,7 @@ export const EnhancedCalendarGrid = ({ selectedDate }: EnhancedCalendarGridProps
                       {activity.title}
                     </div>
                   ))}
-                  
+
                   {/* More Activities Indicator */}
                   {dayActivities.length > 3 && (
                     <div className="text-xs text-muted-foreground px-2 py-1">
@@ -175,21 +183,21 @@ export const EnhancedCalendarGrid = ({ selectedDate }: EnhancedCalendarGridProps
                     {(() => {
                       const totalHours = dayActivities.reduce((sum, activity) => {
                         try {
-                          const startTime = activity.startTime?.includes('T') 
+                          const startTime = activity.startTime?.includes('T')
                             ? new Date(activity.startTime)
                             : new Date(`2000-01-01T${activity.startTime || '00:00'}`);
-                          
+
                           const endTime = activity.endTime?.includes('T')
                             ? new Date(activity.endTime)
                             : new Date(`2000-01-01T${activity.endTime || '00:00'}`);
-                          
+
                           const durationMs = endTime.getTime() - startTime.getTime();
                           return sum + (durationMs / (1000 * 60 * 60));
                         } catch (error) {
                           return sum;
                         }
                       }, 0);
-                      
+
                       return `${totalHours.toFixed(1)}h`;
                     })()}
                   </div>

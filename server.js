@@ -3,8 +3,18 @@ import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*", // In production, replace with specific frontend URL
+    methods: ["GET", "POST"]
+  }
+});
+
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -13,10 +23,34 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 app.use(cors());
 app.use(express.json());
 
+// Socket.io Connection Handler
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('join_user_room', (userId) => {
+    if (userId) {
+      socket.join(`user:${userId}`);
+      console.log(`Socket ${socket.id} joined room user:${userId}`);
+    }
+  });
+
+  socket.on('join_department_room', (department) => {
+    if (department) {
+      socket.join(`dept:${department}`);
+      console.log(`Socket ${socket.id} joined room dept:${department}`);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+
 // Helper function to create notifications
 async function createNotification(userId, category, priority, title, message, link = null) {
   try {
-    await prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         userId,
         category,
@@ -27,6 +61,11 @@ async function createNotification(userId, category, priority, title, message, li
         isRead: false
       }
     });
+
+    // Real-time notification emission
+    io.to(`user:${userId}`).emit('new_notification', notification);
+
+    return notification;
   } catch (error) {
     console.error('Error creating notification:', error);
   }
@@ -37,14 +76,14 @@ async function checkKPIDeadlineAndNotify(kpi) {
   const now = new Date();
   const endDate = new Date(kpi.endDate);
   const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   // Notify if deadline is approaching (7 days or less)
   if (daysRemaining > 0 && daysRemaining <= 7) {
     // Notify all assigned users
     const assignments = await prisma.kpiAssignment.findMany({
       where: { kpiId: kpi.id }
     });
-    
+
     for (const assignment of assignments) {
       await createNotification(
         assignment.userId,
@@ -56,13 +95,13 @@ async function checkKPIDeadlineAndNotify(kpi) {
       );
     }
   }
-  
+
   // Notify if deadline passed
   if (daysRemaining < 0 && kpi.status === 'active') {
     const assignments = await prisma.kpiAssignment.findMany({
       where: { kpiId: kpi.id }
     });
-    
+
     for (const assignment of assignments) {
       await createNotification(
         assignment.userId,
@@ -311,9 +350,9 @@ app.put('/api/admin/profiles/:id', authenticateToken, async (req, res) => {
       code: error.code,
       meta: error.meta
     });
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -337,13 +376,13 @@ app.delete('/api/admin/profiles/:id', authenticateToken, async (req, res) => {
 app.get('/api/kpis', authenticateToken, async (req, res) => {
   try {
     const user = req.user;
-    
+
     // Build where clause based on user role and department
     let whereClause = {};
-    
+
     const isAdmin = user.roles && user.roles.includes('admin');
     const isDepartmentManager = user.roles && user.roles.includes('department_manager');
-    
+
     if (isAdmin) {
       // Admin can see all KPIs
       whereClause = {};
@@ -352,7 +391,7 @@ app.get('/api/kpis', authenticateToken, async (req, res) => {
       whereClause = {
         OR: [
           { department: user.department },
-          { 
+          {
             assignments: {
               some: {
                 user: {
@@ -367,7 +406,7 @@ app.get('/api/kpis', authenticateToken, async (req, res) => {
       // Regular users can only see KPIs assigned to them or from their department
       whereClause = {
         OR: [
-          { 
+          {
             assignments: {
               some: {
                 userId: user.id
@@ -417,7 +456,7 @@ app.post('/api/kpis', authenticateToken, async (req, res) => {
   try {
     const user = req.user;
     const { title, description, department, targetValue, unit, startDate, endDate, period, priority, assignedTo } = req.body;
-    
+
     console.log(`[KPI CREATE] User: ${user.email}`);
     console.log(`[KPI CREATE] Request body:`, { title, description, department, targetValue, unit, startDate, endDate, period, priority, assignedTo });
 
@@ -426,7 +465,7 @@ app.post('/api/kpis', authenticateToken, async (req, res) => {
     const isAdmin = user.roles && user.roles.includes('admin');
     const isDepartmentManager = user.roles && user.roles.includes('department_manager');
     console.log('isAdmin:', isAdmin, 'isDepartmentManager:', isDepartmentManager);
-    
+
     if (!isAdmin && !isDepartmentManager) {
       return res.status(403).json({ error: 'Only admins and department managers can create KPIs' });
     }
@@ -467,7 +506,7 @@ app.post('/api/kpis', authenticateToken, async (req, res) => {
         }
       }
     });
-    
+
     // Transform progress records to include user names
     const kpiWithUserNames = {
       ...kpi,
@@ -476,10 +515,10 @@ app.post('/api/kpis', authenticateToken, async (req, res) => {
         recordedByName: `${p.recorder?.firstName || ''} ${p.recorder?.lastName || ''}`.trim() || p.recordedBy
       }))
     };
-    
+
     // Check deadline and create notifications
     await checkKPIDeadlineAndNotify(kpi);
-    
+
     // Notify assigned users about new KPI
     for (const userId of assignedTo) {
       await createNotification(
@@ -491,7 +530,7 @@ app.post('/api/kpis', authenticateToken, async (req, res) => {
         `/kpi`
       );
     }
-    
+
     console.log(`[KPI CREATE] Successfully created KPI:`, { id: kpi.id, title: kpi.title });
     res.json(kpiWithUserNames);
   } catch (error) {
@@ -506,7 +545,7 @@ app.put('/api/kpis/:id', authenticateToken, async (req, res) => {
     const user = req.user;
     const kpiId = req.params.id;
     const { title, description, department, targetValue, unit, startDate, endDate, period, priority, assignedTo } = req.body;
-    
+
     console.log(`[KPI UPDATE] User: ${user.email}, KPI ID: ${kpiId}`);
     console.log(`[KPI UPDATE] Request body:`, { title, description, department, targetValue, unit, startDate, endDate, period, priority, assignedTo });
 
@@ -520,7 +559,7 @@ app.put('/api/kpis/:id', authenticateToken, async (req, res) => {
       console.log(`[KPI UPDATE] KPI not found: ${kpiId}`);
       return res.status(404).json({ error: 'KPI not found' });
     }
-    
+
     console.log(`[KPI UPDATE] Found existing KPI:`, { id: existingKpi.id, title: existingKpi.title, department: existingKpi.department });
 
     // Check if user can update this KPI
@@ -563,7 +602,7 @@ app.put('/api/kpis/:id', authenticateToken, async (req, res) => {
     }
 
     console.log(`[KPI UPDATE] Updating KPI with data:`, updateData);
-    
+
     const updatedKpi = await prisma.kpiTarget.update({
       where: { id: kpiId },
       data: updateData,
@@ -581,7 +620,7 @@ app.put('/api/kpis/:id', authenticateToken, async (req, res) => {
         }
       }
     });
-    
+
     // Transform progress records to include user names
     const kpiWithUserNames = {
       ...updatedKpi,
@@ -590,7 +629,7 @@ app.put('/api/kpis/:id', authenticateToken, async (req, res) => {
         recordedByName: `${p.recorder?.firstName || ''} ${p.recorder?.lastName || ''}`.trim() || p.recordedBy
       }))
     };
-    
+
     console.log(`[KPI UPDATE] Successfully updated KPI:`, { id: updatedKpi.id, title: updatedKpi.title });
     res.json(kpiWithUserNames);
   } catch (error) {
@@ -659,10 +698,10 @@ app.post('/api/kpis/:id/progress', authenticateToken, async (req, res) => {
     // Check if user can record progress
     const isAdmin = user.roles && user.roles.includes('admin');
     const isDepartmentManager = user.roles && user.roles.includes('department_manager');
-    
-    const canRecordProgress = isAdmin || 
-                             (isDepartmentManager && kpi.department === user.department) ||
-                             kpi.assignments.some(assignment => assignment.userId === user.id);
+
+    const canRecordProgress = isAdmin ||
+      (isDepartmentManager && kpi.department === user.department) ||
+      kpi.assignments.some(assignment => assignment.userId === user.id);
 
     if (!canRecordProgress) {
       return res.status(403).json({ error: 'You cannot record progress for this KPI' });
@@ -682,7 +721,7 @@ app.post('/api/kpis/:id/progress', authenticateToken, async (req, res) => {
     // Update KPI current value
     const updatedKpi = await prisma.kpiTarget.findUnique({
       where: { id: kpiId },
-      include: { 
+      include: {
         progress: true,
         assignments: true
       }
@@ -721,7 +760,7 @@ app.post('/api/kpis/:id/progress', authenticateToken, async (req, res) => {
           }
         }
       }
-      
+
       // Check deadline
       await checkKPIDeadlineAndNotify(updatedKpi);
     }
@@ -759,11 +798,11 @@ app.post('/api/kpis/:id/comments', authenticateToken, async (req, res) => {
     // Check if user can comment
     const isAdmin = user.roles && user.roles.includes('admin');
     const isDepartmentManager = user.roles && user.roles.includes('department_manager');
-    
-    const canComment = isAdmin || 
-                      (isDepartmentManager && kpi.department === user.department) ||
-                      kpi.assignments.some(assignment => assignment.userId === user.id) ||
-                      kpi.department === user.department;
+
+    const canComment = isAdmin ||
+      (isDepartmentManager && kpi.department === user.department) ||
+      kpi.assignments.some(assignment => assignment.userId === user.id) ||
+      kpi.department === user.department;
 
     if (!canComment) {
       return res.status(403).json({ error: 'You cannot comment on this KPI' });
@@ -812,12 +851,12 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
     const ticketsWithNumbers = tickets.map((ticket, index) => {
       const departmentPrefix = ticket.targetDepartment.substring(0, 2).toUpperCase();
       const ticketNumber = `${departmentPrefix}${String(index + 1).padStart(7, '0')}`;
-      
+
       return {
         ...ticket,
         ticketNumber,
-        assignedToName: ticket.assignee 
-          ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}` 
+        assignedToName: ticket.assignee
+          ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}`
           : null
       };
     });
@@ -835,12 +874,12 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
 
     // Generate ticket number based on target department
     const departmentPrefix = targetDepartment.substring(0, 2).toUpperCase();
-    
+
     // Count existing tickets for this department to generate sequential number
     const ticketCount = await prisma.ticket.count({
       where: { targetDepartment }
     });
-    
+
     const ticketNumber = `${departmentPrefix}${String(ticketCount + 1).padStart(7, '0')}`;
 
     const ticket = await prisma.ticket.create({
@@ -865,6 +904,9 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
       ticketNumber
     };
 
+    // Emit real-time event
+    io.to(`dept:${targetDepartment}`).to(`dept:${req.user.department}`).emit('ticket_created', ticketWithNumber);
+
     // Notify all users in target department
     const targetDepartmentUsers = await prisma.profile.findMany({
       where: { department: targetDepartment },
@@ -878,11 +920,14 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
       'urgent': 'Acil'
     };
 
+    // Emit real-time event
+    io.to(`dept:${targetDepartment}`).to(`dept:${req.user.department}`).emit('ticket_created', ticketWithNumber);
+
     for (const user of targetDepartmentUsers) {
       // Notify department managers and admins
       const isManager = user.userRoles.some(r => r.role === 'department_manager');
       const isAdmin = user.userRoles.some(r => r.role === 'admin');
-      
+
       if (isManager || isAdmin) {
         await createNotification(
           user.id,
@@ -922,13 +967,13 @@ app.put('/api/tickets/:id', authenticateToken, async (req, res) => {
     const isSourceDepartment = ticket.sourceDepartment === req.user.department;
     const isCreator = ticket.createdBy === req.user.id;
     const isAssigned = ticket.assignedTo === req.user.id;
-    
+
     // Admin, target department, or assigned user can update
     const canUpdate = isAdmin || isTargetDepartment || (isSourceDepartment && isCreator) || isAssigned;
-    
+
     if (!canUpdate) {
-      return res.status(403).json({ 
-        error: 'Bu ticket\'ı güncelleme yetkiniz bulunmuyor' 
+      return res.status(403).json({
+        error: 'Bu ticket\'ı güncelleme yetkiniz bulunmuyor'
       });
     }
 
@@ -987,10 +1032,10 @@ app.delete('/api/tickets/:id', authenticateToken, async (req, res) => {
     // Only admin or creator can delete
     const isAdmin = req.user.roles && req.user.roles.includes('admin');
     const isCreator = ticket.createdBy === req.user.id;
-    
+
     if (!isAdmin && !isCreator) {
-      return res.status(403).json({ 
-        error: 'Sadece admin veya ticket oluşturan kişi silebilir' 
+      return res.status(403).json({
+        error: 'Sadece admin veya ticket oluşturan kişi silebilir'
       });
     }
 
@@ -1022,10 +1067,10 @@ app.post('/api/tickets/:id/comments', authenticateToken, async (req, res) => {
     }
 
     // Check if user has access to this ticket
-    if (ticket.sourceDepartment !== req.user.department && 
-        ticket.targetDepartment !== req.user.department) {
-      return res.status(403).json({ 
-        error: 'Bu ticket\'a yorum yapma yetkiniz yok' 
+    if (ticket.sourceDepartment !== req.user.department &&
+      ticket.targetDepartment !== req.user.department) {
+      return res.status(403).json({
+        error: 'Bu ticket\'a yorum yapma yetkiniz yok'
       });
     }
 
@@ -1061,10 +1106,10 @@ app.get('/api/tickets/:id/comments', authenticateToken, async (req, res) => {
     }
 
     // Check if user has access to this ticket
-    if (ticket.sourceDepartment !== req.user.department && 
-        ticket.targetDepartment !== req.user.department) {
-      return res.status(403).json({ 
-        error: 'Bu ticket\'ın yorumlarını görme yetkiniz yok' 
+    if (ticket.sourceDepartment !== req.user.department &&
+      ticket.targetDepartment !== req.user.department) {
+      return res.status(403).json({
+        error: 'Bu ticket\'ın yorumlarını görme yetkiniz yok'
       });
     }
 
@@ -1104,11 +1149,11 @@ app.get('/api/calendar/activities', authenticateToken, async (req, res) => {
     });
 
     let activities;
-    
+
     // Check if user is admin or department manager
     const isAdmin = userProfile?.userRoles?.some(role => role.role === 'admin');
     const isDepartmentManager = userProfile?.userRoles?.some(role => role.role === 'department_manager');
-    
+
     if (isAdmin) {
       // Admin can see all activities
       activities = await prisma.calendarActivity.findMany({
@@ -1123,9 +1168,9 @@ app.get('/api/calendar/activities', authenticateToken, async (req, res) => {
         where: { department: userProfile.department },
         select: { id: true }
       });
-      
+
       const userIds = departmentUsers.map(user => user.id);
-      
+
       activities = await prisma.calendarActivity.findMany({
         where: {
           userId: { in: userIds }
@@ -1158,7 +1203,7 @@ app.get('/api/calendar/activities', authenticateToken, async (req, res) => {
 app.post('/api/calendar/activities', authenticateToken, async (req, res) => {
   try {
     const { title, description, categoryId, startTime, endTime, date } = req.body;
-    
+
     console.log('Create activity request body:', req.body);
     console.log('categoryId type:', typeof categoryId, 'value:', categoryId);
 
@@ -1275,7 +1320,7 @@ app.put('/api/calendar/activities/:id', authenticateToken, async (req, res) => {
         ...(date && { date }),
         ...(startTime && { startTime: startDateTime.toISOString() }),
         ...(endTime && { endTime: endDateTime.toISOString() }),
-        ...(startTime && endTime && { 
+        ...(startTime && endTime && {
           duration: Math.round((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60))
         })
       }
@@ -1307,10 +1352,10 @@ app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     console.log(`[MARK AS READ] User: ${req.user.id}, Notification ID: ${id}`);
-    
+
     // Verify notification belongs to user
     const notification = await prisma.notification.findFirst({
-      where: { 
+      where: {
         id,
         userId: req.user.id
       }
@@ -1340,9 +1385,9 @@ app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
       message: error.message,
       stack: error.stack
     });
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -1350,7 +1395,7 @@ app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
 app.put('/api/notifications/read-all', authenticateToken, async (req, res) => {
   try {
     await prisma.notification.updateMany({
-      where: { 
+      where: {
         userId: req.user.id,
         isRead: false
       },
@@ -1364,13 +1409,30 @@ app.put('/api/notifications/read-all', authenticateToken, async (req, res) => {
   }
 });
 
+// Delete all read notifications
+app.delete('/api/notifications/read', authenticateToken, async (req, res) => {
+  try {
+    await prisma.notification.deleteMany({
+      where: {
+        userId: req.user.id,
+        isRead: true
+      }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete read notifications error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.delete('/api/notifications/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Verify notification belongs to user
     const notification = await prisma.notification.findFirst({
-      where: { 
+      where: {
         id,
         userId: req.user.id
       }
@@ -1390,6 +1452,8 @@ app.delete('/api/notifications/:id', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
 
 app.delete('/api/notifications', authenticateToken, async (req, res) => {
   try {
@@ -1414,16 +1478,34 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
     const activeKPIs = await prisma.kpiTarget.count({
       where: { status: 'active' }
     });
+
+    // Ticket Stats
     const totalTickets = await prisma.ticket.count();
-    const openTickets = await prisma.ticket.count({
-      where: { status: 'open' }
+    const openTickets = await prisma.ticket.count({ where: { status: 'open' } });
+    const inProgressTickets = await prisma.ticket.count({ where: { status: 'in_progress' } });
+    const resolvedTickets = await prisma.ticket.count({ where: { status: 'resolved' } });
+    const closedTickets = await prisma.ticket.count({ where: { status: 'closed' } });
+
+    // Tickets by Status for Pie Chart
+    const ticketsByStatus = [
+      { name: 'Açık', value: openTickets, color: '#ef4444' }, // red-500
+      { name: 'İşlemde', value: inProgressTickets, color: '#f59e0b' }, // amber-500
+      { name: 'Çözüldü', value: resolvedTickets, color: '#10b981' }, // emerald-500
+      { name: 'Kapandı', value: closedTickets, color: '#6b7280' } // gray-500
+    ];
+
+    // Tickets by Department (Target)
+    const ticketDeptGroup = await prisma.ticket.groupBy({
+      by: ['targetDepartment'],
+      _count: {
+        id: true
+      }
     });
-    const inProgressTickets = await prisma.ticket.count({
-      where: { status: 'in_progress' }
-    });
-    const completedTickets = await prisma.ticket.count({
-      where: { status: 'closed' }
-    });
+
+    const ticketsByDepartment = ticketDeptGroup.map(item => ({
+      name: item.targetDepartment,
+      value: item._count.id
+    }));
 
     res.json({
       totalKPIs,
@@ -1432,7 +1514,9 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
       totalTickets,
       openTickets,
       inProgressTickets,
-      completedTickets
+      completedTickets: closedTickets,
+      ticketsByStatus,
+      ticketsByDepartment
     });
   } catch (error) {
     console.error('Get dashboard stats error:', error);
@@ -1572,8 +1656,8 @@ app.delete('/api/departments/:id', authenticateToken, async (req, res) => {
     });
 
     if (usersCount > 0) {
-      return res.status(400).json({ 
-        error: 'Cannot delete department with users. Please move users to another department first.' 
+      return res.status(400).json({
+        error: 'Cannot delete department with users. Please move users to another department first.'
       });
     }
 
@@ -1688,8 +1772,8 @@ app.delete('/api/meeting-rooms/:id', authenticateToken, async (req, res) => {
     });
 
     if (reservations.length > 0) {
-      return res.status(400).json({ 
-        error: 'Cannot delete room with approved reservations. Please cancel or reject all reservations first.' 
+      return res.status(400).json({
+        error: 'Cannot delete room with approved reservations. Please cancel or reject all reservations first.'
       });
     }
 
@@ -1879,8 +1963,8 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
     });
 
     if (overlapping) {
-      return res.status(400).json({ 
-        error: 'This time slot is already reserved. Please choose another time.' 
+      return res.status(400).json({
+        error: 'This time slot is already reserved. Please choose another time.'
       });
     }
 
@@ -1938,6 +2022,24 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
       }
     }
 
+    // Emit real-time event
+    const reservationWithDetails = await prisma.meetingReservation.findUnique({
+      where: { id: reservation.id },
+      include: {
+        room: true,
+        requester: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            department: true
+          }
+        }
+      }
+    });
+    io.emit('reservation_created', reservationWithDetails);
+
     res.json(reservation);
   } catch (error) {
     console.error('Create meeting reservation error:', error);
@@ -1977,8 +2079,8 @@ app.put('/api/meeting-reservations/:id/approve', authenticateToken, async (req, 
       });
 
       if (userProfile.department !== reservation.requester.department) {
-        return res.status(403).json({ 
-          error: 'You can only approve reservations from your own department' 
+        return res.status(403).json({
+          error: 'You can only approve reservations from your own department'
         });
       }
     }
@@ -2017,8 +2119,8 @@ app.put('/api/meeting-reservations/:id/approve', authenticateToken, async (req, 
     });
 
     if (overlapping) {
-      return res.status(400).json({ 
-        error: 'This time slot is already reserved by another approved meeting.' 
+      return res.status(400).json({
+        error: 'This time slot is already reserved by another approved meeting.'
       });
     }
 
@@ -2101,6 +2203,9 @@ app.put('/api/meeting-reservations/:id/approve', authenticateToken, async (req, 
       '/meeting-rooms'
     );
 
+    // Emit real-time event
+    io.emit('reservation_updated', updatedReservation);
+
     res.json(updatedReservation);
   } catch (error) {
     console.error('Approve meeting reservation error:', error);
@@ -2140,8 +2245,8 @@ app.put('/api/meeting-reservations/:id/reject', authenticateToken, async (req, r
       });
 
       if (userProfile.department !== reservation.requester.department) {
-        return res.status(403).json({ 
-          error: 'You can only reject reservations from your own department' 
+        return res.status(403).json({
+          error: 'You can only reject reservations from your own department'
         });
       }
     }
@@ -2188,6 +2293,9 @@ app.put('/api/meeting-reservations/:id/reject', authenticateToken, async (req, r
       `"${reservation.room.name}" odası için ${new Date(reservation.startTime).toLocaleString('tr-TR')} - ${new Date(reservation.endTime).toLocaleString('tr-TR')} tarihlerindeki rezervasyon talebiniz reddedildi.`,
       '/meeting-rooms'
     );
+
+    // Emit real-time event
+    io.emit('reservation_updated', updatedReservation);
 
     res.json(updatedReservation);
   } catch (error) {
@@ -2287,8 +2395,8 @@ app.put('/api/meeting-reservations/:id', authenticateToken, async (req, res) => 
       });
 
       if (overlapping) {
-        return res.status(400).json({ 
-          error: 'This time slot is already reserved. Please choose another time.' 
+        return res.status(400).json({
+          error: 'This time slot is already reserved. Please choose another time.'
         });
       }
     }
@@ -2383,6 +2491,9 @@ app.delete('/api/meeting-reservations/:id', authenticateToken, async (req, res) 
       );
     }
 
+    // Emit real-time event
+    io.emit('reservation_deleted', id);
+
     // Delete reservation
     await prisma.meetingReservation.delete({
       where: { id }
@@ -2395,10 +2506,15 @@ app.delete('/api/meeting-reservations/:id', authenticateToken, async (req, res) 
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
+// Export for testing
+export { httpServer, app, io, prisma };
+
+// Start server if run directly
+if (process.argv[1] === new URL(import.meta.url).pathname) {
+  httpServer.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
 // Graceful shutdown
 process.on('SIGINT', async () => {

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
+import {
   Table,
   TableBody,
   TableCell,
@@ -24,16 +24,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Search, 
-  Plus, 
-  MoreHorizontal, 
-  Edit2, 
-  Trash2, 
-  Shield,
+import {
+  Search,
+  Plus,
+  MoreHorizontal,
+  Edit2,
+  Trash2,
   Users as UsersIcon,
+  CheckCircle2,
+  Clock
 } from "lucide-react";
-import { apiClient } from "@/lib/api";
+import { useAdmin } from "@/hooks/useAdmin";
+import { useKPI } from "@/hooks/useKPI";
+import { useTickets } from "@/hooks/useTickets";
 import { DEPARTMENTS, ROLES } from "@/types/user";
 import { CreateUserDialog } from "./CreateUserDialog";
 import { EditUserDialog } from "./EditUserDialog";
@@ -50,55 +53,63 @@ interface User {
   role: 'admin' | 'department_manager' | 'employee';
   isActive: boolean;
   createdAt: string;
+  // Dynamic metrics
+  activeTickets?: number;
+  kpiStats?: {
+    total: number;
+    completed: number;
+    percentage: number;
+  };
 }
 
 export const UserManagement = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const { profiles, loading: adminLoading, deleteProfile, refetch } = useAdmin();
+  const { kpiStats, loading: kpiLoading } = useKPI();
+  const { tickets, loading: ticketsLoading } = useTickets();
+
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedRole, setSelectedRole] = useState('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  const loading = adminLoading || kpiLoading || ticketsLoading;
 
+  // Process and filter users
   useEffect(() => {
-    filterUsers();
-  }, [users, searchTerm, selectedDepartment, selectedRole]);
+    if (!profiles) return;
 
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      const profiles = await apiClient.getProfiles();
-      
-      const usersWithRoles = profiles.map(profile => ({
+    let processed = profiles.map(profile => {
+      // Calculate active tickets
+      const activeTicketsCount = tickets.filter(t =>
+        t.assignedTo === profile.id &&
+        t.status !== 'resolved' &&
+        t.status !== 'closed'
+      ).length;
+
+      // Calculate KPI stats
+      const userKPIs = kpiStats.filter(k => k.assignedToId === profile.id);
+      const totalKPIs = userKPIs.length;
+      const completedKPIs = userKPIs.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
+      const kpiPercentage = totalKPIs > 0 ? (completedKPIs / totalKPIs) * 100 : 0;
+
+      return {
         ...profile,
         role: profile.userRoles?.[0]?.role || 'employee',
-        isActive: true
-      }));
+        isActive: true,
+        activeTickets: activeTicketsCount,
+        kpiStats: {
+          total: totalKPIs,
+          completed: completedKPIs,
+          percentage: kpiPercentage
+        }
+      };
+    });
 
-      setUsers(usersWithRoles);
-    } catch (error) {
-      console.error('Error loading users:', error);
-      toast({
-        title: "Hata",
-        description: "Kullanıcılar yüklenirken bir hata oluştu",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterUsers = () => {
-    let filtered = users;
-
+    // Apply filters
     if (searchTerm) {
-      filtered = filtered.filter(user => 
+      processed = processed.filter(user =>
         user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -106,42 +117,32 @@ export const UserManagement = () => {
     }
 
     if (selectedDepartment !== 'all') {
-      filtered = filtered.filter(user => user.department === selectedDepartment);
+      processed = processed.filter(user => user.department === selectedDepartment);
     }
 
     if (selectedRole !== 'all') {
-      filtered = filtered.filter(user => user.role === selectedRole);
+      processed = processed.filter(user => user.role === selectedRole);
     }
 
-    setFilteredUsers(filtered);
-  };
+    setFilteredUsers(processed);
+  }, [profiles, tickets, kpiStats, searchTerm, selectedDepartment, selectedRole]);
 
   const handleDeleteUser = async (userId: string) => {
     if (window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
       try {
-        await apiClient.deleteProfile(userId);
-        setUsers(users.filter(user => user.id !== userId));
-        toast({
-          title: "Başarılı",
-          description: "Kullanıcı başarıyla silindi"
-        });
+        await deleteProfile(userId);
       } catch (error) {
-        console.error('Error deleting user:', error);
-        toast({
-          title: "Hata",
-          description: "Kullanıcı silinirken bir hata oluştu",
-          variant: "destructive"
-        });
+        // Error handling is done in useAdmin
       }
     }
   };
 
   const handleUserCreated = () => {
-    loadUsers();
+    refetch();
   };
 
   const handleUserUpdated = () => {
-    loadUsers();
+    refetch();
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -177,7 +178,7 @@ export const UserManagement = () => {
           <TabsTrigger value="users">Kullanıcı Yönetimi</TabsTrigger>
           <TabsTrigger value="departments">Departman Yönetimi</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="users" className="space-y-6">
           <Card>
             <CardHeader>
@@ -234,9 +235,9 @@ export const UserManagement = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Kullanıcı</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Departman</TableHead>
-                      <TableHead>Rol</TableHead>
+                      <TableHead>Departman / Rol</TableHead>
+                      <TableHead>Aktif Görevler</TableHead>
+                      <TableHead>KPI Durumu</TableHead>
                       <TableHead>Durum</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
@@ -244,15 +245,38 @@ export const UserManagement = () => {
                   <TableBody>
                     {filteredUsers.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">
-                          {user.firstName} {user.lastName}
-                        </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.department}</TableCell>
                         <TableCell>
-                          <Badge variant={getRoleBadgeVariant(user.role)}>
-                            {getRoleLabel(user.role)}
-                          </Badge>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{user.firstName} {user.lastName}</span>
+                            <span className="text-xs text-muted-foreground">{user.email}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm">{user.department}</span>
+                            <Badge variant={getRoleBadgeVariant(user.role)} className="w-fit">
+                              {getRoleLabel(user.role)}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium">{user.activeTickets || 0} Ticket</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className={`w-4 h-4 ${(user.kpiStats?.percentage || 0) >= 100 ? 'text-success' : 'text-muted-foreground'}`} />
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">
+                                {user.kpiStats?.percentage.toFixed(0)}%
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {user.kpiStats?.completed}/{user.kpiStats?.total} Tamamlandı
+                              </span>
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={user.isActive ? 'default' : 'secondary'}>
@@ -271,7 +295,7 @@ export const UserManagement = () => {
                                 <Edit2 className="w-4 h-4 mr-2" />
                                 Düzenle
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 onClick={() => handleDeleteUser(user.id)}
                                 className="text-destructive"
                               >
@@ -295,7 +319,7 @@ export const UserManagement = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="departments">
           <DepartmentManagement />
         </TabsContent>

@@ -6,28 +6,30 @@ import { DepartmentPerformance } from "@/components/dashboard/DepartmentPerforma
 import { TodaySummary } from "@/components/dashboard/TodaySummary";
 import { UpcomingDeadlines } from "@/components/dashboard/UpcomingDeadlines";
 import { RecentActivities } from "@/components/dashboard/RecentActivities";
+import { TicketStatusPieChart } from "@/components/dashboard/charts/TicketStatusPieChart";
+import { TicketDepartmentBarChart } from "@/components/dashboard/charts/TicketDepartmentBarChart";
 import { Footer } from "@/components/common/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/useDashboard";
 
 export default function Dashboard() {
-  const { criticalKPIs, loading } = useDashboard();
+  const { criticalKPIs, loading, stats } = useDashboard();
 
   return (
     <div className="flex-1 bg-dashboard-bg min-h-screen flex flex-col">
       <DashboardHeader />
-      
+
       <main className="p-4 sm:p-6 space-y-6 flex-1">
         {/* Stats Overview */}
         <StatsOverview />
-        
+
         {/* Today Summary and Upcoming Deadlines */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <TodaySummary />
           <UpcomingDeadlines />
           <RecentActivities />
         </div>
-        
+
         {/* KPI Cards */}
         <div>
           <h2 className="text-xl font-semibold text-foreground mb-4">Kritik KPI'lar</h2>
@@ -62,14 +64,20 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-        
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TicketStatusPieChart data={stats.ticketsByStatus} />
+          <TicketDepartmentBarChart data={stats.ticketsByDepartment} />
+        </div>
+
         {/* Bottom Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <DepartmentPerformance />
           <TicketOverview />
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );

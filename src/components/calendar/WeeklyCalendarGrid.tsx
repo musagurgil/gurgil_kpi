@@ -10,9 +10,19 @@ import * as LucideIcons from 'lucide-react';
 
 interface WeeklyCalendarGridProps {
   selectedDate: Date;
+  getActivitiesForDate: (date: Date) => any[];
+  onDeleteActivity: (id: string) => Promise<void>;
+  onUpdateActivity: (id: string, data: any) => Promise<void>;
+  onCreateActivity: (data: any) => Promise<void>;
 }
 
-export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) => {
+export const WeeklyCalendarGrid = ({
+  selectedDate,
+  getActivitiesForDate,
+  onDeleteActivity,
+  onUpdateActivity,
+  onCreateActivity
+}: WeeklyCalendarGridProps) => {
   const [selectedActivity, setSelectedActivity] = useState<any>(null);
   const [activityDialog, setActivityDialog] = useState<{
     isOpen: boolean;
@@ -28,7 +38,7 @@ export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) =>
   // Get start of week (Monday)
   const startOfWeekDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startOfWeekDate, i));
-  
+
   // Hours from 8:00 to 18:00
   const hours = Array.from({ length: 11 }, (_, i) => i + 8);
 
@@ -37,7 +47,7 @@ export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) =>
     return dateActivities.filter(activity => {
       try {
         let startTime, endTime;
-        
+
         if (activity.startTime?.includes('T')) {
           // ISO string format
           const startDate = new Date(activity.startTime);
@@ -51,7 +61,7 @@ export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) =>
         } else {
           return false;
         }
-        
+
         // Only show activity in its starting hour
         return startTime === hour;
       } catch (error) {
@@ -64,7 +74,7 @@ export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) =>
   const getActivityDuration = (activity: any) => {
     try {
       let startTime, endTime;
-      
+
       if (activity.startTime?.includes('T')) {
         // ISO string format
         const startDate = new Date(activity.startTime);
@@ -80,7 +90,7 @@ export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) =>
       } else {
         return 1; // Default 1 hour
       }
-      
+
       return Math.max(1, endTime - startTime); // Minimum 1 hour
     } catch (error) {
       console.warn('Error calculating activity duration:', error);
@@ -116,11 +126,11 @@ export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) =>
     });
   };
 
-  const { activities, deleteActivity, getActivitiesForDate } = useCalendar();
+
 
   const handleDeleteActivity = async (activity: any) => {
     try {
-      await deleteActivity(activity.id);
+      await onDeleteActivity(activity.id);
       setSelectedActivity(null);
       // Force refresh of activities by calling loadActivities
       // This will be handled by the useCalendar hook automatically
@@ -132,7 +142,7 @@ export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) =>
   const getActivityStyle = (activity: any) => {
     // Get category color or default
     let categoryColor = '#3b82f6'; // Default blue
-    
+
     // Check if activity has category with color
     if (activity.category?.color) {
       categoryColor = activity.category.color;
@@ -147,10 +157,10 @@ export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) =>
       };
       categoryColor = categoryMap[activity.categoryId] || '#3b82f6';
     }
-    
+
     const duration = getActivityDuration(activity);
     const height = getActivityHeight(activity);
-    
+
     return {
       backgroundColor: categoryColor,
       color: 'white',
@@ -201,9 +211,8 @@ export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) =>
               <div className="text-sm font-medium text-foreground">
                 {format(day, 'EEE', { locale: tr })}
               </div>
-              <div className={`text-lg font-bold ${
-                isToday(day) ? 'text-primary' : 'text-muted-foreground'
-              }`}>
+              <div className={`text-lg font-bold ${isToday(day) ? 'text-primary' : 'text-muted-foreground'
+                }`}>
                 {format(day, 'd')}
               </div>
             </div>
@@ -218,11 +227,11 @@ export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) =>
               <div className="p-3 text-sm text-muted-foreground border-r border-border bg-muted/30">
                 {hour.toString().padStart(2, '0')}:00
               </div>
-              
+
               {/* Day Columns */}
               {weekDays.map((day) => {
                 const activities = getActivitiesForHour(day, hour);
-                
+
                 return (
                   <div
                     key={`${day.toISOString()}-${hour}`}
@@ -259,7 +268,7 @@ export const WeeklyCalendarGrid = ({ selectedDate }: WeeklyCalendarGridProps) =>
                             {activity.title}
                           </div>
                           <div className="text-xs opacity-90">
-                            {activity.startTime?.includes('T') 
+                            {activity.startTime?.includes('T')
                               ? new Date(activity.startTime).toTimeString().slice(0, 5)
                               : activity.startTime?.slice(0, 5) || ''
                             } - {activity.endTime?.includes('T')
