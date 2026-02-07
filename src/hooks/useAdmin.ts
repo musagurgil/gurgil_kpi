@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
+import { User, CreateUserData } from '@/types/user';
 
 export const useAdmin = () => {
   const { user, hasRole } = useAuth();
-  const [profiles, setProfiles] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,7 +20,7 @@ export const useAdmin = () => {
   });
 
   // Load profiles
-  const loadProfiles = async () => {
+  const loadProfiles = useCallback(async () => {
     if (!hasRole('admin')) {
       setLoading(false);
       return;
@@ -30,45 +31,35 @@ export const useAdmin = () => {
       setError(null);
       const data = await apiClient.getProfiles();
       setProfiles(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading profiles:', err);
-      setError(err.message || 'Profiller yüklenirken hata oluştu');
-      toast.error('Profiller yüklenirken hata oluştu');
+      const message = err instanceof Error ? err.message : 'Profiller yüklenirken hata oluştu';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [hasRole]);
 
   useEffect(() => {
     loadProfiles();
-  }, [hasRole]);
+  }, [loadProfiles]);
 
-  const createProfile = async (profileData: {
-    email: string;
-    firstName: string;
-    lastName: string;
-    department: string;
-    roles: string[];
-  }) => {
+  const createProfile = async (profileData: CreateUserData) => {
     try {
       const newProfile = await apiClient.createProfile(profileData);
       setProfiles(prev => [newProfile, ...prev]);
       toast.success('Kullanıcı başarıyla oluşturuldu');
       return newProfile;
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error creating profile:', err);
-      toast.error(err.message || 'Kullanıcı oluşturulurken hata oluştu');
+      const message = err instanceof Error ? err.message : 'Kullanıcı oluşturulurken hata oluştu';
+      toast.error(message);
       throw err;
     }
   };
 
-  const updateProfile = async (id: string, profileData: {
-    email: string;
-    firstName: string;
-    lastName: string;
-    department: string;
-    roles: string[];
-  }) => {
+  const updateProfile = async (id: string, profileData: Partial<CreateUserData>) => {
     try {
       const updatedProfile = await apiClient.updateProfile(id, profileData);
       setProfiles(prev =>
@@ -76,9 +67,10 @@ export const useAdmin = () => {
       );
       toast.success('Kullanıcı başarıyla güncellendi');
       return updatedProfile;
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error updating profile:', err);
-      toast.error(err.message || 'Kullanıcı güncellenirken hata oluştu');
+      const message = err instanceof Error ? err.message : 'Kullanıcı güncellenirken hata oluştu';
+      toast.error(message);
       throw err;
     }
   };
@@ -88,9 +80,10 @@ export const useAdmin = () => {
       await apiClient.deleteProfile(id);
       setProfiles(prev => prev.filter(p => p.id !== id));
       toast.success('Kullanıcı başarıyla silindi');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error deleting profile:', err);
-      toast.error(err.message || 'Kullanıcı silinirken hata oluştu');
+      const message = err instanceof Error ? err.message : 'Kullanıcı silinirken hata oluştu';
+      toast.error(message);
       throw err;
     }
   };
@@ -124,8 +117,7 @@ export const useAdmin = () => {
     deleteProfile,
     currentUser: user ? {
       id: user.id,
-      role: user.roles.includes('admin') ? 'admin' :
-        user.roles.includes('department_manager') ? 'department_manager' : 'employee',
+      roles: user.roles, // Updated to use roles
       department: user.department
     } : null,
     refetch: loadProfiles

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -45,7 +46,7 @@ export function ReservationForm({
   const [endHour, setEndHour] = useState<string>("");
   const [endMinute, setEndMinute] = useState<string>("00");
   const [notes, setNotes] = useState<string>("");
-  
+
   // Control Select dropdowns open state
   const [startHourOpen, setStartHourOpen] = useState(false);
   const [startMinuteOpen, setStartMinuteOpen] = useState(false);
@@ -91,19 +92,19 @@ export function ReservationForm({
     const dateStr = format(selectedDate, "yyyy-MM-dd");
     const startTimeFormatted = `${startTime}:00`;
     const endTimeFormatted = `${endTime}:00`;
-    
+
     const startDateTime = new Date(`${dateStr}T${startTimeFormatted}`);
     const endDateTime = new Date(`${dateStr}T${endTimeFormatted}`);
 
     // Validate that start time is before end time
     if (startDateTime >= endDateTime) {
-      alert('Bitiş saati başlangıç saatinden sonra olmalıdır');
+      toast.error('Bitiş saati başlangıç saatinden sonra olmalıdır');
       return;
     }
 
     // Validate that the reservation is not in the past
     if (startDateTime < new Date()) {
-      alert('Geçmiş tarih için rezervasyon yapılamaz');
+      toast.error('Geçmiş tarih için rezervasyon yapılamaz');
       return;
     }
 
@@ -131,7 +132,7 @@ export function ReservationForm({
         <DialogHeader>
           <DialogTitle>Yeni Rezervasyon Talebi</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="room">Toplantı Odası *</Label>
@@ -191,8 +192,8 @@ export function ReservationForm({
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="startHour" className="text-xs text-muted-foreground">Saat</Label>
-                    <Select 
-                      value={startHour} 
+                    <Select
+                      value={startHour}
                       onValueChange={(value) => {
                         setStartHour(value);
                         setStartHourOpen(false);
@@ -214,8 +215,8 @@ export function ReservationForm({
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="startMinute" className="text-xs text-muted-foreground">Dakika</Label>
-                    <Select 
-                      value={startMinute} 
+                    <Select
+                      value={startMinute}
                       onValueChange={(value) => {
                         setStartMinute(value);
                         setStartMinuteOpen(false);
@@ -251,8 +252,8 @@ export function ReservationForm({
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="endHour" className="text-xs text-muted-foreground">Saat</Label>
-                    <Select 
-                      value={endHour} 
+                    <Select
+                      value={endHour}
                       onValueChange={(value) => {
                         setEndHour(value);
                         setEndHourOpen(false);
@@ -274,8 +275,8 @@ export function ReservationForm({
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="endMinute" className="text-xs text-muted-foreground">Dakika</Label>
-                    <Select 
-                      value={endMinute} 
+                    <Select
+                      value={endMinute}
                       onValueChange={(value) => {
                         setEndMinute(value);
                         setEndMinuteOpen(false);

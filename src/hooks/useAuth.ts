@@ -53,10 +53,10 @@ export const useAuth = () => {
           const normalizedPayload = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
           // Add padding if needed
           const paddedPayload = normalizedPayload + '='.repeat((4 - normalizedPayload.length % 4) % 4);
-          
+
           const decodedPayload = decodeBase64(paddedPayload);
           const payload = JSON.parse(decodedPayload);
-          
+
           const user = {
             id: payload.id,
             email: payload.email,
@@ -97,7 +97,7 @@ export const useAuth = () => {
     try {
       console.log('Login attempt:', email);
       const response = await apiClient.login(email, password);
-      
+
       console.log('Login successful:', response.user);
 
       // Store JWT token
@@ -111,9 +111,10 @@ export const useAuth = () => {
 
       toast.success('Giriş başarılı!');
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Login error:', error);
-      toast.error(error.message || 'Giriş yapılırken bir hata oluştu');
+      const message = error instanceof Error ? error.message : 'Giriş yapılırken bir hata oluştu';
+      toast.error(message);
       return false;
     }
   }, []);
@@ -128,7 +129,7 @@ export const useAuth = () => {
     try {
       console.log('Signup attempt:', email);
       const response = await apiClient.signup(email, password, firstName, lastName, department);
-      
+
       console.log('Signup successful:', response.user);
 
       // Store JWT token
@@ -142,9 +143,10 @@ export const useAuth = () => {
 
       toast.success('Kayıt başarılı!');
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Signup error:', error);
-      toast.error(error.message || 'Kayıt olurken bir hata oluştu');
+      const message = error instanceof Error ? error.message : 'Kayıt olurken bir hata oluştu';
+      toast.error(message);
       return false;
     }
   }, []);
@@ -157,7 +159,7 @@ export const useAuth = () => {
       loading: false,
     });
     toast.success('Çıkış yapıldı');
-    
+
     // Force redirect to login page
     window.location.href = '/auth';
   }, []);
@@ -205,13 +207,15 @@ export const useAuth = () => {
       try {
         const profiles = await apiClient.getProfiles();
         const currentUserId = authState.user?.id;
-        
+
         if (currentUserId) {
-          const updatedProfile = profiles.find((p: any) => p.id === currentUserId);
+          // getProfiles returns User[], but we need to check if response is correct
+          // Assuming getProfiles returns User[]
+          const updatedProfile = profiles.find((p) => p.id === currentUserId);
           if (updatedProfile) {
             // Get roles from userRoles relation
-            const roles = updatedProfile.userRoles?.map((ur: any) => ur.role) || [];
-            
+            const roles = updatedProfile.userRoles?.map((ur) => ur.role) || [];
+
             const user = {
               id: updatedProfile.id,
               email: updatedProfile.email,
@@ -220,7 +224,7 @@ export const useAuth = () => {
               department: updatedProfile.department || '',
               roles: roles
             };
-            
+
             console.log('refreshAuth: Updated user from backend:', user);
             setAuthState({
               user,
@@ -251,10 +255,10 @@ export const useAuth = () => {
         const base64Payload = token.split('.')[1];
         const normalizedPayload = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
         const paddedPayload = normalizedPayload + '='.repeat((4 - normalizedPayload.length % 4) % 4);
-        
+
         const decodedPayload = decodeBase64(paddedPayload);
         const payload = JSON.parse(decodedPayload);
-        
+
         const user = {
           id: payload.id,
           email: payload.email,
@@ -263,7 +267,7 @@ export const useAuth = () => {
           department: payload.department || '',
           roles: payload.roles || []
         };
-        
+
         console.log('refreshAuth: Updated user from token:', user);
         setAuthState({
           user,

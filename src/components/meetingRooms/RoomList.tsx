@@ -7,25 +7,26 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { format, setHours, setMinutes, addDays, isSameDay, isWithinInterval, startOfWeek, isToday, addWeeks } from "date-fns";
 import { tr } from "date-fns/locale";
 import { useMemo, useState } from "react";
+import { MeetingRoom, MeetingReservation } from "@/types/meeting";
 
 interface RoomListProps {
-  rooms: any[];
+  rooms: MeetingRoom[];
   onReserve: (roomId: string) => void;
   onDelete?: (roomId: string) => void;
   showDelete?: boolean;
 }
 
 export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: RoomListProps) {
-  const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<MeetingRoom | null>(null);
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   const hours = useMemo(() => Array.from({ length: 12 }, (_, i) => 8 + i), []); // 08:00 - 19:00
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
-  const getRoomDaySegments = (room: any, day: Date) => {
+  const getRoomDaySegments = (room: MeetingRoom, day: Date) => {
     const dayStart = setMinutes(setHours(day, 8), 0);
     const dayEnd = setMinutes(setHours(day, 19), 0);
-    const reservations = (room.reservations || []).filter((r: any) => {
+    const reservations = (room.reservations || []).filter((r) => {
       const start = new Date(r.startTime);
       const end = new Date(r.endTime);
       return isSameDay(start, day) || isSameDay(end, day) || (start < dayEnd && end > dayStart);
@@ -34,11 +35,11 @@ export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: Roo
     return { dayStart, dayEnd, reservations };
   };
 
-  const getReservationsForHour = (room: any, day: Date, hour: number) => {
+  const getReservationsForHour = (room: MeetingRoom, day: Date, hour: number) => {
     const hourStart = setMinutes(setHours(day, hour), 0);
     const hourEnd = setMinutes(setHours(day, hour + 1), 0);
-    
-    return (room.reservations || []).filter((r: any) => {
+
+    return (room.reservations || []).filter((r) => {
       const start = new Date(r.startTime);
       const end = new Date(r.endTime);
       // Check if reservation overlaps with this hour
@@ -46,7 +47,7 @@ export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: Roo
     });
   };
 
-  const getReservationDuration = (reservation: any) => {
+  const getReservationDuration = (reservation: MeetingReservation) => {
     const start = new Date(reservation.startTime);
     const end = new Date(reservation.endTime);
     return (end.getTime() - start.getTime()) / (1000 * 60 * 60); // Duration in hours
@@ -77,22 +78,22 @@ export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: Roo
         return status;
     }
   };
-  const getRoomOccupancy = (room: any) => {
+  const getRoomOccupancy = (room: MeetingRoom) => {
     const now = new Date();
-    const upcoming = room.reservations?.filter((r: any) => {
+    const upcoming = room.reservations?.filter((r) => {
       const start = new Date(r.startTime);
       return start >= now;
     }) || [];
-    
+
     return {
       count: upcoming.length,
       next: upcoming[0] ? new Date(upcoming[0].startTime) : null
     };
   };
 
-  const isRoomAvailable = (room: any) => {
+  const isRoomAvailable = (room: MeetingRoom) => {
     const now = new Date();
-    const active = room.reservations?.find((r: any) => {
+    const active = room.reservations?.find((r) => {
       const start = new Date(r.startTime);
       const end = new Date(r.endTime);
       return start <= now && end >= now;
@@ -189,7 +190,7 @@ export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: Roo
                           <AlertDialogHeader>
                             <AlertDialogTitle>Toplantı Odasını Sil</AlertDialogTitle>
                             <AlertDialogDescription>
-                              "{room.name}" toplantı odasını silmek istediğinize emin misiniz? 
+                              "{room.name}" toplantı odasını silmek istediğinize emin misiniz?
                               Bu işlem geri alınamaz.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -217,17 +218,17 @@ export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: Roo
               {selectedRoom?.name} – Haftalık Takvim
             </DialogTitle>
             <div className="flex items-center justify-between mt-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
               >
                 Bugün
               </Button>
               <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="icon" 
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={() => setWeekStart(addWeeks(weekStart, -1))}
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -235,9 +236,9 @@ export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: Roo
                 <div className="text-sm font-medium min-w-[200px] text-center">
                   {format(weekDays[0], "d MMM", { locale: tr })} - {format(weekDays[6], "d MMM yyyy", { locale: tr })}
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={() => setWeekStart(addWeeks(weekStart, 1))}
                 >
                   <ChevronRight className="w-4 h-4" />
@@ -255,18 +256,16 @@ export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: Roo
                     Saat
                   </div>
                   {weekDays.map((day) => (
-                    <div 
-                      key={day.toISOString()} 
-                      className={`p-3 text-center border-r border-border last:border-r-0 ${
-                        isToday(day) ? 'bg-primary/10' : ''
-                      }`}
+                    <div
+                      key={day.toISOString()}
+                      className={`p-3 text-center border-r border-border last:border-r-0 ${isToday(day) ? 'bg-primary/10' : ''
+                        }`}
                     >
                       <div className="text-sm font-medium text-foreground">
                         {format(day, 'EEE', { locale: tr })}
                       </div>
-                      <div className={`text-lg font-bold ${
-                        isToday(day) ? 'text-primary' : 'text-muted-foreground'
-                      }`}>
+                      <div className={`text-lg font-bold ${isToday(day) ? 'text-primary' : 'text-muted-foreground'
+                        }`}>
                         {format(day, 'd')}
                       </div>
                     </div>
@@ -281,16 +280,16 @@ export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: Roo
                       <div className="p-2 text-sm text-muted-foreground border-r border-border bg-muted/30">
                         {hour.toString().padStart(2, '0')}:00
                       </div>
-                      
+
                       {/* Day Columns */}
                       {weekDays.map((day) => {
                         const reservations = getReservationsForHour(selectedRoom, day, hour);
                         // Only show reservation in its starting hour
-                        const startingReservations = reservations.filter((r: any) => {
+                        const startingReservations = reservations.filter((r) => {
                           const start = new Date(r.startTime);
                           return start.getHours() === hour;
                         });
-                        
+
                         return (
                           <div
                             key={`${day.toISOString()}-${hour}`}
@@ -298,13 +297,13 @@ export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: Roo
                           >
                             {/* Reservations */}
                             <div className="space-y-1">
-                              {startingReservations.map((reservation: any) => {
+                              {startingReservations.map((reservation) => {
                                 const duration = getReservationDuration(reservation);
                                 const height = Math.max(60, duration * 60); // Minimum 60px (1 hour)
                                 const color = getStatusColor(reservation.status);
                                 const start = new Date(reservation.startTime);
                                 const end = new Date(reservation.endTime);
-                                
+
                                 return (
                                   <div
                                     key={reservation.id}

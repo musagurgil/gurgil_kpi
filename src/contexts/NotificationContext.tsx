@@ -2,22 +2,15 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 import { useSocket } from './SocketContext';
+import { Notification, NotificationFilter } from '@/types/notification';
 
 interface NotificationContextType {
-    notifications: any[];
-    allNotifications: any[];
+    notifications: Notification[];
+    allNotifications: Notification[];
     loading: boolean;
     unreadCount: number;
-    filter: {
-        category: string;
-        priority: string;
-        isRead: string;
-    };
-    setFilter: React.Dispatch<React.SetStateAction<{
-        category: string;
-        priority: string;
-        isRead: string;
-    }>>;
+    filter: NotificationFilter;
+    setFilter: React.Dispatch<React.SetStateAction<NotificationFilter>>;
     markAsRead: (id: string) => Promise<void>;
     markAllAsRead: () => Promise<void>;
     deleteNotification: (id: string) => Promise<void>;
@@ -29,11 +22,11 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider = ({ children }: { children: ReactNode }) => {
-    const [notifications, setNotifications] = useState<any[]>([]);
-    const [allNotifications, setAllNotifications] = useState<any[]>([]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
     const [unreadCount, setUnreadCount] = useState(0);
-    const [filter, setFilter] = useState({
+    const [filter, setFilter] = useState<NotificationFilter>({
         category: 'all',
         priority: 'all',
         isRead: 'all'
@@ -51,15 +44,15 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 setNotifications(data);
 
                 // Count unread notifications
-                const unread = data.filter((n: any) => !n.isRead).length;
+                const unread = data.filter((n: Notification) => !n.isRead).length;
                 setUnreadCount(unread);
             } catch (err: any) {
                 console.error('Error loading notifications:', err);
                 // Set mock data on error if needed, or just leave empty
-                // For now, let's keep the mock data fallback behavior from the original hook
-                const mockNotifications = [
+                const mockNotifications: Notification[] = [
                     {
                         id: '1',
+                        userId: 'mock-user',
                         title: 'Hoş Geldiniz!',
                         message: 'KPI Yönetim Sistemine hoş geldiniz. Başarılar dileriz!',
                         category: 'system',
@@ -69,8 +62,6 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                         link: '/'
                     }
                 ];
-                // Only set mock if it was a real error, but maybe better to just show empty or last known
-                // Assuming we want to show something if backend fails for demo purposes
                 setAllNotifications(mockNotifications);
                 setNotifications(mockNotifications);
                 setUnreadCount(1);
@@ -86,7 +77,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         if (!socket) return;
 
-        const handleNewNotification = (notification: any) => {
+        const handleNewNotification = (notification: Notification) => {
             // Add new notification to the list
             setAllNotifications(prev => [notification, ...prev]);
 
@@ -98,7 +89,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
                 description: notification.message,
                 action: notification.link ? {
                     label: 'Görüntüle',
-                    onClick: () => window.location.href = notification.link
+                    onClick: () => window.location.href = notification.link!
                 } : undefined,
             });
         };
@@ -114,17 +105,16 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         let filtered = allNotifications;
 
-        if (filter.category !== 'all') {
+        if (filter.category && filter.category !== 'all') {
             filtered = filtered.filter(n => n.category === filter.category);
         }
 
-        if (filter.priority !== 'all') {
+        if (filter.priority && filter.priority !== 'all') {
             filtered = filtered.filter(n => n.priority === filter.priority);
         }
 
-        if (filter.isRead !== 'all') {
-            const isRead = filter.isRead === 'read';
-            filtered = filtered.filter(n => n.isRead === isRead);
+        if (filter.isRead !== 'all' && filter.isRead !== undefined) {
+            filtered = filtered.filter(n => n.isRead === filter.isRead);
         }
 
         setNotifications(filtered);

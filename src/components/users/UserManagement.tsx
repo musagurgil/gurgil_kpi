@@ -12,6 +12,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -73,6 +83,7 @@ export const UserManagement = () => {
   const [selectedRole, setSelectedRole] = useState('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   const loading = adminLoading || kpiLoading || ticketsLoading;
 
@@ -127,13 +138,19 @@ export const UserManagement = () => {
     setFilteredUsers(processed);
   }, [profiles, tickets, kpiStats, searchTerm, selectedDepartment, selectedRole]);
 
-  const handleDeleteUser = async (userId: string) => {
-    if (window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
-      try {
-        await deleteProfile(userId);
-      } catch (error) {
-        // Error handling is done in useAdmin
-      }
+  const handleDeleteUser = (userId: string) => {
+    setUserToDelete(userId);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    try {
+      await deleteProfile(userToDelete);
+    } catch (error) {
+      // Error handling is done in useAdmin
+    } finally {
+      setUserToDelete(null);
     }
   };
 
@@ -339,6 +356,23 @@ export const UserManagement = () => {
           onUserUpdated={handleUserUpdated}
         />
       )}
+
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Sil
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -7,13 +7,14 @@ import { EventDetailDialog } from './EventDetailDialog';
 import { format, startOfWeek, addDays, isSameDay, isToday } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import * as LucideIcons from 'lucide-react';
+import { Activity } from '@/types/calendar';
 
 interface WeeklyCalendarGridProps {
   selectedDate: Date;
-  getActivitiesForDate: (date: Date) => any[];
+  getActivitiesForDate: (date: Date) => Activity[];
   onDeleteActivity: (id: string) => Promise<void>;
-  onUpdateActivity: (id: string, data: any) => Promise<void>;
-  onCreateActivity: (data: any) => Promise<void>;
+  onUpdateActivity: (id: string, data: Partial<Activity>) => Promise<void | Activity>;
+  onCreateActivity: (data: Omit<Activity, 'id' | 'userId'>) => Promise<void | Activity>;
 }
 
 export const WeeklyCalendarGrid = ({
@@ -23,12 +24,12 @@ export const WeeklyCalendarGrid = ({
   onUpdateActivity,
   onCreateActivity
 }: WeeklyCalendarGridProps) => {
-  const [selectedActivity, setSelectedActivity] = useState<any>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [activityDialog, setActivityDialog] = useState<{
     isOpen: boolean;
     date: Date;
     hour: number;
-    editingActivity?: any;
+    editingActivity?: Activity;
   }>({
     isOpen: false,
     date: new Date(),
@@ -51,13 +52,13 @@ export const WeeklyCalendarGrid = ({
         if (activity.startTime?.includes('T')) {
           // ISO string format
           const startDate = new Date(activity.startTime);
-          const endDate = new Date(activity.endTime);
+          //   const endDate = new Date(activity.endTime); // unused
           startTime = startDate.getHours();
-          endTime = endDate.getHours();
+          //   endTime = endDate.getHours(); // unused
         } else if (activity.startTime?.includes(':')) {
           // Time string format (HH:MM)
           startTime = parseInt(activity.startTime.split(':')[0]);
-          endTime = parseInt(activity.endTime?.split(':')[0] || activity.startTime.split(':')[0]);
+          //   endTime = parseInt(activity.endTime?.split(':')[0] || activity.startTime.split(':')[0]); // unused
         } else {
           return false;
         }
@@ -71,7 +72,7 @@ export const WeeklyCalendarGrid = ({
     });
   };
 
-  const getActivityDuration = (activity: any) => {
+  const getActivityDuration = (activity: Activity) => {
     try {
       let startTime, endTime;
 
@@ -98,7 +99,7 @@ export const WeeklyCalendarGrid = ({
     }
   };
 
-  const getActivityHeight = (activity: any) => {
+  const getActivityHeight = (activity: Activity) => {
     const duration = getActivityDuration(activity);
     // Each hour is 60px, so duration * 60px
     return Math.max(60, duration * 60); // Minimum 60px height (1 hour)
@@ -112,11 +113,11 @@ export const WeeklyCalendarGrid = ({
     });
   };
 
-  const handleActivityClick = (activity: any) => {
+  const handleActivityClick = (activity: Activity) => {
     setSelectedActivity(activity);
   };
 
-  const handleEditActivity = (activity: any) => {
+  const handleEditActivity = (activity: Activity) => {
     setSelectedActivity(null);
     setActivityDialog({
       isOpen: true,
@@ -128,18 +129,20 @@ export const WeeklyCalendarGrid = ({
 
 
 
-  const handleDeleteActivity = async (activity: any) => {
+  const handleDeleteActivity = async (activity: Activity) => {
     try {
-      await onDeleteActivity(activity.id);
-      setSelectedActivity(null);
-      // Force refresh of activities by calling loadActivities
-      // This will be handled by the useCalendar hook automatically
+      if (activity.id) {
+        await onDeleteActivity(activity.id);
+        setSelectedActivity(null);
+        // Force refresh of activities by calling loadActivities
+        // This will be handled by the useCalendar hook automatically
+      }
     } catch (error) {
       console.error('Error deleting activity:', error);
     }
   };
 
-  const getActivityStyle = (activity: any) => {
+  const getActivityStyle = (activity: Activity) => {
     // Get category color or default
     let categoryColor = '#3b82f6'; // Default blue
 

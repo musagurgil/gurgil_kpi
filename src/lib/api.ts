@@ -1,5 +1,20 @@
 const API_BASE_URL = 'http://localhost:3001/api';
 
+import { User, CreateUserData } from '@/types/user';
+import { Ticket, CreateTicketData, TicketComment } from '@/types/ticket';
+import { Activity, ActivityCategory } from '@/types/calendar';
+import { Notification } from '@/types/notification';
+import { KPITarget, CreateKPIData, KPIProgress, KPIComment, RawKPI } from '@/types/kpi';
+import { MeetingRoom, MeetingReservation, CreateMeetingRoomData, CreateMeetingReservationData } from '@/types/meeting';
+import { DashboardStats } from '@/types/dashboard';
+
+
+
+interface ApiError extends Error {
+  status?: number;
+  response?: unknown;
+}
+
 class ApiClient {
   private baseURL: string;
   private token: string | null = null;
@@ -33,9 +48,9 @@ class ApiClient {
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Network error' }));
       const errorMessage = error.error || error.details || 'Request failed';
-      const customError = new Error(errorMessage);
-      (customError as any).status = response.status;
-      (customError as any).response = error;
+      const customError = new Error(errorMessage) as ApiError;
+      customError.status = response.status;
+      customError.response = error;
       throw customError;
     }
 
@@ -44,7 +59,7 @@ class ApiClient {
 
   // Auth methods
   async login(email: string, password: string) {
-    const response = await this.request<{ user: any; token: string }>('/auth/login', {
+    const response = await this.request<{ user: User; token: string }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -55,7 +70,7 @@ class ApiClient {
   }
 
   async signup(email: string, password: string, firstName: string, lastName: string, department: string) {
-    const response = await this.request<{ user: any; token: string }>('/auth/signup', {
+    const response = await this.request<{ user: User; token: string }>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ email, password, firstName, lastName, department }),
     });
@@ -72,30 +87,18 @@ class ApiClient {
 
   // User management
   async getProfiles() {
-    return this.request<any[]>('/admin/profiles');
+    return this.request<User[]>('/admin/profiles');
   }
 
-  async createProfile(data: {
-    email: string;
-    firstName: string;
-    lastName: string;
-    department: string;
-    roles: string[];
-  }) {
-    return this.request<any>('/admin/profiles', {
+  async createProfile(data: CreateUserData) {
+    return this.request<User>('/admin/profiles', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateProfile(id: string, data: {
-    email: string;
-    firstName: string;
-    lastName: string;
-    department: string;
-    roles: string[];
-  }) {
-    return this.request<any>(`/admin/profiles/${id}`, {
+  async updateProfile(id: string, data: Partial<CreateUserData>) {
+    return this.request<User>(`/admin/profiles/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -109,49 +112,38 @@ class ApiClient {
 
   // KPI methods
   async getKPIs() {
-    return this.request<any[]>('/kpis');
+    return this.request<RawKPI[]>('/kpis'); // Returns RawKPI structure
   }
 
-  async createKPI(data: {
-    title: string;
-    description: string;
-    department: string;
-    targetValue: number;
-    unit: string;
-    startDate: string;
-    endDate: string;
-    period: string;
-    priority: string;
-    assignedTo: string[];
-  }) {
-    return this.request<any>('/kpis', {
+  async createKPI(data: CreateKPIData) {
+    return this.request<RawKPI>('/kpis', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateKPI(id: string, data: any) {
-    return this.request<any>(`/kpis/${id}`, {
+  async updateKPI(id: string, data: Partial<CreateKPIData>) {
+    return this.request<RawKPI>(`/kpis/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteKPI(id: string) {
-    return this.request<any>(`/kpis/${id}`, {
+    return this.request<{ success: boolean }>(`/kpis/${id}`, {
       method: 'DELETE',
     });
   }
 
   async recordKPIProgress(kpiId: string, value: number, note?: string) {
-    return this.request<any>(`/kpis/${kpiId}/progress`, {
+    return this.request<KPIProgress>(`/kpis/${kpiId}/progress`, {
       method: 'POST',
       body: JSON.stringify({ value, note }),
     });
   }
 
   async addKPIComment(kpiId: string, content: string) {
-    return this.request<any>(`/kpis/${kpiId}/comments`, {
+    return this.request<KPIComment>(`/kpis/${kpiId}/comments`, {
       method: 'POST',
       body: JSON.stringify({ content }),
     });
@@ -159,23 +151,18 @@ class ApiClient {
 
   // Ticket methods
   async getTickets() {
-    return this.request<any[]>('/tickets');
+    return this.request<Ticket[]>('/tickets');
   }
 
-  async createTicket(data: {
-    title: string;
-    description: string;
-    priority: string;
-    targetDepartment: string;
-  }) {
-    return this.request<any>('/tickets', {
+  async createTicket(data: CreateTicketData) {
+    return this.request<Ticket>('/tickets', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateTicket(id: string, data: any) {
-    return this.request<any>(`/tickets/${id}`, {
+  async updateTicket(id: string, data: Partial<CreateTicketData> & { status?: string, assignedTo?: string }) {
+    return this.request<Ticket>(`/tickets/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -188,11 +175,11 @@ class ApiClient {
   }
 
   async getTicketComments(ticketId: string) {
-    return this.request<any[]>(`/tickets/${ticketId}/comments`);
+    return this.request<TicketComment[]>(`/tickets/${ticketId}/comments`);
   }
 
   async addTicketComment(ticketId: string, content: string, isInternal?: boolean) {
-    return this.request<any>(`/tickets/${ticketId}/comments`, {
+    return this.request<TicketComment>(`/tickets/${ticketId}/comments`, {
       method: 'POST',
       body: JSON.stringify({ content, isInternal }),
     });
@@ -200,7 +187,11 @@ class ApiClient {
 
   // Calendar methods
   async getActivities() {
-    return this.request<any[]>('/calendar/activities');
+    return this.request<Activity[]>('/calendar/activities');
+  }
+
+  async getCategories() {
+    return this.request<ActivityCategory[]>('/calendar/categories');
   }
 
   async createActivity(data: {
@@ -212,7 +203,7 @@ class ApiClient {
     date: string;
     duration: number;
   }) {
-    return this.request<any>('/calendar/activities', {
+    return this.request<Activity>('/calendar/activities', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -226,25 +217,25 @@ class ApiClient {
     endTime?: string;
     date?: string;
   }) {
-    return this.request<any>(`/calendar/activities/${id}`, {
+    return this.request<Activity>(`/calendar/activities/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteActivity(id: string) {
-    return this.request<any>(`/calendar/activities/${id}`, {
+    return this.request<{ success: boolean; message: string }>(`/calendar/activities/${id}`, {
       method: 'DELETE',
     });
   }
 
   // Notification methods
   async getNotifications() {
-    return this.request<any[]>('/notifications');
+    return this.request<Notification[]>('/notifications');
   }
 
   async markNotificationAsRead(id: string) {
-    return this.request<any>(`/notifications/${id}/read`, {
+    return this.request<Notification>(`/notifications/${id}/read`, {
       method: 'PUT',
     });
   }
@@ -262,7 +253,7 @@ class ApiClient {
   }
 
   async deleteReadNotifications() {
-    return this.request<any>('/notifications/read', {
+    return this.request<{ success: boolean; count: number }>('/notifications/read', {
       method: 'DELETE',
     });
   }
@@ -275,23 +266,23 @@ class ApiClient {
 
   // Dashboard methods
   async getDashboardStats() {
-    return this.request<any>('/dashboard/stats');
+    return this.request<DashboardStats>('/dashboard/stats');
   }
 
   // Department methods
   async getDepartments() {
-    return this.request<any[]>('/departments');
+    return this.request<{ id: string; name: string; createdAt: string; updatedAt: string }[]>('/departments');
   }
 
   async createDepartment(name: string) {
-    return this.request<any>('/departments', {
+    return this.request<{ id: string; name: string }>('/departments', {
       method: 'POST',
       body: JSON.stringify({ name }),
     });
   }
 
   async updateDepartment(id: string, name: string) {
-    return this.request<any>(`/departments/${id}`, {
+    return this.request<{ id: string; name: string }>(`/departments/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ name }),
     });
@@ -305,16 +296,11 @@ class ApiClient {
 
   // Meeting Room methods
   async getMeetingRooms() {
-    return this.request<any[]>('/meeting-rooms');
+    return this.request<MeetingRoom[]>('/meeting-rooms');
   }
 
-  async createMeetingRoom(data: {
-    name: string;
-    capacity: number;
-    location: string;
-    description?: string;
-  }) {
-    return this.request<any>('/meeting-rooms', {
+  async createMeetingRoom(data: CreateMeetingRoomData) {
+    return this.request<MeetingRoom>('/meeting-rooms', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -328,29 +314,24 @@ class ApiClient {
 
   // Meeting Reservation methods
   async getMeetingReservations() {
-    return this.request<any[]>('/meeting-reservations');
+    return this.request<MeetingReservation[]>('/meeting-reservations');
   }
 
-  async createMeetingReservation(data: {
-    roomId: string;
-    startTime: string;
-    endTime: string;
-    notes?: string;
-  }) {
-    return this.request<any>('/meeting-reservations', {
+  async createMeetingReservation(data: CreateMeetingReservationData) {
+    return this.request<MeetingReservation>('/meeting-reservations', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async approveMeetingReservation(id: string) {
-    return this.request<any>(`/meeting-reservations/${id}/approve`, {
+    return this.request<MeetingReservation>(`/meeting-reservations/${id}/approve`, {
       method: 'PUT',
     });
   }
 
   async rejectMeetingReservation(id: string) {
-    return this.request<any>(`/meeting-reservations/${id}/reject`, {
+    return this.request<MeetingReservation>(`/meeting-reservations/${id}/reject`, {
       method: 'PUT',
     });
   }
@@ -360,7 +341,7 @@ class ApiClient {
     endTime?: string;
     notes?: string;
   }) {
-    return this.request<any>(`/meeting-reservations/${id}`, {
+    return this.request<MeetingReservation>(`/meeting-reservations/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });

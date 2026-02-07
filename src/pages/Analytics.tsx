@@ -27,14 +27,22 @@ import {
 import { useKPI } from "@/hooks/useKPI";
 import { useTickets } from "@/hooks/useTickets";
 import { apiClient } from "@/lib/api";
+import { User } from "@/types/user";
+
+interface Department {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--kpi-success))', 'hsl(var(--kpi-warning))', 'hsl(var(--kpi-danger))', 'hsl(var(--accent))'];
 
 export default function Analytics() {
   const { kpiStats, loading: kpiLoading } = useKPI();
   const { tickets, loading: ticketsLoading } = useTickets();
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [profiles, setProfiles] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Load auxiliary data (Departments, Users)
@@ -45,7 +53,8 @@ export default function Analytics() {
           apiClient.getDepartments(),
           apiClient.getProfiles()
         ]);
-        setDepartments(deptsData);
+        // Type assertion needed if strictly typed
+        setDepartments(deptsData as unknown as Department[]);
         setProfiles(profilesData);
       } catch (error) {
         console.error("Error loading analytics auxiliary data:", error);
@@ -60,11 +69,11 @@ export default function Analytics() {
 
   // 1. KPI Status Distribution
   const statusDistribution = useMemo(() => {
-    const counts = kpiStats.reduce((acc: any, kpi: any) => {
+    const counts = kpiStats.reduce((acc, kpi) => {
       const status = kpi.status || 'active'; // Default to active if undefined
       acc[status] = (acc[status] || 0) + 1;
       return acc;
-    }, {});
+    }, {} as Record<string, number>);
 
     return [
       { name: 'Başarılı', value: counts['success'] || 0, color: 'hsl(var(--kpi-success))' },
@@ -101,7 +110,7 @@ export default function Analytics() {
 
   // 3. Top Performers (Calculated from KPI completion and Ticket resolution)
   const topPerformers = useMemo(() => {
-    const userScores = new Map();
+    const userScores = new Map<string, { kpiCount: number; ticketCount: number }>();
 
     // Score from KPIs
     kpiStats.forEach(kpi => {
@@ -128,7 +137,7 @@ export default function Analytics() {
     });
 
     return Array.from(userScores.entries())
-      .map(([userId, scores]: [string, any]) => {
+      .map(([userId, scores]) => {
         const profile = profiles.find(p => p.id === userId);
         if (!profile) return null;
 
@@ -141,15 +150,15 @@ export default function Analytics() {
           totalScore: scores.kpiCount * 10 + scores.ticketCount * 5 // Weighted score
         };
       })
-      .filter(Boolean) // Remove nulls (users not found)
-      .sort((a: any, b: any) => b.totalScore - a.totalScore)
+      .filter((item): item is NonNullable<typeof item> => item !== null) // Remove nulls (users not found)
+      .sort((a, b) => b.totalScore - a.totalScore)
       .slice(0, 5);
   }, [kpiStats, tickets, profiles]);
 
   // 4. Trend Data (Simulated based on KPI Start Dates for distribution over time)
   // Since we don't have historical snapshots, we'll visualize "New KPIs vs Completed KPIs" over the last 6 months
   const trendData = useMemo(() => {
-    const months: any = {};
+    const months: Record<string, { month: string; newKPIs: number; completedKPIs: number; tickets: number }> = {};
     const now = new Date();
 
     // Initialize last 6 months
@@ -296,7 +305,7 @@ export default function Analytics() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {statusDistribution.map((entry: any, index: number) => (
+                    {statusDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -367,7 +376,7 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {topPerformers.map((performer: any, index: number) => (
+                {topPerformers.map((performer, index) => (
                   <div key={performer.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-white
@@ -406,7 +415,7 @@ export default function Analytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {departmentStats.map((dept: any) => (
+              {departmentStats.map((dept) => (
                 <div key={dept.name} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
                   <div>
                     <h3 className="font-medium text-foreground">{dept.name}</h3>

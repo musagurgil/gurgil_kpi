@@ -31,6 +31,7 @@ export interface TicketAttachment {
 
 export interface TicketComment {
   id: string;
+  ticketId: string;
   content: string;
   authorId: string;
   authorName: string;

@@ -4,6 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Edit, Plus, Palette } from 'lucide-react';
 import { useCategories } from '@/hooks/useCategories';
@@ -22,10 +32,13 @@ const DEFAULT_COLORS = [
   'hsl(10, 79%, 53%)',  // Orange Red
 ];
 
+import { ActivityCategory } from '@/types/calendar';
+
 export const CategoryManagement = () => {
   const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<ActivityCategory | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     color: DEFAULT_COLORS[0]
@@ -34,7 +47,7 @@ export const CategoryManagement = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       toast({
         title: "Hata",
@@ -70,7 +83,7 @@ export const CategoryManagement = () => {
     }
   };
 
-  const handleEdit = (category: any) => {
+  const handleEdit = (category: ActivityCategory) => {
     setEditingCategory(category);
     setFormData({
       name: category.name,
@@ -88,22 +101,27 @@ export const CategoryManagement = () => {
       });
       return;
     }
+    setDeleteId(categoryId);
+  };
 
-    if (window.confirm('Bu kategoriyi silmek istediğinizden emin misiniz?')) {
-      try {
-        deleteCategory(categoryId);
-        toast({
-          title: "Başarılı",
-          description: "Kategori silindi"
-        });
-      } catch (error) {
-        console.error('Error deleting category:', error);
-        toast({
-          title: "Hata",
-          description: "Kategori silinirken hata oluştu",
-          variant: "destructive"
-        });
-      }
+  const confirmDelete = () => {
+    if (!deleteId) return;
+
+    try {
+      deleteCategory(deleteId);
+      toast({
+        title: "Başarılı",
+        description: "Kategori silindi"
+      });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Hata",
+        description: "Kategori silinirken hata oluştu",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleteId(null);
     }
   };
 
@@ -141,7 +159,7 @@ export const CategoryManagement = () => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div 
+                  <div
                     className="w-4 h-4 rounded-full flex-shrink-0"
                     style={{ backgroundColor: category.color }}
                   />
@@ -180,7 +198,7 @@ export const CategoryManagement = () => {
               {editingCategory ? 'Kategori Düzenle' : 'Yeni Kategori'}
             </DialogTitle>
           </DialogHeader>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="name">Kategori Adı</Label>
@@ -200,11 +218,10 @@ export const CategoryManagement = () => {
                   <button
                     key={color}
                     type="button"
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${
-                      formData.color === color 
-                        ? 'border-foreground scale-110' 
-                        : 'border-border hover:border-foreground/50'
-                    }`}
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${formData.color === color
+                      ? 'border-foreground scale-110'
+                      : 'border-border hover:border-foreground/50'
+                      }`}
                     style={{ backgroundColor: color }}
                     onClick={() => setFormData({ ...formData, color })}
                   />
@@ -230,6 +247,23 @@ export const CategoryManagement = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bu kategoriyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Sil
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

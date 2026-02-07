@@ -7,26 +7,27 @@ import { format, setHours, setMinutes, addDays, isSameDay, startOfWeek, isToday,
 import { tr } from "date-fns/locale";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { MeetingRoom, MeetingReservation } from "@/types/meeting";
 
 interface WeeklyViewProps {
-  rooms: any[];
+  rooms: MeetingRoom[];
   onReserve?: (roomId: string) => void;
   onDelete?: (roomId: string) => void;
   showDelete?: boolean;
 }
 
 export function WeeklyView({ rooms, onReserve, onDelete, showDelete = false }: WeeklyViewProps) {
-  const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<MeetingRoom | null>(null);
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
 
   const hours = useMemo(() => Array.from({ length: 12 }, (_, i) => 8 + i), []); // 08:00 - 19:00
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
-  const getReservationsForHour = (room: any, day: Date, hour: number) => {
+  const getReservationsForHour = (room: MeetingRoom, day: Date, hour: number) => {
     const hourStart = setMinutes(setHours(day, hour), 0);
     const hourEnd = setMinutes(setHours(day, hour + 1), 0);
-    
-    return (room.reservations || []).filter((r: any) => {
+
+    return (room.reservations || []).filter((r) => {
       if (r.status === 'rejected') return false;
       const start = new Date(r.startTime);
       const end = new Date(r.endTime);
@@ -47,23 +48,23 @@ export function WeeklyView({ rooms, onReserve, onDelete, showDelete = false }: W
     }
   };
 
-  const getRoomOccupancy = (room: any) => {
+  const getRoomOccupancy = (room: MeetingRoom) => {
     const now = new Date();
-    const upcoming = room.reservations?.filter((r: any) => {
+    const upcoming = room.reservations?.filter((r) => {
       if (r.status === 'rejected') return false;
       const start = new Date(r.startTime);
       return start >= now;
     }) || [];
-    
+
     return {
       count: upcoming.length,
       next: upcoming[0] ? new Date(upcoming[0].startTime) : null
     };
   };
 
-  const isRoomAvailable = (room: any) => {
+  const isRoomAvailable = (room: MeetingRoom) => {
     const now = new Date();
-    const active = room.reservations?.find((r: any) => {
+    const active = room.reservations?.find((r) => {
       if (r.status !== 'approved') return false;
       const start = new Date(r.startTime);
       const end = new Date(r.endTime);
@@ -179,8 +180,8 @@ export function WeeklyView({ rooms, onReserve, onDelete, showDelete = false }: W
                       Saat
                     </div>
                     {weekDays.map((day) => (
-                      <div 
-                        key={day.toISOString()} 
+                      <div
+                        key={day.toISOString()}
                         className={cn(
                           "p-3 text-center border-r border-border last:border-r-0",
                           isToday(day) && "bg-primary/10"
@@ -208,13 +209,13 @@ export function WeeklyView({ rooms, onReserve, onDelete, showDelete = false }: W
                         </div>
                         {weekDays.map((day) => {
                           const reservations = getReservationsForHour(room, day, hour);
-                          
+
                           return (
                             <div
                               key={day.toISOString()}
                               className="p-1 border-r border-border last:border-r-0 min-h-[60px] relative"
                             >
-                              {reservations.map((reservation: any) => {
+                              {reservations.map((reservation) => {
                                 const start = new Date(reservation.startTime);
                                 const end = new Date(reservation.endTime);
                                 const startHour = start.getHours();
@@ -270,8 +271,8 @@ export function WeeklyView({ rooms, onReserve, onDelete, showDelete = false }: W
                     Saat
                   </div>
                   {weekDays.map((day) => (
-                    <div 
-                      key={day.toISOString()} 
+                    <div
+                      key={day.toISOString()}
                       className={cn(
                         "p-3 text-center border-r border-border last:border-r-0",
                         isToday(day) && "bg-primary/10"
@@ -297,13 +298,13 @@ export function WeeklyView({ rooms, onReserve, onDelete, showDelete = false }: W
                       </div>
                       {weekDays.map((day) => {
                         const reservations = getReservationsForHour(selectedRoom, day, hour);
-                        
+
                         return (
                           <div
                             key={day.toISOString()}
                             className="p-1 border-r border-border last:border-r-0 min-h-[60px] relative"
                           >
-                            {reservations.map((reservation: any) => {
+                            {reservations.map((reservation) => {
                               const start = new Date(reservation.startTime);
                               const end = new Date(reservation.endTime);
                               const startHour = start.getHours();

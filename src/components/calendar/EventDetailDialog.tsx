@@ -1,5 +1,15 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -16,15 +26,16 @@ interface EventDetailDialogProps {
   onDelete?: (activity: any) => void;
 }
 
-export const EventDetailDialog = ({ 
-  activity, 
-  isOpen, 
-  onClose, 
+export const EventDetailDialog = ({
+  activity,
+  isOpen,
+  onClose,
   onEdit,
-  onDelete 
+  onDelete
 }: EventDetailDialogProps) => {
   const { categories } = useCategories();
-  
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+
   if (!activity) return null;
 
   // Get category info from categoryId
@@ -73,18 +84,18 @@ export const EventDetailDialog = ({
 
   const getDuration = () => {
     try {
-      const startTime = activity.startTime?.includes('T') 
+      const startTime = activity.startTime?.includes('T')
         ? new Date(activity.startTime)
         : new Date(`2000-01-01T${activity.startTime || '00:00'}`);
-      
+
       const endTime = activity.endTime?.includes('T')
         ? new Date(activity.endTime)
         : new Date(`2000-01-01T${activity.endTime || '00:00'}`);
-      
+
       const durationMs = endTime.getTime() - startTime.getTime();
       const hours = Math.floor(durationMs / (1000 * 60 * 60));
       const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-      
+
       if (hours > 0) {
         return `${hours} saat ${minutes} dakika`;
       } else {
@@ -111,7 +122,7 @@ export const EventDetailDialog = ({
               onClick={onClose}
               className="h-8 w-8 p-0"
             >
-                <LucideIcons.X className="w-4 h-4" />
+              <LucideIcons.X className="w-4 h-4" />
             </Button>
           </div>
         </DialogHeader>
@@ -120,10 +131,10 @@ export const EventDetailDialog = ({
           {/* Category Badge */}
           <div className="flex items-center gap-2">
             <LucideIcons.Tag className="w-4 h-4 text-muted-foreground" />
-            <Badge 
+            <Badge
               variant="secondary"
               className="text-xs"
-              style={{ 
+              style={{
                 backgroundColor: categoryInfo.color,
                 color: 'white'
               }}
@@ -140,7 +151,7 @@ export const EventDetailDialog = ({
                 {formatDate(activity.date || activity.startTime)}
               </span>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <LucideIcons.Clock className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm">
@@ -170,19 +181,12 @@ export const EventDetailDialog = ({
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => {
-                if (confirm('Bu aktiviteyi silmek istediğinizden emin misiniz?')) {
-                  if (onDelete) {
-                    onDelete(activity);
-                  }
-                  onClose();
-                }
-              }}
+              onClick={() => setShowDeleteConfirm(true)}
             >
               <LucideIcons.Trash2 className="w-4 h-4 mr-2" />
               Sil
             </Button>
-            
+
             <Button
               onClick={() => onEdit(activity)}
               size="sm"
@@ -193,6 +197,32 @@ export const EventDetailDialog = ({
           </div>
         </div>
       </DialogContent>
-    </Dialog>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bu aktiviteyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (onDelete) {
+                  onDelete(activity);
+                }
+                setShowDeleteConfirm(false);
+                onClose();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sil
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Dialog >
   );
 };

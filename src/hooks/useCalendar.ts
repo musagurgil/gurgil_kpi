@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
+import { Activity } from '@/types/calendar';
 
 export const useCalendar = () => {
-  const [activities, setActivities] = useState<any[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [filters, setFilters] = useState({
@@ -18,7 +19,7 @@ export const useCalendar = () => {
         setLoading(true);
         const data = await apiClient.getActivities();
         setActivities(data || []);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error loading activities:', err);
         toast.error('Aktiviteler yüklenirken hata oluştu');
         setActivities([]);
@@ -30,15 +31,7 @@ export const useCalendar = () => {
     loadActivities();
   }, []);
 
-  const createActivity = async (activityData: {
-    title: string;
-    description: string;
-    categoryId: string;
-    startTime: string;
-    endTime: string;
-    date: string;
-    duration: number;
-  }) => {
+  const createActivity = async (activityData: Omit<Activity, 'id' | 'userId'>) => {
     try {
       const newActivity = await apiClient.createActivity(activityData);
       setActivities(prev => [newActivity, ...prev]);
@@ -46,22 +39,24 @@ export const useCalendar = () => {
       const minutes = activityData.duration % 60;
       toast.success(`✅ Aktivite başarıyla oluşturuldu! (${hours}s ${minutes}dk)`);
       return newActivity;
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error creating activity:', err);
-      toast.error('❌ ' + (err.message || 'Aktivite oluşturulurken hata oluştu'));
+      const message = err instanceof Error ? err.message : 'Aktivite oluşturulurken hata oluştu';
+      toast.error('❌ ' + message);
       throw err;
     }
   };
 
-  const updateActivity = async (id: string, activityData: any) => {
+  const updateActivity = async (id: string, activityData: Partial<Activity>) => {
     try {
       const updatedActivity = await apiClient.updateActivity(id, activityData);
       setActivities(prev => prev.map(a => a.id === id ? updatedActivity : a));
       toast.success('✅ Aktivite başarıyla güncellendi!');
       return updatedActivity;
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error updating activity:', err);
-      toast.error('❌ ' + (err.message || 'Aktivite güncellenirken hata oluştu'));
+      const message = err instanceof Error ? err.message : 'Aktivite güncellenirken hata oluştu';
+      toast.error('❌ ' + message);
       throw err;
     }
   };
@@ -71,14 +66,15 @@ export const useCalendar = () => {
       await apiClient.deleteActivity(id);
       setActivities(prev => prev.filter(a => a.id !== id));
       toast.success('✅ Aktivite başarıyla silindi!');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error deleting activity:', err);
-      toast.error('❌ ' + (err.message || 'Aktivite silinirken hata oluştu'));
+      const message = err instanceof Error ? err.message : 'Aktivite silinirken hata oluştu';
+      toast.error('❌ ' + message);
       throw err;
     }
   };
 
-  const updateFilters = (newFilters: any) => {
+  const updateFilters = (newFilters: Partial<typeof filters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
@@ -126,7 +122,7 @@ export const useCalendar = () => {
   const getMonthlyStats = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
-    
+
     const monthlyActivities = activities.filter(activity => {
       try {
         if (!activity.date) {
@@ -146,14 +142,14 @@ export const useCalendar = () => {
     const totalActivities = monthlyActivities.length;
     const totalHours = monthlyActivities.reduce((sum, activity) => {
       try {
-        const startTime = activity.startTime?.includes('T') 
+        const startTime = activity.startTime?.includes('T')
           ? new Date(activity.startTime)
           : new Date(`2000-01-01T${activity.startTime || '00:00'}`);
-        
+
         const endTime = activity.endTime?.includes('T')
           ? new Date(activity.endTime)
           : new Date(`2000-01-01T${activity.endTime || '00:00'}`);
-        
+
         if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
           return sum;
         }
@@ -167,14 +163,14 @@ export const useCalendar = () => {
     const categoryStats = monthlyActivities.reduce((acc, activity) => {
       const categoryId = activity.categoryId?.toString() || 'unknown';
       try {
-        const startTime = activity.startTime?.includes('T') 
+        const startTime = activity.startTime?.includes('T')
           ? new Date(activity.startTime)
           : new Date(`2000-01-01T${activity.startTime || '00:00'}`);
-        
+
         const endTime = activity.endTime?.includes('T')
           ? new Date(activity.endTime)
           : new Date(`2000-01-01T${activity.endTime || '00:00'}`);
-        
+
         if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
           const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
           acc[categoryId] = (acc[categoryId] || 0) + hours;

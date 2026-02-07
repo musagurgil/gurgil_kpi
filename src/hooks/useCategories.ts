@@ -19,10 +19,10 @@ export const useCategories = () => {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const apiCategories = await apiClient.request('/calendar/categories');
+        const apiCategories = await apiClient.getCategories();
         if (apiCategories && apiCategories.length > 0) {
           // Convert backend categories to frontend format
-          const formattedCategories = apiCategories.map((cat: any) => ({
+          const formattedCategories = apiCategories.map((cat) => ({
             id: cat.id.toString(),
             name: cat.name,
             color: cat.color
@@ -68,14 +68,14 @@ export const useCategories = () => {
       ...category,
       id: Date.now().toString()
     };
-    
+
     const updatedCategories = [...categories, newCategory];
     setCategories(updatedCategories);
     localStorage.setItem('activity-categories', JSON.stringify(updatedCategories));
   };
 
   const updateCategory = (id: string, updates: Partial<ActivityCategory>) => {
-    const updatedCategories = categories.map(cat => 
+    const updatedCategories = categories.map(cat =>
       cat.id === id ? { ...cat, ...updates } : cat
     );
     setCategories(updatedCategories);

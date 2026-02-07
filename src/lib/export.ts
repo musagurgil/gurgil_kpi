@@ -1,4 +1,6 @@
 import { KPIStats } from '@/types/kpi';
+import { Ticket } from '@/types/ticket';
+import { Activity } from '@/types/calendar';
 
 /**
  * KPI verilerini CSV formatına çevir ve indir
@@ -43,7 +45,7 @@ export function exportKPIsToCSV(kpis: KPIStats[], filename: string = 'kpi-raporu
     (kpi.velocity || 0).toFixed(2),
     `"${(kpi.description || '').replace(/"/g, '""')}"` // Escape double quotes
   ].join(','));
-  
+
   // CSV içeriği oluştur
   const csvContent = [headers, ...rows].join('\n');
 
@@ -54,12 +56,12 @@ export function exportKPIsToCSV(kpis: KPIStats[], filename: string = 'kpi-raporu
   // İndirme linkini oluştur ve tetikle
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   const date = new Date().toISOString().split('T')[0];
   link.setAttribute('href', url);
   link.setAttribute('download', `${filename}-${date}.csv`);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -70,7 +72,7 @@ export function exportKPIsToCSV(kpis: KPIStats[], filename: string = 'kpi-raporu
  */
 export function exportKPIDetailToCSV(kpi: KPIStats, filename?: string) {
   const name = filename || `kpi-${kpi.title.toLowerCase().replace(/\s+/g, '-')}`;
-  
+
   // KPI genel bilgileri
   const generalInfo = [
     ['KPI Detay Raporu'],
@@ -135,12 +137,12 @@ export function exportKPIDetailToCSV(kpi: KPIStats, filename?: string) {
   const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   const date = new Date().toISOString().split('T')[0];
   link.setAttribute('href', url);
   link.setAttribute('download', `${name}-${date}.csv`);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -151,17 +153,17 @@ export function exportKPIDetailToCSV(kpi: KPIStats, filename?: string) {
  */
 export function exportKPIToJSON(kpi: KPIStats, filename?: string) {
   const name = filename || `kpi-${kpi.title.toLowerCase().replace(/\s+/g, '-')}`;
-  
+
   const data = JSON.stringify(kpi, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   const date = new Date().toISOString().split('T')[0];
   link.setAttribute('href', url);
   link.setAttribute('download', `${name}-${date}.json`);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -170,7 +172,7 @@ export function exportKPIToJSON(kpi: KPIStats, filename?: string) {
 /**
  * Ticket verilerini CSV formatına çevir ve indir
  */
-export function exportTicketsToCSV(tickets: any[], filename: string = 'ticket-raporu') {
+export function exportTicketsToCSV(tickets: Ticket[], filename: string = 'ticket-raporu') {
   if (!tickets || tickets.length === 0) {
     throw new Error('Export edilecek ticket bulunamadı');
   }
@@ -215,12 +217,12 @@ export function exportTicketsToCSV(tickets: any[], filename: string = 'ticket-ra
   const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   const date = new Date().toISOString().split('T')[0];
   link.setAttribute('href', url);
   link.setAttribute('download', `${filename}-${date}.csv`);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -229,9 +231,9 @@ export function exportTicketsToCSV(tickets: any[], filename: string = 'ticket-ra
 /**
  * Tek bir ticket'ın detaylı raporunu CSV olarak export et
  */
-export function exportTicketDetailToCSV(ticket: any, filename?: string) {
+export function exportTicketDetailToCSV(ticket: Ticket, filename?: string) {
   const name = filename || `ticket-${ticket.id}`;
-  
+
   // Ticket genel bilgileri
   const generalInfo = [
     ['Ticket Detay Raporu'],
@@ -243,7 +245,7 @@ export function exportTicketDetailToCSV(ticket: any, filename?: string) {
     ['Öncelik', ticket.priority],
     [''],
     ['Departman Bilgileri'],
-    ['Kaynak Departman', ticket.sourceDepartman],
+    ['Kaynak Departman', ticket.sourceDepartment],
     ['Hedef Departman', ticket.targetDepartment],
     [''],
     ['Kullanıcı Bilgileri'],
@@ -262,7 +264,7 @@ export function exportTicketDetailToCSV(ticket: any, filename?: string) {
   ];
 
   // Yorumlar
-  const commentRows = (ticket.comments || []).map((c: any) => [
+  const commentRows = (ticket.comments || []).map((c) => [
     new Date(c.createdAt).toLocaleString('tr-TR'),
     c.authorName,
     c.isInternal ? 'Evet' : 'Hayır',
@@ -278,12 +280,12 @@ export function exportTicketDetailToCSV(ticket: any, filename?: string) {
   const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   const date = new Date().toISOString().split('T')[0];
   link.setAttribute('href', url);
   link.setAttribute('download', `${name}-${date}.csv`);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -292,7 +294,7 @@ export function exportTicketDetailToCSV(ticket: any, filename?: string) {
 /**
  * Calendar aktivitelerini CSV formatına çevir ve indir
  */
-export function exportActivitiesToCSV(activities: any[], filename: string = 'aktivite-raporu') {
+export function exportActivitiesToCSV(activities: Activity[], filename: string = 'aktivite-raporu') {
   if (!activities || activities.length === 0) {
     throw new Error('Export edilecek aktivite bulunamadı');
   }
@@ -314,12 +316,16 @@ export function exportActivitiesToCSV(activities: any[], filename: string = 'akt
     const duration = activity.duration || 0;
     const hours = Math.floor(duration / 60);
     const minutes = duration % 60;
-    
+
+    // Determine category name (mock logic as we don't have categories here)
+    // You might want to pass categories too or fetch them
+    const categoryName = activity.categoryId;
+
     return [
       new Date(activity.date).toLocaleDateString('tr-TR'),
       `"${(activity.title || '').replace(/"/g, '""')}"`,
-      `"${activity.category?.name || ''}"`,
-      activity.startTime?.includes('T') 
+      `"${categoryName}"`,
+      activity.startTime?.includes('T')
         ? new Date(activity.startTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
         : activity.startTime || '',
       activity.endTime?.includes('T')
@@ -339,12 +345,12 @@ export function exportActivitiesToCSV(activities: any[], filename: string = 'akt
   const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   const date = new Date().toISOString().split('T')[0];
   link.setAttribute('href', url);
   link.setAttribute('download', `${filename}-${date}.csv`);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

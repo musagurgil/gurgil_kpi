@@ -38,7 +38,7 @@ describe('useDashboard Hook', () => {
     });
 
     it('should initialize with loading state', async () => {
-        (apiClient.getDashboardStats as any).mockReturnValue(new Promise(() => { }));
+        vi.mocked(apiClient.getDashboardStats).mockReturnValue(new Promise(() => { }));
         const { result } = renderHook(() => useDashboard());
         expect(result.current.loading).toBe(true);
         expect(result.current.stats).toBeDefined();

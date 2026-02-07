@@ -44,8 +44,7 @@ import {
   Download
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { KPIStats, KPI_PERIODS, KPI_PRIORITIES, CreateKPIData, KPIComment, KPIProgress } from '@/types/kpi';
-import { User as UserType } from '@/types/user';
+import { KPIStats, KPI_PERIODS, KPI_PRIORITIES, CreateKPIData, KPIComment, KPIProgress, KPIUser } from '@/types/kpi';
 import { toast } from '@/hooks/use-toast';
 import { KPIProgressChart } from './KPIProgressChart';
 import { exportKPIDetailToCSV } from '@/lib/export';
@@ -53,9 +52,9 @@ import { toast as sonnerToast } from 'sonner';
 
 interface KPIDetailDialogProps {
   kpiStats: KPIStats;
-  currentUser: UserType | null;
+  currentUser: KPIUser | null;
   availableDepartments: string[];
-  availableUsers: UserType[];
+  availableUsers: KPIUser[];
   onUpdateKPI: (kpiId: string, updates: Partial<CreateKPIData>) => Promise<void>;
   onDeleteKPI: (kpiId: string) => Promise<void>;
   onRecordProgress: (kpiId: string, value: number, note?: string) => Promise<void>;
@@ -180,9 +179,9 @@ export function KPIDetailDialog({
       });
       return;
     }
-    
+
     const value = Number(progressValue);
-    
+
     // Negatif değer kontrolü
     if (value <= 0) {
       toast({
@@ -192,7 +191,7 @@ export function KPIDetailDialog({
       });
       return;
     }
-    
+
     // Hedeften fazla olma kontrolü (warning)
     const newCurrentValue = (kpiStats.currentValue || 0) + value;
     if (newCurrentValue > kpiStats.targetValue) {
@@ -203,7 +202,7 @@ export function KPIDetailDialog({
       });
       // Kullanıcı devam edebilir, sadece uyarı veriyoruz
     }
-    
+
     try {
       await onRecordProgress(kpiStats.kpiId, value, progressNote || undefined);
       setProgressValue('');
@@ -216,7 +215,7 @@ export function KPIDetailDialog({
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
-    
+
     try {
       await onAddComment(kpiStats.kpiId, newComment);
       setNewComment('');
@@ -329,8 +328,8 @@ export function KPIDetailDialog({
                     <div className="text-sm text-muted-foreground">
                       Hedef: {kpiStats.targetValue.toLocaleString('tr-TR')} {kpiStats.unit}
                     </div>
-                    <Progress 
-                      value={Math.min(kpiStats.progressPercentage, 100)} 
+                    <Progress
+                      value={Math.min(kpiStats.progressPercentage, 100)}
                       className={cn("h-2", `[&>div]:bg-${getStatusColor()}`)}
                     />
                     <div className="text-xs text-muted-foreground">
@@ -359,11 +358,11 @@ export function KPIDetailDialog({
                     <div className="text-sm font-medium">Kalan Süre</div>
                     <div className={cn(
                       "text-sm font-medium",
-                      isOverdue ? "text-kpi-danger" : 
-                      (kpiStats.remainingDays || 0) <= 7 ? "text-kpi-warning" : "text-foreground"
+                      isOverdue ? "text-kpi-danger" :
+                        (kpiStats.remainingDays || 0) <= 7 ? "text-kpi-warning" : "text-foreground"
                     )}>
-                      {isOverdue ? 
-                        `${Math.abs(kpiStats.remainingDays || 0)} gün gecikme` : 
+                      {isOverdue ?
+                        `${Math.abs(kpiStats.remainingDays || 0)} gün gecikme` :
                         `${kpiStats.remainingDays || 0} gün`
                       }
                     </div>

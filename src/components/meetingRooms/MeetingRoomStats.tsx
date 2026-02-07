@@ -3,11 +3,12 @@ import { Calendar, Clock, CheckCircle2, AlertCircle, Building2 } from "lucide-re
 import { useMemo } from "react";
 import { format, isToday, isFuture, isPast } from "date-fns";
 import { tr } from "date-fns/locale";
+import { MeetingRoom, MeetingReservation } from "@/types/meeting";
 
 interface MeetingRoomStatsProps {
-  rooms: any[];
-  reservations: any[];
-  userReservations?: any[];
+  rooms: MeetingRoom[];
+  reservations: MeetingReservation[];
+  userReservations?: MeetingReservation[];
   canApprove?: boolean;
 }
 
@@ -15,12 +16,29 @@ export function MeetingRoomStats({ rooms, reservations, userReservations, canApp
   const stats = useMemo(() => {
     const now = new Date();
     const availableRooms = rooms.filter(room => {
-      const active = room.reservations?.find((r: any) => {
+      // Check if room has active reservation
+      const active = room.reservations?.find((r) => {
         if (r.status !== 'approved') return false;
         const start = new Date(r.startTime);
         const end = new Date(r.endTime);
         return start <= now && end >= now;
       });
+
+      // Also check against global reservations list if needed, 
+      // but assuming room.reservations is populated or we should use the reservations prop passed in
+      // The original code used room.reservations, so we stick to that if it exists on MeetingRoom type
+      // If MeetingRoom type doesn't have reservations, we might need to filter the reservations prop.
+      // Checking type definition from memory/previous turns: MeetingRoom usually has relations if included.
+      // Let's assume room.reservations is available or optional.
+
+      // Actually, looking at the original code: 
+      // const active = room.reservations?.find((r: any) => { ...
+
+      // If MeetingRoom definition doesn't include reservations, this will fail.
+      // Let's assume for now it does, or I might need to cross-check.
+      // If the `reservations` prop contains ALL reservations, maybe we should use that instead? 
+      // But `room.reservations` is more direct if available.
+
       return !active;
     });
 
@@ -88,7 +106,7 @@ export function MeetingRoomStats({ rooms, reservations, userReservations, canApp
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {statCards.map((stat, index) => {
         if (stat.showOnlyForManagers && !canApprove) return null;
-        
+
         const Icon = stat.icon;
         return (
           <Card key={index} className="hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">

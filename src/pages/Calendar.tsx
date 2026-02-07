@@ -58,8 +58,9 @@ const Calendar = () => {
     try {
       exportActivitiesToCSV(activities, 'calisma-takvimi');
       toast.success(`✅ ${activities.length} aktivite Excel dosyasına aktarıldı!`);
-    } catch (error: any) {
-      toast.error('❌ Export işlemi başarısız: ' + error.message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Bilinmeyen hata';
+      toast.error('❌ Export işlemi başarısız: ' + message);
     }
   };
 

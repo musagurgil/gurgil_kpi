@@ -2,21 +2,26 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
+import { KPIStats, CreateKPIData, KPIFilters, KPITarget, KPIProgress, KPIComment, RawKPI, KPIUser } from '@/types/kpi';
+import { User } from '@/types/user';
 
 export const useKPI = () => {
   const { user } = useAuth();
-  const [kpiStats, setKpiStats] = useState<any[]>([]);
+  const [kpiStats, setKpiStats] = useState<KPIStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<KPIFilters>({
     department: '',
-    status: '',
-    priority: '',
-    period: ''
+    status: undefined,
+    priority: undefined,
+    period: undefined,
+    assignedTo: undefined,
+    startDate: undefined,
+    endDate: undefined
   });
 
   // Calculate KPI stats
-  const calculateKPIStats = (kpi: any) => {
+  const calculateKPIStats = (kpi: RawKPI): KPIStats => {
     const now = new Date();
     const startDate = new Date(kpi.startDate);
     const endDate = new Date(kpi.endDate);
@@ -25,13 +30,13 @@ export const useKPI = () => {
     const remainingDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
     // Get current value from all progress records (sum of all progress values)
-    const currentValue = kpi.progress?.reduce((sum: number, p: any) => sum + (p.value || 0), 0) || 0;
+    const currentValue = kpi.progress?.reduce((sum: number, p: KPIProgress) => sum + (p.value || 0), 0) || 0;
 
     // Calculate progress percentage
     const progressPercentage = kpi.targetValue > 0 ? (currentValue / kpi.targetValue) * 100 : 0;
 
     // Determine status
-    let status = 'normal';
+    let status: KPIStats['status'] = 'success';
     if (progressPercentage >= 100) {
       status = 'success';
     } else if (remainingDays < 0) {
@@ -46,18 +51,26 @@ export const useKPI = () => {
     const velocity = elapsedDays > 0 ? currentValue / elapsedDays : 0;
 
     // Estimate completion date
-    let estimatedCompletion = null;
+    let estimatedCompletion: Date | null = null;
     if (velocity > 0 && currentValue < kpi.targetValue) {
       const remainingValue = kpi.targetValue - currentValue;
       const daysToComplete = Math.ceil(remainingValue / velocity);
       const estimatedDate = new Date(now.getTime() + (daysToComplete * 24 * 60 * 60 * 1000));
 
-      // Limit estimated completion to maximum 2x the original end date to prevent unrealistic dates
-      const maxEstimatedDate = new Date(endDate.getTime() + (30 * 24 * 60 * 60 * 1000)); // End date + 30 days
+      // Hard cap at 5 years from now
+      const fiveYearsFromNow = new Date(now.getTime() + (5 * 365 * 24 * 60 * 60 * 1000));
+
+      // Limit estimated completion to maximum 2x the original end date OR 5 years, whichever is smaller
+      // checking against endDate + 30 days is too strict if the user is just slightly behind
+      const maxEstimatedDate = new Date(Math.min(
+        new Date(endDate.getTime() + (365 * 24 * 60 * 60 * 1000)).getTime(), // End date + 1 year
+        fiveYearsFromNow.getTime()
+      ));
 
       if (estimatedDate > maxEstimatedDate) {
-        // If estimated date is too far, use the original end date
-        estimatedCompletion = endDate;
+        // If estimated date is too far, use the max date or original end date depending on context
+        // For UI purposes, if it's way off, better to show something reasonable or indicate "Overdue"
+        estimatedCompletion = maxEstimatedDate;
       } else {
         estimatedCompletion = estimatedDate;
       }
@@ -71,19 +84,21 @@ export const useKPI = () => {
     }
 
     // Transform assignments array to assignedUsers array (user IDs)
-    const assignedUsers = kpi.assignments?.map((assignment: any) => assignment.userId) || [];
+    const assignedUsers = kpi.assignments?.map((assignment) => assignment.userId) || [];
 
     return {
       ...kpi,
-      kpiId: kpi.id, // Backend'den gelen id'yi kpiId olarak map et
+      kpiId: kpi.id, // Map ID from backend
       currentValue,
       progressPercentage: Math.min(progressPercentage, 100),
       remainingDays,
+      daysTotal: Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)),
       status,
+      lifecycleStatus: kpi.status,
       velocity,
       estimatedCompletion: estimatedCompletion?.toISOString(),
       recentProgress: kpi.progress || [],
-      assignedUsers, // assignments array'ini assignedUsers'a dönüştür
+      assignedUsers,
       comments: kpi.comments || []
     };
   };
@@ -95,13 +110,13 @@ export const useKPI = () => {
         setLoading(true);
         setError(null);
         const data = await apiClient.getKPIs();
-        const processedData = data.map(calculateKPIStats);
+        const processedData = data.map((item) => calculateKPIStats(item));
         setKpiStats(processedData);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error loading KPIs:', err);
-        setError(err.message || 'KPI\'lar yüklenirken hata oluştu');
+        const message = err instanceof Error ? err.message : 'KPI\'lar yüklenirken hata oluştu';
+        setError(message);
         toast.error('KPI\'lar yüklenirken hata oluştu');
-        // Set empty array as fallback
         setKpiStats([]);
       } finally {
         setLoading(false);
@@ -111,49 +126,40 @@ export const useKPI = () => {
     loadKPIs();
   }, []);
 
-  const createKPI = async (kpiData: {
-    title: string;
-    description: string;
-    department: string;
-    targetValue: number;
-    unit: string;
-    startDate: string;
-    endDate: string;
-    period: string;
-    priority: string;
-    assignedTo: string[];
-  }) => {
+  const createKPI = async (kpiData: CreateKPIData) => {
     try {
       await apiClient.createKPI(kpiData);
 
       // Reload KPI data from server to get accurate values
       const data = await apiClient.getKPIs();
-      const processedData = data.map(calculateKPIStats);
+      const processedData = data.map((item) => calculateKPIStats(item));
       setKpiStats(processedData);
 
       toast.success('✅ KPI başarıyla oluşturuldu!');
       return processedData[0]; // Return the newly created KPI
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error creating KPI:', err);
-      toast.error('❌ ' + (err.message || 'KPI oluşturulurken hata oluştu'));
+      const message = err instanceof Error ? err.message : 'KPI oluşturulurken hata oluştu';
+      toast.error('❌ ' + message);
       throw err;
     }
   };
 
-  const updateKPI = async (id: string, kpiData: any) => {
+  const updateKPI = async (id: string, kpiData: Partial<CreateKPIData>) => {
     try {
       await apiClient.updateKPI(id, kpiData);
 
       // Reload KPI data from server to get accurate values
       const data = await apiClient.getKPIs();
-      const processedData = data.map(calculateKPIStats);
+      const processedData = data.map((item) => calculateKPIStats(item));
       setKpiStats(processedData);
 
       toast.success('✅ KPI başarıyla güncellendi!');
       return processedData.find(kpi => kpi.kpiId === id);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error updating KPI:', err);
-      toast.error('❌ ' + (err.message || 'KPI güncellenirken hata oluştu'));
+      const message = err instanceof Error ? err.message : 'KPI güncellenirken hata oluştu';
+      toast.error('❌ ' + message);
       throw err;
     }
   };
@@ -164,13 +170,14 @@ export const useKPI = () => {
 
       // Reload KPI data from server to get accurate values
       const data = await apiClient.getKPIs();
-      const processedData = data.map(calculateKPIStats);
+      const processedData = data.map((item) => calculateKPIStats(item));
       setKpiStats(processedData);
 
       toast.success('✅ KPI başarıyla silindi!');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error deleting KPI:', err);
-      toast.error('❌ ' + (err.message || 'KPI silinirken hata oluştu'));
+      const message = err instanceof Error ? err.message : 'KPI silinirken hata oluştu';
+      toast.error('❌ ' + message);
       throw err;
     }
   };
@@ -198,13 +205,15 @@ export const useKPI = () => {
           const newCurrentValue = (kpi.currentValue || 0) + value;
           const newProgressPercentage = kpi.targetValue > 0 ? (newCurrentValue / kpi.targetValue) * 100 : 0;
 
-          let newStatus = 'normal';
+          let newStatus: KPIStats['status'] = 'success';
           if (newProgressPercentage >= 100) {
             newStatus = 'success';
           } else if ((kpi.remainingDays || 0) < 0) {
             newStatus = 'danger';
           } else if ((kpi.remainingDays || 0) <= 7 || newProgressPercentage < 50) {
             newStatus = 'warning';
+          } else {
+            newStatus = 'success';
           }
 
           return {
@@ -212,7 +221,7 @@ export const useKPI = () => {
             currentValue: newCurrentValue,
             progressPercentage: Math.min(newProgressPercentage, 100),
             status: newStatus,
-            recentProgress: updatedProgress
+            recentProgress: updatedProgress as KPIProgress[]
           };
         }
         return kpi;
@@ -221,17 +230,13 @@ export const useKPI = () => {
 
     try {
       await apiClient.recordKPIProgress(kpiId, value, note);
-      // Success toast is handled by optimistic UI, but we confirm here
-      // We could silently re-validate here if strict consistency is needed, 
-      // but for better UX we accept the optimistic state as truth until next load.
-      // However, to ensure we have the real server ID for the progress, we might want to reload eventually.
-      // For now, let's keep the optimistic state to avoid flicker.
       toast.success(`✅ İlerleme kaydedildi: +${value}`);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error recording progress:', err);
       // Rollback on error
       setKpiStats(previousKpiStats);
-      toast.error('❌ ' + (err.message || 'İlerleme kaydedilirken hata oluştu'));
+      const message = err instanceof Error ? err.message : 'İlerleme kaydedilirken hata oluştu';
+      toast.error('❌ ' + message);
       throw err;
     }
   };
@@ -245,7 +250,8 @@ export const useKPI = () => {
       content,
       userId: user?.id,
       userName: `${user?.firstName} ${user?.lastName}`,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      kpiId
     };
 
     setKpiStats(currentStats => {
@@ -253,7 +259,7 @@ export const useKPI = () => {
         if (kpi.kpiId === kpiId) {
           return {
             ...kpi,
-            comments: [optimisticComment, ...(kpi.comments || [])]
+            comments: [optimisticComment as KPIComment, ...(kpi.comments || [])]
           };
         }
         return kpi;
@@ -263,11 +269,12 @@ export const useKPI = () => {
     try {
       await apiClient.addKPIComment(kpiId, content);
       toast.success('✅ Yorum başarıyla eklendi!');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error adding comment:', err);
       // Rollback
       setKpiStats(previousKpiStats);
-      toast.error('❌ ' + (err.message || 'Yorum eklenirken hata oluştu'));
+      const message = err instanceof Error ? err.message : 'Yorum eklenirken hata oluştu';
+      toast.error('❌ ' + message);
       throw err;
     }
   };
@@ -275,19 +282,20 @@ export const useKPI = () => {
   const getAvailableDepartments = useCallback(async () => {
     try {
       const departments = await apiClient.getDepartments();
-      return departments.map((dept: any) => dept.name);
-    } catch (err: any) {
+      return departments.map((dept) => dept.name);
+    } catch (err) {
       console.error('Error loading departments:', err);
       return [];
     }
   }, []);
 
-  const getAccessibleUsers = useCallback(async () => {
+  const getAccessibleUsers = useCallback(async (): Promise<KPIUser[]> => {
     try {
       const profiles = await apiClient.getProfiles();
-      const processedUsers = profiles.map((profile: any) => {
+      const processedUsers = profiles.map((profile: User) => {
         // Get the highest priority role (admin > department_manager > employee)
-        const roles = profile.userRoles?.map((ur: any) => ur.role) || [];
+        const roles = profile.userRoles?.map((ur) => ur.role) || profile.roles || [];
+
         let highestRole = 'employee';
         if (roles.includes('admin')) {
           highestRole = 'admin';
@@ -313,14 +321,14 @@ export const useKPI = () => {
       );
 
       return uniqueUsers;
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading users:', err);
       return [];
     }
   }, []);
 
   // Create currentUser object for compatibility
-  const currentUser = user ? {
+  const currentUser: KPIUser | null = user ? {
     id: user.id,
     firstName: user.firstName,
     lastName: user.lastName,

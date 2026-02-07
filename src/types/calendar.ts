@@ -12,6 +12,7 @@ export interface Activity {
   endTime: string;
   date: string;
   categoryId: string;
+  category?: ActivityCategory;
   userId: string;
   duration: number; // in minutes
 }

@@ -9,7 +9,7 @@ import { CreateKPIDialog } from '@/components/kpi/CreateKPIDialog';
 import { KPIStatsCard } from '@/components/kpi/KPIStatsCard';
 import { KPIDetailDialog } from '@/components/kpi/KPIDetailDialog';
 import { toast } from '@/hooks/use-toast';
-import { KPIStats } from '@/types/kpi';
+import { KPIStats, CreateKPIData, KPIUser } from '@/types/kpi';
 import { exportKPIsToCSV } from '@/lib/export';
 import { toast as sonnerToast } from 'sonner';
 
@@ -33,7 +33,7 @@ export default function KPITracking() {
   const [selectedKPI, setSelectedKPI] = useState<KPIStats | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [availableDepartments, setAvailableDepartments] = useState<string[]>([]);
-  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<KPIUser[]>([]);
 
   useEffect(() => {
     if (error) {
@@ -53,7 +53,7 @@ export default function KPITracking() {
         setSelectedKPI(updatedKPI);
       }
     }
-  }, [kpiStats]);
+  }, [kpiStats, selectedKPI]);
 
   // Load departments and users
   useEffect(() => {
@@ -63,10 +63,10 @@ export default function KPITracking() {
           getAvailableDepartments(),
           getAccessibleUsers()
         ]);
-        
+
         console.log('Departments loaded:', departments);
         console.log('Users loaded:', users);
-        
+
         setAvailableDepartments(departments);
         setAvailableUsers(users);
       } catch (err) {
@@ -80,9 +80,9 @@ export default function KPITracking() {
     };
 
     loadData();
-  }, []); // Remove dependencies to prevent infinite re-renders
+  }, [getAvailableDepartments, getAccessibleUsers]);
 
-  const handleCreateKPI = async (data: any) => {
+  const handleCreateKPI = async (data: CreateKPIData) => {
     await createKPI(data);
   };
 
@@ -99,7 +99,7 @@ export default function KPITracking() {
     setIsDetailModalOpen(true);
   };
 
-  const handleUpdateKPI = async (kpiId: string, updates: any) => {
+  const handleUpdateKPI = async (kpiId: string, updates: Partial<CreateKPIData>) => {
     await updateKPI(kpiId, updates);
     if (selectedKPI && selectedKPI.kpiId === kpiId) {
       const updatedKPI = kpiStats.find(k => k.kpiId === kpiId);
@@ -115,7 +115,7 @@ export default function KPITracking() {
     setSelectedKPI(null);
   };
 
-  const canRecordProgress = (kpiStat: any) => {
+  const canRecordProgress = (kpiStat: KPIStats) => {
     if (!currentUser) return false;
     if (currentUser.role === 'admin') return true;
     if (currentUser.role === 'department_manager' && currentUser.department === kpiStat.department) return true;
@@ -127,8 +127,8 @@ export default function KPITracking() {
 
   const canEditKPI = (kpiStat: KPIStats) => {
     if (!currentUser) return false;
-    return currentUser.role === 'admin' || 
-           (currentUser.role === 'department_manager' && currentUser.department === kpiStat.department);
+    return currentUser.role === 'admin' ||
+      (currentUser.role === 'department_manager' && currentUser.department === kpiStat.department);
   };
 
   const canDeleteKPI = (kpiStat: KPIStats) => {
@@ -142,15 +142,15 @@ export default function KPITracking() {
     try {
       exportKPIsToCSV(filteredKPIs, 'kpi-raporu');
       sonnerToast.success(`✅ ${filteredKPIs.length} KPI Excel dosyasına aktarıldı!`);
-    } catch (error: any) {
-      sonnerToast.error('❌ Export işlemi başarısız: ' + error.message);
+    } catch (error) {
+      sonnerToast.error('❌ Export işlemi başarısız: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
     }
   };
 
   // Filter KPIs based on filters
   const filteredKPIs = kpiStats.filter(kpi => {
     if (filters.department && kpi.department !== filters.department) return false;
-    if (filters.status && kpi.status !== filters.status) return false;
+    if (filters.status && kpi.lifecycleStatus !== filters.status) return false;
     if (filters.priority && kpi.priority !== filters.priority) return false;
     if (filters.period && kpi.period !== filters.period) return false;
     if (filters.assignedTo && !kpi.assignedUsers?.includes(filters.assignedTo)) return false;
@@ -177,12 +177,12 @@ export default function KPITracking() {
   const totalKPIs = kpiStats.length;
   const completedKPIs = kpiStats.filter(kpi => kpi.progressPercentage >= 100).length;
   // At risk: danger status or warning status with low progress
-  const atRiskKPIs = kpiStats.filter(kpi => 
+  const atRiskKPIs = kpiStats.filter(kpi =>
     kpi.status === 'danger' || (kpi.status === 'warning' && kpi.progressPercentage < 50)
   ).length;
   // On track: success status (completed) or normal status with good progress and time remaining
-  const onTrackKPIs = kpiStats.filter(kpi => 
-    kpi.status === 'success' || (kpi.status === 'normal' && kpi.progressPercentage >= 50 && kpi.remainingDays > 7)
+  const onTrackKPIs = kpiStats.filter(kpi =>
+    kpi.status === 'success' || (kpi.status === 'warning' && kpi.progressPercentage >= 50 && kpi.remainingDays > 7)
   ).length;
 
   return (
@@ -198,27 +198,27 @@ export default function KPITracking() {
               Departman bazlı performans hedeflerini takip edin ve ilerlemelerinizi kaydedin
             </p>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            onClick={handleExportKPIs}
-            disabled={filteredKPIs.length === 0}
-            className="gap-2 w-full sm:w-auto justify-center"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Excel'e Aktar</span>
-            <span className="sm:hidden">Aktar</span>
-            <span className="hidden sm:inline">({filteredKPIs.length})</span>
-          </Button>
-          <div className="w-full sm:w-auto">
-            <CreateKPIDialog
-              onCreateKPI={handleCreateKPI}
-              availableDepartments={availableDepartments}
-              availableUsers={availableUsers}
-              currentUser={currentUser as any}
-            />
-          </div>
+            <Button
+              variant="outline"
+              onClick={handleExportKPIs}
+              disabled={filteredKPIs.length === 0}
+              className="gap-2 w-full sm:w-auto justify-center"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Excel'e Aktar</span>
+              <span className="sm:hidden">Aktar</span>
+              <span className="hidden sm:inline">({filteredKPIs.length})</span>
+            </Button>
+            <div className="w-full sm:w-auto">
+              <CreateKPIDialog
+                onCreateKPI={handleCreateKPI}
+                availableDepartments={availableDepartments}
+                availableUsers={availableUsers}
+                currentUser={currentUser}
+              />
+            </div>
           </div>
         </div>
 
@@ -277,7 +277,7 @@ export default function KPITracking() {
           onFiltersChange={setFilters}
           availableDepartments={availableDepartments}
           availableUsers={availableUsers}
-          currentUser={currentUser as any}
+          currentUser={currentUser}
         />
 
         {filteredKPIs.length === 0 ? (
@@ -288,17 +288,17 @@ export default function KPITracking() {
                 {kpiStats.length === 0 ? 'Henüz KPI hedefi bulunmuyor' : 'Filtrelerinize uygun KPI bulunamadı'}
               </h3>
               <p className="text-muted-foreground mb-4">
-                {kpiStats.length === 0 
-                  ? 'İlk KPI hedefinizi oluşturarak performans takibine başlayın' 
+                {kpiStats.length === 0
+                  ? 'İlk KPI hedefinizi oluşturarak performans takibine başlayın'
                   : 'Farklı filtreler deneyebilir veya filtreleri temizleyebilirsiniz'}
               </p>
               {kpiStats.length === 0 && (currentUser?.role === 'admin' || currentUser?.role === 'department_manager') && (
-              <CreateKPIDialog
-                onCreateKPI={handleCreateKPI}
-                availableDepartments={availableDepartments}
-                availableUsers={availableUsers}
-                currentUser={currentUser as any}
-              />
+                <CreateKPIDialog
+                  onCreateKPI={handleCreateKPI}
+                  availableDepartments={availableDepartments}
+                  availableUsers={availableUsers}
+                  currentUser={currentUser}
+                />
               )}
             </CardContent>
           </Card>
@@ -320,7 +320,7 @@ export default function KPITracking() {
         {selectedKPI && (
           <KPIDetailDialog
             kpiStats={selectedKPI}
-            currentUser={currentUser as any}
+            currentUser={currentUser}
             availableDepartments={availableDepartments}
             availableUsers={availableUsers}
             onUpdateKPI={handleUpdateKPI}

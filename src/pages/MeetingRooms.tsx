@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useMeetingRooms } from '@/hooks/useMeetingRooms';
 import { useAuth } from '@/hooks/useAuth';
 import { ReservationForm } from '@/components/meetingRooms/ReservationForm';
@@ -31,6 +31,8 @@ import { cn } from '@/lib/utils';
 import { format, isPast } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
+import { MeetingRoom, MeetingReservation } from '@/types/meeting';
+
 export default function MeetingRooms() {
   const {
     rooms,
@@ -53,10 +55,10 @@ export default function MeetingRooms() {
 
   const [showReservationForm, setShowReservationForm] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState<any | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<MeetingRoom | null>(null);
   const [showCreateRoomDialog, setShowCreateRoomDialog] = useState(false);
-  const [editingReservation, setEditingReservation] = useState<any | null>(null);
-  const [selectedReservation, setSelectedReservation] = useState<any | null>(null);
+  const [editingReservation, setEditingReservation] = useState<MeetingReservation | null>(null);
+  const [selectedReservation, setSelectedReservation] = useState<MeetingReservation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
 
@@ -133,7 +135,7 @@ export default function MeetingRooms() {
     await refreshReservations();
   };
 
-  const handleEditReservation = (reservation: any) => {
+  const handleEditReservation = (reservation: MeetingReservation) => {
     setEditingReservation(reservation);
   };
 
@@ -153,6 +155,11 @@ export default function MeetingRooms() {
     await refreshRooms();
     await refreshReservations();
   };
+
+  // Get reservations for a room
+  const getRoomReservations = useCallback((roomId: string) => {
+    return reservations.filter(r => r.roomId === roomId);
+  }, [reservations]);
 
   // Filter rooms
   const filteredRooms = useMemo(() => {
@@ -177,23 +184,18 @@ export default function MeetingRooms() {
     }
 
     return filtered;
-  }, [rooms, searchQuery, statusFilter, reservations]);
-
-  // Get reservations for a room
-  const getRoomReservations = (roomId: string) => {
-    return reservations.filter(r => r.roomId === roomId);
-  };
+  }, [rooms, searchQuery, statusFilter, getRoomReservations]);
 
   // Handle room card click
-  const handleRoomClick = (room: any) => {
+  const handleRoomClick = (room: MeetingRoom) => {
     setSelectedRoom(room);
   };
 
   // Check if room is available now
-  const isRoomAvailable = (room: any) => {
+  const isRoomAvailable = (room: MeetingRoom) => {
     const now = new Date();
     const roomReservations = getRoomReservations(room.id);
-    const active = roomReservations.find((r: any) => {
+    const active = roomReservations.find((r) => {
       if (r.status !== 'approved') return false;
       const start = new Date(r.startTime);
       const end = new Date(r.endTime);
@@ -340,31 +342,33 @@ export default function MeetingRooms() {
                           </Badge>
                         </div>
                         {isAdmin && (
-                          <AlertDialog onClick={(e) => e.stopPropagation()}>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-destructive hover:text-destructive shrink-0 h-8 w-8 p-0"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Odayı Sil</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Bu odayı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>İptal</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteRoom(room.id)}>
-                                  Sil
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive shrink-0 h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Odayı Sil</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Bu odayı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>İptal</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteRoom(room.id)}>
+                                    Sil
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         )}
                       </div>
 

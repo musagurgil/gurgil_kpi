@@ -3,34 +3,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/lib/api';
 import { useKPI } from '@/hooks/useKPI';
 import { useTickets } from '@/hooks/useTickets';
-
-export interface DashboardStats {
-  totalKPIs: number;
-  completedKPIs: number;
-  activeKPIs: number;
-  totalTickets: number;
-  openTickets: number;
-  inProgressTickets: number;
-  completedTickets: number;
-  kpiProgressPercentage: number;
-  ticketCompletionPercentage: number;
-  criticalKPIs: any[];
-  recentActivities: any[];
-  // User-specific stats
-  userKPIs: number;
-  userCompletedKPIs: number;
-  userActiveKPIs: number;
-  userTickets: number;
-  userAssignedTickets: number;
-  upcomingDeadlines: any[];
-  todaySummary: {
-    completedToday: number;
-    dueToday: number;
-    dueThisWeek: number;
-  };
-  ticketsByStatus: { name: string; value: number; color: string }[];
-  ticketsByDepartment: { name: string; value: number }[];
-}
+import { KPIStats, KPIProgress } from '@/types/kpi';
+import { DashboardStats, CriticalKPI, RecentActivity, UpcomingDeadline } from '@/types/dashboard';
 
 export const useDashboard = () => {
   const { user } = useAuth();
@@ -104,7 +78,7 @@ export const useDashboard = () => {
         ).length;
 
         // Filter critical KPIs from user's KPIs
-        const criticalKPIs = userKPIsList
+        const criticalKPIs: CriticalKPI[] = userKPIsList
           .filter(kpi =>
             kpi.priority === 'critical' ||
             kpi.status === 'danger' ||
@@ -138,7 +112,7 @@ export const useDashboard = () => {
         // Calculate upcoming deadlines (7 days)
         const now = new Date();
         const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-        const upcomingDeadlines = userKPIsList
+        const upcomingDeadlines: UpcomingDeadline[] = userKPIsList
           .filter(kpi => {
             const endDate = new Date(kpi.endDate);
             return endDate >= now && endDate <= sevenDaysLater && kpi.progressPercentage < 100;
@@ -169,7 +143,7 @@ export const useDashboard = () => {
 
         const completedToday = userKPIsList.filter(kpi => {
           // Check if progress was recorded today
-          const hasProgressToday = kpi.recentProgress?.some((p: any) => {
+          const hasProgressToday = kpi.recentProgress?.some((p: KPIProgress) => {
             const progressDate = new Date(p.createdAt);
             return progressDate >= today && progressDate < tomorrow;
           });
@@ -192,12 +166,12 @@ export const useDashboard = () => {
         const userAssignedTickets = tickets.filter(ticket => ticket.assignedTo === user.id).length;
 
         // Recent activities from user's KPIs and tickets
-        const recentActivities: any[] = [];
+        const recentActivities: RecentActivity[] = [];
 
         // Add KPI progress activities
         userKPIsList.forEach(kpi => {
           if (kpi.recentProgress && kpi.recentProgress.length > 0) {
-            kpi.recentProgress.slice(0, 3).forEach((progress: any) => {
+            kpi.recentProgress.slice(0, 3).forEach((progress: KPIProgress) => {
               recentActivities.push({
                 id: `kpi-progress-${kpi.kpiId}-${progress.id}`,
                 type: 'kpi_progress',
@@ -293,8 +267,7 @@ export const useDashboard = () => {
     loading,
     currentUser: user ? {
       id: user.id,
-      role: user.roles.includes('admin') ? 'admin' :
-        user.roles.includes('department_manager') ? 'department_manager' : 'employee',
+      roles: user.roles, // Updated to use roles
       department: user.department
     } : null
   };

@@ -11,11 +11,11 @@ export function DepartmentPerformance() {
   const { stats, loading, currentUser } = useDashboard();
   const { user } = useAuth();
   const { kpiStats } = useKPI();
-  
+
   // Filter KPIs by user's department or show all for admin
   const isAdmin = user?.roles.includes('admin');
   const userDepartment = user?.department || '';
-  
+
   // Calculate department performance from actual KPI data
   const departmentPerformanceMap = new Map<string, {
     name: string;
@@ -50,15 +50,15 @@ export function DepartmentPerformance() {
   // Convert to array and calculate performance percentage
   const departmentPerformance = Array.from(departmentPerformanceMap.values())
     .map(dept => {
-      const performance = dept.totalKPIs > 0 
+      const performance = dept.totalKPIs > 0
         ? Math.round(dept.totalProgress / dept.totalKPIs)
         : 0;
-      
+
       // Calculate change (mock for now, can be enhanced with historical data)
       const change = performance > 80 ? 10 : performance > 60 ? 5 : -5;
-      
+
       const changeType: 'increase' | 'decrease' = change >= 0 ? 'increase' : 'decrease';
-      
+
       return {
         name: dept.name,
         performance,
@@ -78,7 +78,7 @@ export function DepartmentPerformance() {
         <CardHeader>
           <CardTitle className="text-lg font-semibold">Departman Performansı</CardTitle>
         </CardHeader>
-        
+
         <CardContent className="space-y-4">
           {[...Array(3)].map((_, index) => (
             <div key={index} className="space-y-2">
@@ -110,10 +110,10 @@ export function DepartmentPerformance() {
             {isAdmin ? 'Departman Performansı' : `${userDepartment} Performansı`}
           </CardTitle>
         </CardHeader>
-        
+
         <CardContent>
           <p className="text-muted-foreground text-center py-8">
-            {isAdmin 
+            {isAdmin
               ? 'Henüz departman performans verisi bulunmamaktadır.'
               : `${userDepartment} departmanı için henüz KPI verisi bulunmamaktadır.`
             }
@@ -131,7 +131,7 @@ export function DepartmentPerformance() {
           {isAdmin ? 'Departman Performansı' : `${userDepartment} Performansı`}
         </CardTitle>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {departmentPerformance.map((dept) => (
           <div key={dept.name} className="space-y-2">
@@ -142,7 +142,7 @@ export function DepartmentPerformance() {
                   {dept.completedKPIs}/{dept.kpiCount} KPI
                 </Badge>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium">%{dept.performance}</span>
                 <div className="flex items-center space-x-1">
@@ -151,20 +151,19 @@ export function DepartmentPerformance() {
                   ) : (
                     <TrendingDown className="w-4 h-4 text-kpi-danger" />
                   )}
-                  <span className={`text-xs ${
-                    dept.changeType === 'increase' ? 'text-kpi-success' : 'text-kpi-danger'
-                  }`}>
+                  <span className={`text-xs ${dept.changeType === 'increase' ? 'text-kpi-success' : 'text-kpi-danger'
+                    }`}>
                     {dept.changeType === 'increase' ? '+' : ''}{dept.change}%
                   </span>
                 </div>
               </div>
             </div>
-            
-            <Progress 
-              value={(dept.performance / dept.target) * 100} 
+
+            <Progress
+              value={(dept.performance / dept.target) * 100}
               className="h-2"
             />
-            
+
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Hedef: %{dept.target}</span>
               <span>

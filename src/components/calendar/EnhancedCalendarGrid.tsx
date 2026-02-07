@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useCalendar } from '@/hooks/useCalendar';
+// import { Card } from '@/components/ui/card'; // unused
+// import { Badge } from '@/components/ui/badge'; // unused
+// import { useCalendar } from '@/hooks/useCalendar'; // unused
 import { ActivityDialog } from './ActivityDialog';
 import { EventDetailDialog } from './EventDetailDialog';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import * as LucideIcons from 'lucide-react';
+import { Activity } from '@/types/calendar';
 
 interface EnhancedCalendarGridProps {
   selectedDate: Date;
-  getActivitiesForDate: (date: Date) => any[];
+  getActivitiesForDate: (date: Date) => Activity[];
   onDeleteActivity: (id: string) => Promise<void>;
-  onUpdateActivity: (id: string, data: any) => Promise<void>;
-  onCreateActivity: (data: any) => Promise<void>;
+  onUpdateActivity: (id: string, data: Partial<Activity>) => Promise<void | Activity>;
+  onCreateActivity: (data: Omit<Activity, 'id' | 'userId'>) => Promise<void | Activity>;
 }
 
 export const EnhancedCalendarGrid = ({
@@ -22,21 +23,21 @@ export const EnhancedCalendarGrid = ({
   getActivitiesForDate,
   onDeleteActivity,
   onUpdateActivity,
-  onCreateActivity
+  onCreateActivity // unused directly but kept for interface compliance or future use
 }: EnhancedCalendarGridProps) => {
-  const [selectedActivity, setSelectedActivity] = useState<any>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [activityDialog, setActivityDialog] = useState<{
     isOpen: boolean;
     date: Date;
-    editingActivity?: any;
+    editingActivity?: Activity;
   }>({
     isOpen: false,
     date: new Date(),
   });
 
   // Get month boundaries
-  const monthStart = startOfMonth(selectedDate);
-  const monthEnd = endOfMonth(selectedDate);
+  // const monthStart = startOfMonth(selectedDate); // unused
+  // const monthEnd = endOfMonth(selectedDate); // unused
 
   // Get all days in the month view (including previous/next month days)
   const startDate = startOfMonth(selectedDate);
@@ -58,12 +59,12 @@ export const EnhancedCalendarGrid = ({
     });
   };
 
-  const handleActivityClick = (activity: any, e: React.MouseEvent) => {
+  const handleActivityClick = (activity: Activity, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedActivity(activity);
   };
 
-  const handleEditActivity = (activity: any) => {
+  const handleEditActivity = (activity: Activity) => {
     setSelectedActivity(null);
     setActivityDialog({
       isOpen: true,
@@ -72,18 +73,18 @@ export const EnhancedCalendarGrid = ({
     });
   };
 
-  // useCalendar hook removed, using props instead
-
-  const handleDeleteActivity = async (activity: any) => {
+  const handleDeleteActivity = async (activity: Activity) => {
     try {
-      await onDeleteActivity(activity.id);
-      setSelectedActivity(null);
+      if (activity.id) {
+        await onDeleteActivity(activity.id);
+        setSelectedActivity(null);
+      }
     } catch (error) {
       console.error('Error deleting activity:', error);
     }
   };
 
-  const getActivityStyle = (activity: any) => {
+  const getActivityStyle = (activity: Activity) => {
     const categoryColor = activity.category?.color || '#3b82f6';
     return {
       backgroundColor: categoryColor,
@@ -117,7 +118,7 @@ export const EnhancedCalendarGrid = ({
 
         {/* Calendar Days */}
         <div className="grid grid-cols-7">
-          {days.map((day, dayIdx) => {
+          {days.map((day) => {
             const dayActivities = getActivitiesForDateLocal(day);
             const isCurrentMonth = isSameMonth(day, selectedDate);
             const isTodayDate = isToday(day);

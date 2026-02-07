@@ -1,11 +1,11 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  BarChart3, 
-  Ticket, 
-  Users, 
-  Settings, 
+import {
+  BarChart3,
+  Ticket,
+  Users,
+  Settings,
   Home,
   Target,
   TrendingUp,
@@ -55,16 +55,16 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
     return menuItems.filter(item => {
       // Admin can see everything
       if (hasPermission('admin')) return true;
-      
+
       // Hide admin panel for non-admins
       if (item.id === '/admin') return false;
-      
+
       // Hide user management for non-admins
       if (item.id === '/users') return false;
-      
+
       // Hide analytics and reports for employees (only department_manager and admin can see)
       if ((item.id === '/analytics' || item.id === '/reports') && !hasPermission('department_manager')) return false;
-      
+
       // Show everything else
       return true;
     });
@@ -120,21 +120,21 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
-              {user ? `${user.firstName} ${user.lastName}` : 'Kullanıcı'}
+              {user && (user.firstName || user.lastName) ? `${user.firstName} ${user.lastName}`.trim() : 'Kullanıcı'}
             </p>
             <p className="text-xs text-muted-foreground truncate">
               {user?.email || 'email@company.com'}
             </p>
             {user && (
               <p className="text-xs font-medium text-primary">
-                {hasRole('admin') ? 'Sistem Yöneticisi' : 
-                 hasRole('department_manager') ? 'Departman Yöneticisi' : 
-                 'Çalışan'}
+                {hasRole('admin') ? 'Sistem Yöneticisi' :
+                  hasRole('department_manager') ? 'Departman Yöneticisi' :
+                    'Çalışan'}
               </p>
             )}
           </div>
         </div>
-        
+
         <Button
           variant="ghost"
           size="sm"

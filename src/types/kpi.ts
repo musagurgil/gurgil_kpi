@@ -17,6 +17,12 @@ export interface KPITarget {
   updatedAt: string;
 }
 
+export interface RawKPI extends KPITarget {
+  progress?: KPIProgress[];
+  assignments?: { userId: string }[];
+  comments?: KPIComment[];
+}
+
 export interface KPIComment {
   id: string;
   kpiId: string;
@@ -34,6 +40,9 @@ export interface KPIProgress {
   note?: string;
   recordedAt: string;
   recordedBy: string;
+  recordedByName?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface KPIStats {
@@ -49,6 +58,7 @@ export interface KPIStats {
   period: 'monthly' | 'quarterly' | 'yearly';
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: 'success' | 'warning' | 'danger';
+  lifecycleStatus: 'active' | 'completed' | 'paused' | 'cancelled';
   progressPercentage: number;
   remainingDays: number;
   daysTotal: number;
@@ -84,14 +94,14 @@ export interface KPIFilters {
 
 export const KPI_PERIODS = {
   monthly: 'Aylık',
-  quarterly: 'Üç Aylık', 
+  quarterly: 'Üç Aylık',
   yearly: 'Yıllık'
 } as const;
 
 export const KPI_PRIORITIES = {
   low: 'Düşük',
   medium: 'Orta',
-  high: 'Yüksek', 
+  high: 'Yüksek',
   critical: 'Kritik'
 } as const;
 
@@ -101,3 +111,14 @@ export const KPI_STATUSES = {
   paused: 'Duraklatıldı',
   cancelled: 'İptal Edildi'
 } as const;
+
+export interface KPIUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  department: string;
+  role: string;
+  isActive?: boolean;
+  createdAt?: string;
+}

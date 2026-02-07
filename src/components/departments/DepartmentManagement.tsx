@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
+import {
   Table,
   TableBody,
   TableCell,
@@ -25,11 +25,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Plus, 
-  MoreHorizontal, 
-  Edit2, 
-  Trash2, 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Plus,
+  MoreHorizontal,
+  Edit2,
+  Trash2,
   Building2,
   Users as UsersIcon
 } from "lucide-react";
@@ -47,6 +57,7 @@ export function DepartmentManagement() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  const [departmentToDelete, setDepartmentToDelete] = useState<Department | null>(null);
   const [departmentName, setDepartmentName] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -58,17 +69,17 @@ export function DepartmentManagement() {
     try {
       // Fetch departments from API
       const depts = await apiClient.getDepartments();
-      
+
       // Fetch profiles from API
       const profiles = await apiClient.getProfiles();
 
       // Calculate stats
       const departmentStats = new Map<string, { userCount: number; managerCount: number }>();
-      
+
       profiles?.forEach(profile => {
         const current = departmentStats.get(profile.department) || { userCount: 0, managerCount: 0 };
         current.userCount++;
-        
+
         // Check if user is admin or department_manager
         // Backend returns userRoles array with role objects
         const roles = profile.userRoles?.map((ur: any) => ur.role) || [];
@@ -76,7 +87,7 @@ export function DepartmentManagement() {
         if (isManager) {
           current.managerCount++;
         }
-        
+
         departmentStats.set(profile.department, current);
       });
 
@@ -129,7 +140,7 @@ export function DepartmentManagement() {
       setDepartmentName('');
       setShowCreateDialog(false);
       loadData();
-      
+
       toast({
         title: "Başarılı",
         description: "Departman başarıyla oluşturuldu"
@@ -169,7 +180,7 @@ export function DepartmentManagement() {
       setDepartmentName('');
       setEditingDepartment(null);
       loadData();
-      
+
       toast({
         title: "Başarılı",
         description: "Departman başarıyla güncellendi"
@@ -184,7 +195,7 @@ export function DepartmentManagement() {
     }
   };
 
-  const handleDeleteDepartment = async (department: Department) => {
+  const handleDeleteDepartment = (department: Department) => {
     if (department.userCount > 0) {
       toast({
         title: "Hata",
@@ -193,25 +204,30 @@ export function DepartmentManagement() {
       });
       return;
     }
+    setDepartmentToDelete(department);
+  };
 
-    if (window.confirm(`"${department.name}" departmanını silmek istediğinizden emin misiniz?`)) {
-      try {
-        await apiClient.deleteDepartment(department.id);
+  const confirmDeleteDepartment = async () => {
+    if (!departmentToDelete) return;
 
-        loadData();
-        
-        toast({
-          title: "Başarılı",
-          description: "Departman başarıyla silindi"
-        });
-      } catch (error: any) {
-        console.error('Error deleting department:', error);
-        toast({
-          title: "Hata",
-          description: error.message || "Departman silinemedi",
-          variant: "destructive"
-        });
-      }
+    try {
+      await apiClient.deleteDepartment(departmentToDelete.id);
+
+      loadData();
+
+      toast({
+        title: "Başarılı",
+        description: "Departman başarıyla silindi"
+      });
+    } catch (error: any) {
+      console.error('Error deleting department:', error);
+      toast({
+        title: "Hata",
+        description: error.message || "Departman silinemedi",
+        variant: "destructive"
+      });
+    } finally {
+      setDepartmentToDelete(null);
     }
   };
 
@@ -249,7 +265,7 @@ export function DepartmentManagement() {
             Şirket departmanlarını yönetin
           </p>
         </div>
-        <Button 
+        <Button
           onClick={openCreateDialog}
           className="bg-gradient-primary hover:opacity-90"
         >
@@ -271,7 +287,7 @@ export function DepartmentManagement() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
@@ -291,7 +307,7 @@ export function DepartmentManagement() {
             <div>
               <p className="text-sm text-muted-foreground">Ortalama Çalışan/Departman</p>
               <p className="text-xl font-bold">
-                {departments.length > 0 
+                {departments.length > 0
                   ? (departments.reduce((sum, dept) => sum + dept.userCount, 0) / departments.length).toFixed(2)
                   : '0.00'}
               </p>
@@ -424,6 +440,23 @@ export function DepartmentManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!departmentToDelete} onOpenChange={(open) => !open && setDepartmentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{departmentToDelete?.name}" departmanını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDepartment} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Sil
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

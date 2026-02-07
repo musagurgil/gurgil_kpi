@@ -7,22 +7,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Target } from "lucide-react";
-import { CreateKPIData, KPI_PERIODS, KPI_PRIORITIES } from '@/types/kpi';
-import { User } from '@/types/user';
+import { CreateKPIData, KPI_PERIODS, KPI_PRIORITIES, KPIUser } from '@/types/kpi';
 import { toast } from '@/hooks/use-toast';
 
 interface CreateKPIDialogProps {
   onCreateKPI: (data: CreateKPIData) => Promise<void>;
   availableDepartments: string[];
-  availableUsers: User[];
-  currentUser: User | null;
+  availableUsers: KPIUser[];
+  currentUser: KPIUser | null;
 }
 
-export function CreateKPIDialog({ 
-  onCreateKPI, 
-  availableDepartments, 
+export function CreateKPIDialog({
+  onCreateKPI,
+  availableDepartments,
   availableUsers,
-  currentUser 
+  currentUser
 }: CreateKPIDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -48,7 +47,7 @@ export function CreateKPIDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (!formData.title.trim()) {
       toast({
@@ -106,7 +105,7 @@ export function CreateKPIDialog({
 
     if (formData.assignedTo.length === 0) {
       toast({
-        title: "Hata", 
+        title: "Hata",
         description: "En az bir kişi atanmalıdır",
         variant: "destructive"
       });
@@ -116,7 +115,7 @@ export function CreateKPIDialog({
     try {
       setLoading(true);
       await onCreateKPI(formData);
-      
+
       // Reset form
       setFormData({
         title: '',
@@ -130,7 +129,7 @@ export function CreateKPIDialog({
         priority: 'medium',
         assignedTo: []
       });
-      
+
       setOpen(false);
     } catch (error) {
       console.error('Error creating KPI:', error);
@@ -153,10 +152,11 @@ export function CreateKPIDialog({
     }
   };
 
-  // Filter users based on selected department
-  const departmentUsers = availableUsers.filter(user => 
-    user.department === formData.department
-  );
+  // Filter users based on selected department with case-insensitive matching
+  const departmentUsers = availableUsers.filter(user => {
+    if (!user.department || !formData.department) return false;
+    return user.department.trim().toLowerCase() === formData.department.trim().toLowerCase();
+  });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -166,7 +166,7 @@ export function CreateKPIDialog({
           Yeni KPI Hedefi
         </Button>
       </DialogTrigger>
-      
+
       <DialogContent className="max-w-2xl w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
@@ -176,7 +176,7 @@ export function CreateKPIDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Title */}
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="title" className="text-sm font-medium">KPI Başlığı *</Label>
@@ -208,8 +208,8 @@ export function CreateKPIDialog({
               <Label htmlFor="department" className="text-sm font-medium">Departman *</Label>
               <Select
                 value={formData.department}
-                onValueChange={(value) => setFormData(prev => ({ 
-                  ...prev, 
+                onValueChange={(value) => setFormData(prev => ({
+                  ...prev,
                   department: value,
                   assignedTo: [] // Reset assigned users when department changes
                 }))}
@@ -220,19 +220,19 @@ export function CreateKPIDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {availableDepartments.length > 0 ? (
-                    currentUser?.role === 'admin' 
+                    currentUser?.role === 'admin'
                       ? availableDepartments.map(dept => (
+                        <SelectItem key={dept} value={dept}>
+                          {dept}
+                        </SelectItem>
+                      ))
+                      : availableDepartments
+                        .filter(dept => dept === currentUser?.department)
+                        .map(dept => (
                           <SelectItem key={dept} value={dept}>
                             {dept}
                           </SelectItem>
                         ))
-                      : availableDepartments
-                          .filter(dept => dept === currentUser?.department)
-                          .map(dept => (
-                      <SelectItem key={dept} value={dept}>
-                        {dept}
-                      </SelectItem>
-                    ))
                   ) : (
                     <SelectItem value="loading" disabled>
                       Yükleniyor...
@@ -276,9 +276,9 @@ export function CreateKPIDialog({
                 min="0.01"
                 step="0.01"
                 value={formData.targetValue || ''}
-                onChange={(e) => setFormData(prev => ({ 
-                  ...prev, 
-                  targetValue: parseFloat(e.target.value) || 0 
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  targetValue: parseFloat(e.target.value) || 0
                 }))}
                 placeholder="100"
                 required
@@ -364,15 +364,15 @@ export function CreateKPIDialog({
                     <Checkbox
                       id={`user-${user.id}`}
                       checked={formData.assignedTo.includes(user.id)}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         handleAssignedToChange(user.id, checked as boolean)
                       }
                     />
-                    <Label 
+                    <Label
                       htmlFor={`user-${user.id}`}
                       className="text-sm font-normal cursor-pointer"
                     >
-                      {user.firstName} {user.lastName} ({user.role === 'admin' ? 'Sistem Yöneticisi' : 
+                      {user.firstName} {user.lastName} ({user.role === 'admin' ? 'Sistem Yöneticisi' :
                         user.role === 'department_manager' ? 'Departman Yöneticisi' : 'Çalışan'})
                     </Label>
                   </div>

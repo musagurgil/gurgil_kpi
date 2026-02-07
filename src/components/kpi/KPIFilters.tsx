@@ -5,23 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Filter, X } from "lucide-react";
-import { KPIFilters, KPI_PERIODS, KPI_PRIORITIES, KPI_STATUSES } from '@/types/kpi';
-import { User } from '@/types/user';
+import { KPIFilters, KPI_PERIODS, KPI_PRIORITIES, KPI_STATUSES, KPIUser } from '@/types/kpi';
 
 interface KPIFiltersProps {
   filters: KPIFilters;
   onFiltersChange: (filters: KPIFilters) => void;
   availableDepartments: string[];
-  availableUsers: User[];
-  currentUser: User | null;
+  availableUsers: KPIUser[];
+  currentUser: KPIUser | null;
 }
 
-export function KPIFiltersComponent({ 
-  filters, 
-  onFiltersChange, 
-  availableDepartments, 
+export function KPIFiltersComponent({
+  filters,
+  onFiltersChange,
+  availableDepartments,
   availableUsers,
-  currentUser 
+  currentUser
 }: KPIFiltersProps) {
   const handleFilterChange = (key: keyof KPIFilters, value: string | undefined) => {
     const updatedValue = value === "all" ? undefined : value;
@@ -58,7 +57,7 @@ export function KPIFiltersComponent({
           )}
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {/* Department Filter - Only show if user can access multiple departments */}

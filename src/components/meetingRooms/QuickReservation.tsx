@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -67,7 +68,7 @@ export function QuickReservation({ rooms, onReserve }: QuickReservationProps) {
     end.setHours(parseInt(endHour), parseInt(endMinute), 0, 0);
 
     if (start >= end) {
-      alert('Bitiş saati başlangıç saatinden sonra olmalıdır');
+      toast.error('Bitiş saati başlangıç saatinden sonra olmalıdır');
       return;
     }
 
