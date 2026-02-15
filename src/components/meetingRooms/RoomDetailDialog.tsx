@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Users, Calendar as CalendarIcon, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { MapPin, Users, Calendar as CalendarIcon, Clock, CheckCircle2, XCircle, Building2, ChevronRight } from "lucide-react";
 import { format, setHours, setMinutes, isSameDay, isWithinInterval, startOfWeek, addDays, isToday } from "date-fns";
 import { tr } from "date-fns/locale";
 import { useMemo, useState } from "react";
@@ -37,6 +37,7 @@ export function RoomDetailDialog({
   isAdmin = false,
   currentUserId
 }: RoomDetailDialogProps) {
+
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'day'>('day');
 
@@ -56,13 +57,13 @@ export function RoomDetailDialog({
   const isHourAvailable = (hour: number) => {
     const hourStart = setMinutes(setHours(selectedDate, hour), 0);
     const hourEnd = setMinutes(setHours(selectedDate, hour + 1), 0);
-    
+
     const hasOverlap = dayReservations.some(r => {
       const start = new Date(r.startTime);
       const end = new Date(r.endTime);
       return (start < hourEnd && end > hourStart);
     });
-    
+
     return !hasOverlap;
   };
 
@@ -70,7 +71,7 @@ export function RoomDetailDialog({
   const getReservationsForHour = (hour: number) => {
     const hourStart = setMinutes(setHours(selectedDate, hour), 0);
     const hourEnd = setMinutes(setHours(selectedDate, hour + 1), 0);
-    
+
     return dayReservations.filter(r => {
       const start = new Date(r.startTime);
       const end = new Date(r.endTime);
@@ -112,325 +113,256 @@ export function RoomDetailDialog({
     setSelectedDate(new Date());
   };
 
+  const upcomingReservations = useMemo(() => {
+    const now = new Date();
+    return reservations
+      .filter(r => new Date(r.startTime) > now && r.status === 'approved')
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+      .slice(0, 5);
+  }, [reservations]);
+
   if (!room) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="text-xl sm:text-2xl truncate">{room.name}</DialogTitle>
+          <DialogTitle className="text-xl sm:text-2xl truncate flex items-center gap-2">
+            <Building2 className="w-6 h-6" />
+            {room.name}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 sm:space-y-6">
-          {/* Room Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 min-w-0">
-              <MapPin className="w-5 h-5 text-muted-foreground shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground">Konum</p>
-                <p className="font-medium text-sm sm:text-base truncate">{room.location}</p>
+        <div className="space-y-6">
+          {/* Room Info Banner */}
+          <div className="bg-muted/30 p-4 rounded-lg border flex flex-wrap gap-4 justify-between items-center">
+            <div className="flex gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-muted-foreground" />
+                <span>{room.location}</span>
               </div>
-            </div>
-            <div className="flex items-center gap-2 min-w-0">
-              <Users className="w-5 h-5 text-muted-foreground shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground">Kapasite</p>
-                <p className="font-medium text-sm sm:text-base">{room.capacity} kişi</p>
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-muted-foreground" />
+                <span>{room.capacity} Kişi</span>
               </div>
+              {room.responsible && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+                  <span>Sorumlu: {room.responsible.firstName} {room.responsible.lastName}</span>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2 min-w-0">
-              <CalendarIcon className="w-5 h-5 text-muted-foreground shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs sm:text-sm text-muted-foreground">Toplam Rezervasyon</p>
-                <p className="font-medium text-sm sm:text-base">{reservations.filter(r => r.status !== 'rejected').length}</p>
-              </div>
-            </div>
-          </div>
-
-          {room.description && (
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">{room.description}</p>
-            </div>
-          )}
-
-          {/* Calendar View Toggle */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button
-                variant={viewMode === 'day' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('day')}
-                className="flex-1 sm:flex-initial"
-              >
-                Günlük
-              </Button>
-              <Button
-                variant={viewMode === 'week' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('week')}
-                className="flex-1 sm:flex-initial"
-              >
-                Haftalık
-              </Button>
-            </div>
-            <Button 
-              variant="default" 
-              onClick={() => onReserve(room.id)}
-              className="w-full sm:w-auto shrink-0"
-            >
+            <Button onClick={() => onReserve(room.id)}>
               <CalendarIcon className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Rezervasyon Oluştur</span>
-              <span className="sm:hidden">Rezervasyon</span>
+              Rezervasyon Yap
             </Button>
           </div>
 
-          {/* Calendar */}
-          <Card>
-            <CardContent className="p-4">
-              {/* Day View */}
-              {viewMode === 'day' && (
-                <div className="space-y-4">
-                  {/* Date Navigation */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handlePrevDay}
-                      className="w-full sm:w-auto order-2 sm:order-1"
-                    >
-                      ← Önceki
-                    </Button>
-                    <div className="flex items-center justify-center gap-2 order-1 sm:order-2">
-                      <Button variant="outline" size="sm" onClick={handleToday} className="shrink-0">
-                        Bugün
-                      </Button>
-                      <h3 className="font-semibold text-sm sm:text-lg text-center truncate">
-                        {format(selectedDate, "d MMMM yyyy EEEE", { locale: tr })}
-                      </h3>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleNextDay}
-                      className="w-full sm:w-auto order-3"
-                    >
-                      Sonraki →
-                    </Button>
-                  </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Panel: Calendar */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-primary" />
+                  Günlük Program
+                </h3>
+                <div className="flex bg-muted p-1 rounded-md">
+                  <Button
+                    variant={viewMode === 'day' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('day')}
+                    className="h-7 text-xs"
+                  >
+                    Gün
+                  </Button>
+                  <Button
+                    variant={viewMode === 'week' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('week')}
+                    className="h-7 text-xs"
+                  >
+                    Hafta
+                  </Button>
+                </div>
+              </div>
 
-                  {/* Hours Grid */}
-                  <div className="space-y-2">
-                    {hours.map((hour) => {
-                      const available = isHourAvailable(hour);
-                      const hourReservations = getReservationsForHour(hour);
-                      
-                      return (
-                        <div
-                          key={hour}
-                          className={cn(
-                            "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                            available && "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800",
-                            !available && "bg-muted/50"
-                          )}
-                        >
-                          <div className="w-20 text-sm font-medium">
-                            {hour.toString().padStart(2, '0')}:00 - {(hour + 1).toString().padStart(2, '0')}:00
-                          </div>
-                          <div className="flex-1">
-                            {available ? (
-                              <Badge className="bg-green-500">Müsait</Badge>
-                            ) : (
-                              <div className="space-y-1">
-                                {hourReservations.map((reservation) => (
-                                  <div
-                                    key={reservation.id}
-                                    className="flex items-center gap-2 text-sm"
-                                  >
-                                    {getStatusBadge(reservation.status)}
-                                    <span>
-                                      {format(new Date(reservation.startTime), "HH:mm", { locale: tr })} -{' '}
-                                      {format(new Date(reservation.endTime), "HH:mm", { locale: tr })}
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                      {reservation.requester?.firstName} {reservation.requester?.lastName}
-                                    </span>
+              <Card className="border-2 shadow-none">
+                <CardContent className="p-0">
+                  {/* Calendar Layout */}
+                  {viewMode === 'day' && (
+                    <div className="divide-y">
+                      {/* Navigation */}
+                      <div className="flex items-center justify-between p-3 bg-muted/20">
+                        <Button variant="ghost" size="icon" onClick={handlePrevDay}>
+                          <ChevronRight className="w-4 h-4 rotate-180" />
+                        </Button>
+                        <span className="font-medium text-sm sm:text-base">
+                          {format(selectedDate, "d MMMM yyyy, EEEE", { locale: tr })}
+                        </span>
+                        <Button variant="ghost" size="icon" onClick={handleNextDay}>
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      {/* Hours List - Timeline Style */}
+                      <div className="max-h-[500px] overflow-y-auto">
+                        {hours.map((hour) => {
+                          const available = isHourAvailable(hour);
+                          const hourReservations = getReservationsForHour(hour);
+                          return (
+                            <div key={hour} className="flex group min-h-[60px]">
+                              {/* Time Column */}
+                              <div className="w-16 p-3 text-xs text-muted-foreground border-r bg-muted/10 shrink-0 text-center font-medium">
+                                {hour.toString().padStart(2, '0')}:00
+                              </div>
+                              {/* Content Column */}
+                              <div className={cn(
+                                "flex-1 p-2 flex flex-col justify-center transition-colors",
+                                available ? "group-hover:bg-green-50/50" : "bg-red-50/50 dark:bg-red-950/20"
+                              )}>
+                                {available ? (
+                                  <span className="text-xs text-muted-foreground/50 ml-2">Müsait</span>
+                                ) : (
+                                  <div className="space-y-1">
+                                    {hourReservations.map(res => (
+                                      <div key={res.id} className="flex items-center gap-2 bg-background/80 border p-1.5 rounded-md shadow-sm">
+                                        <Badge variant="outline" className={cn(
+                                          "text-[10px] h-5 px-1.5",
+                                          res.status === 'approved' ? "bg-green-100 text-green-700 border-green-200" : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                        )}>
+                                          {res.status === 'approved' ? 'Dolu' : 'Bekliyor'}
+                                        </Badge>
+                                        <span className="text-xs font-medium truncate">
+                                          {res.requester?.firstName} {res.requester?.lastName}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground ml-auto">
+                                          {format(new Date(res.startTime), "HH:mm")} - {format(new Date(res.endTime), "HH:mm")}
+                                        </span>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Week View */}
-              {viewMode === 'week' && (
-                <div className="space-y-4">
-                  {/* Week Navigation */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const newDate = new Date(selectedDate);
-                        newDate.setDate(newDate.getDate() - 7);
-                        setSelectedDate(newDate);
-                      }}
-                      className="w-full sm:w-auto order-2 sm:order-1"
-                    >
-                      ← Önceki Hafta
-                    </Button>
-                    <div className="flex items-center justify-center gap-2 order-1 sm:order-2">
-                      <Button variant="outline" size="sm" onClick={handleToday} className="shrink-0">
-                        Bugün
-                      </Button>
-                      <h3 className="font-semibold text-sm sm:text-base text-center truncate">
-                        {format(weekDays[0], "d MMM", { locale: tr })} - {format(weekDays[6], "d MMM yyyy", { locale: tr })}
-                      </h3>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const newDate = new Date(selectedDate);
-                        newDate.setDate(newDate.getDate() + 7);
-                        setSelectedDate(newDate);
-                      }}
-                      className="w-full sm:w-auto order-3"
-                    >
-                      Sonraki Hafta →
-                    </Button>
-                  </div>
+                  )}
 
-                  {/* Week Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-                    {weekDays.map((day) => {
-                      const dayReservations = reservations.filter(r => {
-                        if (r.status === 'rejected') return false;
-                        return isSameDay(new Date(r.startTime), day);
-                      });
+                  {viewMode === 'week' && (
+                    <div className="p-4">
+                      {/* Simplified Week Grid reused from existing logic but cleaner */}
+                      <div className="flex items-center justify-between mb-4">
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedDate(d => addDays(d, -7))}>← Önceki</Button>
+                        <span className="font-medium">
+                          {format(weekDays[0], "d MMM", { locale: tr })} - {format(weekDays[6], "d MMM", { locale: tr })}
+                        </span>
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedDate(d => addDays(d, 7))}>Sonraki →</Button>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                        {weekDays.map(day => {
+                          const dayReservations = reservations
+                            .filter(r => isSameDay(new Date(r.startTime), day) && r.status !== 'rejected')
+                            .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
-                      return (
+                          return (
+                            <div
+                              key={day.toString()}
+                              className={cn(
+                                "p-2 rounded border text-xs min-h-[150px] flex flex-col cursor-pointer hover:border-primary transition-colors",
+                                isToday(day) && "border-primary bg-primary/5"
+                              )}
+                              onClick={() => {
+                                setSelectedDate(day);
+                                setViewMode('day');
+                              }}
+                            >
+                              <div className="font-medium mb-2 text-center pb-2 border-b">
+                                {format(day, "EEE d", { locale: tr })}
+                              </div>
+                              <div className="space-y-1 flex-1 overflow-y-auto custom-scrollbar">
+                                {dayReservations.length === 0 ? (
+                                  <div className="text-center text-muted-foreground/50 text-[10px] mt-4">Boş</div>
+                                ) : (
+                                  dayReservations.map(r => (
+                                    <div
+                                      key={r.id}
+                                      className={cn(
+                                        "p-1 rounded text-[10px] truncate border",
+                                        r.status === 'approved'
+                                          ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
+                                          : "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800"
+                                      )}
+                                      title={`${format(new Date(r.startTime), "HH:mm")} - ${format(new Date(r.endTime), "HH:mm")} (${r.requester?.firstName})`}
+                                    >
+                                      <span className="font-semibold">{format(new Date(r.startTime), "HH:mm")}</span>
+                                      <span className="ml-1 opacity-75">{r.requester?.firstName}</span>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Panel: Upcoming */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <CalendarIcon className="w-5 h-5 text-primary" />
+                Yaklaşan
+              </h3>
+              <Card className="h-full max-h-[600px] flex flex-col">
+                <CardContent className="p-0 flex-1 overflow-y-auto">
+                  {upcomingReservations.length === 0 ? (
+                    <div className="p-6 text-center text-muted-foreground text-sm">
+                      Yaklaşan onaylı rezervasyon yok.
+                    </div>
+                  ) : (
+                    <div className="divide-y">
+                      {upcomingReservations.map(res => (
                         <div
-                          key={day.toISOString()}
-                          className={cn(
-                            "p-2 border rounded-lg min-h-[120px] sm:min-h-[150px] lg:min-h-[200px]",
-                            isToday(day) && "ring-2 ring-primary"
-                          )}
+                          key={res.id}
+                          className="p-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setSelectedDate(new Date(res.startTime));
+                            setViewMode('day');
+                          }}
                         >
-                          <div className="text-xs sm:text-sm font-medium mb-2">
-                            {format(day, "EEE d", { locale: tr })}
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium text-sm text-primary">
+                              {format(new Date(res.startTime), "d MMMM", { locale: tr })}
+                            </span>
+                            <Badge variant="outline" className="text-[10px] whitespace-nowrap">
+                              {format(new Date(res.startTime), "HH:mm")} - {format(new Date(res.endTime), "HH:mm")}
+                            </Badge>
                           </div>
-                          <div className="space-y-1">
-                            {dayReservations.map((reservation) => (
-                              <div
-                                key={reservation.id}
-                                className="text-xs p-1 bg-blue-100 dark:bg-blue-900 rounded"
-                              >
-                                <div className="font-medium">
-                                  {format(new Date(reservation.startTime), "HH:mm", { locale: tr })}
-                                </div>
-                                <div className="text-muted-foreground truncate">
-                                  {reservation.requester?.firstName}
-                                </div>
-                              </div>
-                            ))}
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                            <Users className="w-3 h-3" />
+                            <span>{res.requester?.firstName} {res.requester?.lastName}</span>
                           </div>
+                          {((res.requestedBy === currentUserId || isAdmin) || (canApprove && res.status === 'pending')) && (
+                            <div className="flex gap-2 mt-2">
+                              {canApprove && res.status === 'pending' && onApprove && (
+                                <Button size="sm" className="h-6 text-[10px] w-full" onClick={() => onApprove(res.id)}>Onayla</Button>
+                              )}
+                              {(res.requestedBy === currentUserId || isAdmin) && onDelete && (
+                                <Button size="sm" variant="ghost" className="h-6 text-[10px] w-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => onDelete(res.id)}>İptal Et</Button>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Reservations List */}
-          <div>
-            <h3 className="font-semibold mb-3 text-base sm:text-lg">Rezervasyonlar</h3>
-            <div className="space-y-2">
-              {reservations.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Henüz rezervasyon bulunmuyor.
-                </p>
-              ) : (
-                reservations
-                  .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-                  .map((reservation) => (
-                    <div
-                      key={reservation.id}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 border rounded-lg"
-                    >
-                      <div className="flex-1 min-w-0 w-full sm:w-auto">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          {getStatusBadge(reservation.status)}
-                          <span className="text-sm font-medium whitespace-nowrap">
-                            {format(new Date(reservation.startTime), "d MMM yyyy", { locale: tr })}
-                          </span>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
-                          <span className="whitespace-nowrap">
-                            {format(new Date(reservation.startTime), "HH:mm", { locale: tr })} -{' '}
-                            {format(new Date(reservation.endTime), "HH:mm", { locale: tr })}
-                          </span>
-                          <span className="truncate">
-                            {reservation.requester?.firstName} {reservation.requester?.lastName}
-                          </span>
-                        </div>
-                        {reservation.notes && (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{reservation.notes}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto shrink-0">
-                        {canApprove && reservation.status === 'pending' && onApprove && onReject && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => onApprove(reservation.id)}
-                              className="flex-1 sm:flex-initial text-xs"
-                            >
-                              <CheckCircle2 className="w-3 h-3 mr-1" />
-                              Onayla
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => onReject(reservation.id)}
-                              className="flex-1 sm:flex-initial text-xs"
-                            >
-                              <XCircle className="w-3 h-3 mr-1" />
-                              Reddet
-                            </Button>
-                          </>
-                        )}
-                        {(reservation.requestedBy === currentUserId || isAdmin) && onEdit && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onEdit(reservation)}
-                            className="flex-1 sm:flex-initial text-xs"
-                          >
-                            Düzenle
-                          </Button>
-                        )}
-                        {(reservation.requestedBy === currentUserId || isAdmin) && onDelete && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => onDelete(reservation.id)}
-                            className="flex-1 sm:flex-initial text-xs"
-                          >
-                            Sil
-                          </Button>
-                        )}
-                      </div>
+                      ))}
                     </div>
-                  ))
-              )}
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

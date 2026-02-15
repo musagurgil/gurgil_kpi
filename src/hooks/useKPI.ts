@@ -335,7 +335,8 @@ export const useKPI = () => {
     email: user.email,
     department: user.department,
     role: user.roles.includes('admin') ? 'admin' :
-      user.roles.includes('department_manager') ? 'department_manager' : 'employee',
+      user.roles.includes('department_manager') ? 'department_manager' :
+        user.roles.includes('board_member') ? 'board_member' : 'employee',
     isActive: true,
     createdAt: new Date().toISOString()
   } : null;

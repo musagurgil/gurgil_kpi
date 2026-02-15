@@ -1,6 +1,4 @@
 import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -9,32 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-  LineChart,
-  Line
-} from "recharts";
-import {
-  Users,
-  Clock,
-  TrendingUp,
-  Calendar,
-  Activity,
-  Target,
-  Download,
-  FileText,
-  Ticket
-} from "lucide-react";
+import { Download } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCalendar } from "@/hooks/useCalendar";
 import { useCategories } from "@/hooks/useCategories";
@@ -43,7 +16,10 @@ import { useTickets } from "@/hooks/useTickets";
 import { subDays, isAfter, format, startOfDay, parseISO } from "date-fns";
 import { tr } from "date-fns/locale";
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--kpi-success))', 'hsl(var(--kpi-warning))', 'hsl(var(--kpi-danger))', 'hsl(var(--accent))'];
+import { ReportSummaryCards } from "@/components/reports/ReportSummaryCards";
+import { CategoryDistribution, CategoryDetailedTable } from "@/components/reports/CategoryDistribution";
+import { DailyTrendChart } from "@/components/reports/DailyTrendChart";
+import { DepartmentReport } from "@/components/reports/DepartmentReport";
 
 export default function Reports() {
   const { user } = useAuth();
@@ -67,12 +43,7 @@ export default function Reports() {
     });
 
     const rangeTickets = tickets.filter(t => isAfter(parseISO(t.createdAt), startDate));
-
-    // KPI filtering is tricky as they have start/end dates. 
-    // We'll include KPIs that are active within the range or created within the range.
-    // For simplicity, let's look at assignments or updates if available, but here 
-    // we'll filter by creation date for "New KPIs" and updates for progress.
-    const rangeKPIs = kpiStats; // Use all for status, but filter for activity stream
+    const rangeKPIs = kpiStats;
 
     return { activities: rangeActivities, tickets: rangeTickets, kpis: rangeKPIs, startDate };
   }, [activities, tickets, kpiStats, dateRange]);
@@ -102,27 +73,9 @@ export default function Reports() {
     return { resolved, created, open };
   }, [filteredData.tickets]);
 
-  // 3. User Engagement (Top active users based on calendar hours)
-  const userEngagement = useMemo(() => {
-    // Note: In a real app we'd need user names attached to activities. 
-    // Assuming activities currently are only loaded for the current user or all users if admin?
-    // useCalendar loads ALL activities from API.
-    // However, the activity object structure in useCalendar (based on mock/API) might vary.
-    // Let's assume we can aggregate by 'userId'. 
-
-    // Currently useCalendar.ts -> apiClient.getActivities() doesn't seem to explicitly map user names 
-    // in the frontend transformation, but let's check if the API response includes it.
-    // If not, we might only be able to show aggregate data.
-
-    // Let's stick to Category breakdown for interactions and maybe simple "Total Hours" trend.
-    return [];
-  }, []);
-
   // 4. Daily Activity Trend
   const activityTrend = useMemo(() => {
     const days = new Map();
-    // Initialize days if range is small, but for "all" it might be too big. 
-    // Let's just aggregate present data.
 
     filteredData.activities.forEach(a => {
       const dateStr = a.date; // YYYY-MM-DD
@@ -136,12 +89,17 @@ export default function Reports() {
 
   }, [filteredData.activities]);
 
+  const totalHours = Math.round(filteredData.activities.reduce((acc, a) => acc + a.duration / 60, 0) * 10) / 10;
+  const avgDaily = dateRange !== "all"
+    ? Math.round((totalHours / parseInt(dateRange)) * 10) / 10
+    : 0;
+
   const handleExport = () => {
     const reportData = {
       dateRange: dateRange === "all" ? "Tümü" : `Son ${dateRange} Gün`,
       generatedAt: new Date().toLocaleString('tr-TR'),
       stats: {
-        totalWorkHours: filteredData.activities.reduce((acc, a) => acc + a.duration / 60, 0).toFixed(1),
+        totalWorkHours: totalHours,
         totalTicketsCreated: ticketStats.created,
         totalTicketsResolved: ticketStats.resolved,
         activeKPIs: kpiStats.filter(k => k.status !== 'success').length,
@@ -160,11 +118,6 @@ export default function Reports() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-
-  const totalHours = Math.round(filteredData.activities.reduce((acc, a) => acc + a.duration / 60, 0) * 10) / 10;
-  const avgDaily = dateRange !== "all"
-    ? Math.round((totalHours / parseInt(dateRange)) * 10) / 10
-    : 0; // Don't calc avg for 'all' as accurate days count is hard without start date
 
   if (isLoading) {
     return (
@@ -205,157 +158,39 @@ export default function Reports() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Total Work Hours */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Toplam Çalışma</p>
-                  <p className="text-2xl font-bold text-foreground">{totalHours}s</p>
-                  {dateRange !== 'all' && <p className="text-xs text-muted-foreground mt-1">Ort. {avgDaily}s / gün</p>}
-                </div>
-                <Clock className="h-8 w-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Ticket Stats */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Destek Talepleri</p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-bold text-foreground">{ticketStats.created}</p>
-                    <span className="text-xs text-muted-foreground">Toplam</span>
-                  </div>
-                  <p className="text-xs text-green-500 mt-1">{ticketStats.resolved} Çözüldü</p>
-                </div>
-                <Ticket className="h-8 w-8 text-accent" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* KPI Stats */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Aktif KPI'lar</p>
-                  <p className="text-2xl font-bold text-foreground">{filteredData.kpis.filter(k => k.status !== 'success').length}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {filteredData.kpis.filter(k => k.status === 'success').length} Tamamlandı
-                  </p>
-                </div>
-                <Target className="h-8 w-8 text-kpi-warning" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Efficiency/Engagement (Placeholder calculation) */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Aktivite Sayısı</p>
-                  <p className="text-2xl font-bold text-foreground">{filteredData.activities.length}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Kayıtlı işlem</p>
-                </div>
-                <Activity className="h-8 w-8 text-kpi-success" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <ReportSummaryCards
+          totalHours={totalHours}
+          avgDaily={avgDaily}
+          ticketStats={ticketStats}
+          kpiStats={filteredData.kpis}
+          activityCount={filteredData.activities.length}
+          dateRange={dateRange}
+        />
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Category Distribution */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Çalışma Kategorileri
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={categoryStats}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {categoryStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `${value} saat`} />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Daily Trend */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Günlük Çalışma Trendi ({dateRange == 'all' ? 'Tümü' : `Son ${dateRange} Gün`})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={activityTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" fontSize={12} />
-                  <YAxis />
-                  <Tooltip formatter={(value) => `${value} saat`} />
-                  <Legend />
-                  <Bar dataKey="hours" name="Çalışma Saati" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <CategoryDistribution
+            categoryStats={categoryStats}
+            totalHours={totalHours}
+          />
+          <DailyTrendChart
+            activityTrend={activityTrend}
+            dateRangeLabel={dateRange == 'all' ? 'Tümü' : `Son ${dateRange} Gün`}
+          />
         </div>
 
         {/* Detailed Category Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Kategori Bazlı Detaylar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {categoryStats.map((cat, idx) => (
-                <div key={idx} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
-                    <span className="font-medium">{cat.name}</span>
-                  </div>
-                  <div className="flex items-center gap-8">
-                    <div className="text-right">
-                      <p className="font-bold">{cat.value} saat</p>
-                      <p className="text-xs text-muted-foreground">Toplam Süre</p>
-                    </div>
-                    <div className="text-right w-16">
-                      <Badge variant="outline">
-                        {totalHours > 0 ? ((cat.value / totalHours) * 100).toFixed(1) : 0}%
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {categoryStats.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">Seçilen tarih aralığında veri bulunamadı.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <CategoryDetailedTable
+          categoryStats={categoryStats}
+          totalHours={totalHours}
+        />
+
+        {/* Department Report */}
+        <DepartmentReport
+          kpiStats={kpiStats}
+          isAdmin={user?.roles.includes('admin') || false}
+          userDepartment={user?.department || ''}
+        />
 
       </div>
     </div>

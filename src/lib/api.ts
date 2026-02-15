@@ -86,6 +86,11 @@ class ApiClient {
   }
 
   // User management
+  async getUsers(department?: string) {
+    const query = department ? `?department=${encodeURIComponent(department)}` : '';
+    return this.request<User[]>(`/users${query}`);
+  }
+
   async getProfiles() {
     return this.request<User[]>('/admin/profiles');
   }
@@ -302,6 +307,13 @@ class ApiClient {
   async createMeetingRoom(data: CreateMeetingRoomData) {
     return this.request<MeetingRoom>('/meeting-rooms', {
       method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateMeetingRoom(id: string, data: Partial<CreateMeetingRoomData> & { responsibleId?: string }) {
+    return this.request<MeetingRoom>(`/meeting-rooms/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(data),
     });
   }

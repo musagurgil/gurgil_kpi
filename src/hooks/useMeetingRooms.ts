@@ -89,6 +89,21 @@ export const useMeetingRooms = () => {
     }
   };
 
+  // Update room (admin only)
+  const updateRoom = async (id: string, data: Partial<CreateMeetingRoomData> & { responsibleId?: string }) => {
+    try {
+      const updatedRoom = await apiClient.updateMeetingRoom(id, data);
+      setRooms(prev => prev.map(room => room.id === id ? updatedRoom : room));
+      toast.success(`✅ Toplantı odası "${updatedRoom.name}" başarıyla güncellendi!`);
+      return updatedRoom;
+    } catch (err) {
+      console.error('Error updating meeting room:', err);
+      const message = err instanceof Error ? err.message : 'Toplantı odası güncellenirken hata oluştu';
+      toast.error('❌ ' + message);
+      throw err;
+    }
+  };
+
   // Delete room (admin only)
   const deleteRoom = async (id: string) => {
     try {
@@ -214,6 +229,7 @@ export const useMeetingRooms = () => {
     loading,
     error,
     createRoom,
+    updateRoom,
     deleteRoom,
     createReservation,
     approveReservation,

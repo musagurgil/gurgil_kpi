@@ -72,22 +72,32 @@ export function TicketDetails({
   const assignedUser = ticket.assignedTo ? users.find(u => u.id === ticket.assignedTo) : null;
 
   const canUserModifyTicket = () => {
-    return currentUser.role === 'admin' || 
-           ticket.assignedTo === currentUser.id ||
-           ticket.createdBy === currentUser.id ||
-           (currentUser.role === 'department_manager' && 
-            (currentUser.department === ticket.sourceDepartment || 
-             currentUser.department === ticket.targetDepartment));
+    if (currentUser.roles.includes('board_member')) return false;
+
+    return currentUser.roles.includes('admin') ||
+      ticket.assignedTo === currentUser.id ||
+      ticket.createdBy === currentUser.id ||
+      (currentUser.roles.includes('department_manager') &&
+        (currentUser.department === ticket.sourceDepartment ||
+          currentUser.department === ticket.targetDepartment));
   };
 
+  const isAssignee = ticket.assignedTo === currentUser.id;
+  const isCreator = ticket.createdBy === currentUser.id;
+
+  // Can assign ticket: Admin OR Manager of the target department
   const canAssignTicket = () => {
-    return currentUser.role === 'admin' ||
-           (currentUser.role === 'department_manager' && 
-            currentUser.department === ticket.targetDepartment);
+    // Board members cannot assign
+    if (currentUser.roles.includes('board_member')) return false;
+
+    if (currentUser.roles.includes('admin')) return true;
+    if (currentUser.roles.includes('department_manager') && currentUser.department === ticket.targetDepartment) return true;
+    return false;
   };
 
+  // Can delete ticket: Only Admin
   const canDeleteTicket = () => {
-    return currentUser.role === 'admin' || ticket.createdBy === currentUser.id;
+    return currentUser.roles.includes('admin');
   };
 
   const handleExportTicket = () => {
@@ -145,18 +155,18 @@ export function TicketDetails({
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
-    
+
     setIsSubmittingComment(true);
     try {
       await onAddComment(ticket.id, newComment.trim());
       setNewComment('');
-      
+
       // Wait a brief moment for backend to update
       setTimeout(() => {
-      // Refresh ticket data after adding comment
-      if (onRefreshTicket) {
-        onRefreshTicket();
-      }
+        // Refresh ticket data after adding comment
+        if (onRefreshTicket) {
+          onRefreshTicket();
+        }
       }, 100);
     } finally {
       setIsSubmittingComment(false);
@@ -176,7 +186,7 @@ export function TicketDetails({
   };
 
   const getAvailableUsers = () => {
-    return users.filter(user => 
+    return users.filter(user =>
       user.department === ticket.targetDepartment && user.isActive
     );
   };
@@ -190,7 +200,7 @@ export function TicketDetails({
               <DialogTitle className="text-lg sm:text-xl line-clamp-2">{ticket.title}</DialogTitle>
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
                 <span className="font-mono truncate text-primary font-semibold">
-                  #{ticket.ticketNumber || ticket.id.substring(0, 8)}
+                  #{ticket.id.substring(0, 8)}
                 </span>
                 <span className="hidden sm:inline">•</span>
                 <span className="truncate">Oluşturulma: {formatDate(ticket.createdAt)}</span>
@@ -216,7 +226,7 @@ export function TicketDetails({
                     <AlertDialogHeader>
                       <AlertDialogTitle>Ticket'ı Silmek İstediğinize Emin misiniz?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        <span className="font-semibold text-foreground">{ticket.title}</span> ticket'ını silmek üzeresiniz. 
+                        <span className="font-semibold text-foreground">{ticket.title}</span> ticket'ını silmek üzeresiniz.
                         Bu işlem geri alınamaz ve tüm yorumlar da silinecektir.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -263,7 +273,7 @@ export function TicketDetails({
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Yorumlar ({ticket.comments?.length || 0})
               </h3>
-              
+
               <ScrollArea className="h-48 sm:h-64 space-y-3">
                 {(!ticket.comments || ticket.comments.length === 0) ? (
                   <p className="text-sm text-muted-foreground text-center py-8">
@@ -328,13 +338,13 @@ export function TicketDetails({
             {/* Ticket Info */}
             <div className="space-y-4">
               <h3 className="font-semibold">Ticket Bilgileri</h3>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Kaynak Departman:</span>
                   <span className="font-medium">{ticket.sourceDepartment}</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Hedef Departman:</span>
                   <span className="font-medium">{ticket.targetDepartment}</span>
@@ -367,7 +377,7 @@ export function TicketDetails({
             {canUserModifyTicket() && (
               <div className="space-y-4">
                 <h3 className="font-semibold">İşlemler</h3>
-                
+
                 <div className="space-y-3">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Durum</label>
@@ -386,8 +396,8 @@ export function TicketDetails({
                   {canAssignTicket() && (
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Atanan Kişi</label>
-                      <Select 
-                        value={ticket.assignedTo || 'unassigned'} 
+                      <Select
+                        value={ticket.assignedTo || 'unassigned'}
                         onValueChange={handleAssignChange}
                       >
                         <SelectTrigger>

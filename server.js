@@ -216,6 +216,50 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
+
+// General user routes
+app.get('/api/users', authenticateToken, async (req, res) => {
+  try {
+    const { department } = req.query;
+
+    const whereClause = {
+      isActive: true
+    };
+
+    if (department) {
+      whereClause.department = department;
+    }
+
+    const users = await prisma.profile.findMany({
+      where: whereClause,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        department: true,
+        userRoles: true,
+        isActive: true,
+        createdAt: true
+      },
+      orderBy: { firstName: 'asc' }
+    });
+
+    // Transform to flat structure if needed, or keep as is.
+    // Frontend expects 'role' property, so let's map it ensuring we pick the primary role or list them.
+    // The mock data used 'role' string.
+    const mappedUsers = users.map(u => ({
+      ...u,
+      role: u.userRoles.length > 0 ? u.userRoles[0].role : 'employee'
+    }));
+
+    res.json(mappedUsers);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // User management routes
 app.get('/api/admin/profiles', authenticateToken, async (req, res) => {
   try {
@@ -357,9 +401,144 @@ app.put('/api/admin/profiles/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Deactivate profile endpoint (Soft Delete)
+app.post('/api/admin/profiles/:id/deactivate', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists
+    const user = await prisma.profile.findUnique({
+      where: { id },
+      include: {
+        ticketsAssigned: { where: { status: { not: 'closed' } } },
+        kpiAssignments: { where: { kpi: { status: 'active' } } }
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Deactivate user
+    await prisma.profile.update({
+      where: { id },
+      data: { isActive: false }
+    });
+
+    res.json({
+      success: true,
+      activeAssets: {
+        tickets: user.ticketsAssigned.length,
+        kpis: user.kpiAssignments.length
+      }
+    });
+  } catch (error) {
+    console.error('Deactivate profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Transfer assets endpoint
+app.post('/api/admin/profiles/transfer', authenticateToken, async (req, res) => {
+  try {
+    const { fromUserId, toUserId, transferTickets, transferKpis } = req.body;
+
+    console.log(`[TRANSFER] From: ${fromUserId} To: ${toUserId}`);
+
+    if (!fromUserId || !toUserId) {
+      return res.status(400).json({ error: 'Source and target users are required' });
+    }
+
+    const targetUser = await prisma.profile.findUnique({ where: { id: toUserId } });
+    if (!targetUser) {
+      return res.status(404).json({ error: 'Target user not found' });
+    }
+
+    const results = {
+      tickets: 0,
+      kpis: 0
+    };
+
+    // Transfer Tickets
+    if (transferTickets) {
+      const tickets = await prisma.ticket.updateMany({
+        where: { assignedTo: fromUserId, status: { not: 'closed' } },
+        data: { assignedTo: toUserId }
+      });
+      results.tickets = tickets.count;
+
+      // Add system note to transferred tickets (optional, but good for history)
+      // We can't easily do this in bulk with prisma, so we skip for now or do it in loop if needed.
+    }
+
+    // Transfer KPIs
+    if (transferKpis) {
+      // 1. Find all active assignments for old user
+      const assignments = await prisma.kpiAssignment.findMany({
+        where: { userId: fromUserId, kpi: { status: 'active' } }
+      });
+
+      for (const assignment of assignments) {
+        // 2. Check if target user already assigned
+        const existingAssignment = await prisma.kpiAssignment.findUnique({
+          where: { kpiId_userId: { kpiId: assignment.kpiId, userId: toUserId } }
+        });
+
+        if (!existingAssignment) {
+          // Reassign
+          await prisma.kpiAssignment.update({
+            where: { id: assignment.id },
+            data: { userId: toUserId }
+          });
+          results.kpis++;
+        } else {
+          // Target user already has this KPI, just remove old assignment
+          await prisma.kpiAssignment.delete({ where: { id: assignment.id } });
+        }
+      }
+    }
+
+    res.json({ success: true, transferred: results });
+
+  } catch (error) {
+    console.error('Transfer assets error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Safer Delete Profile Endpoint
 app.delete('/api/admin/profiles/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Check for linked data manually since we removed Cascade
+    const user = await prisma.profile.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            ticketsCreated: true,
+            kpiProgress: true,
+            ticketComments: true,
+            kpiComments: true
+          }
+        }
+      }
+    });
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const hasLinkedData = user._count.ticketsCreated > 0 ||
+      user._count.kpiProgress > 0 ||
+      user._count.ticketComments > 0 ||
+      user._count.kpiComments > 0;
+
+    if (hasLinkedData) {
+      return res.status(400).json({
+        error: 'Cannot delete user with history. Please deactivate instead.',
+        requiresDeactivation: true
+      });
+    }
 
     await prisma.profile.delete({
       where: { id }
@@ -382,9 +561,10 @@ app.get('/api/kpis', authenticateToken, async (req, res) => {
 
     const isAdmin = user.roles && user.roles.includes('admin');
     const isDepartmentManager = user.roles && user.roles.includes('department_manager');
+    const isBoardMember = user.roles && user.roles.includes('board_member');
 
-    if (isAdmin) {
-      // Admin can see all KPIs
+    if (isAdmin || isBoardMember) {
+      // Admin and Board Members can see all KPIs
       whereClause = {};
     } else if (isDepartmentManager) {
       // Department manager can see KPIs from their department
@@ -833,13 +1013,23 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
   try {
     // Filter tickets based on user's department
     // Users can only see tickets where their department is either source or target
-    const tickets = await prisma.ticket.findMany({
-      where: {
+    // Admin and Board Members see all tickets
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    const isBoardMember = req.user.roles && req.user.roles.includes('board_member');
+
+    let whereClause = {};
+
+    if (!isAdmin && !isBoardMember) {
+      whereClause = {
         OR: [
           { sourceDepartment: req.user.department },
           { targetDepartment: req.user.department }
         ]
-      },
+      };
+    }
+
+    const tickets = await prisma.ticket.findMany({
+      where: whereClause,
       include: {
         comments: true,
         assignee: true // Include assigned user details
@@ -1701,6 +1891,14 @@ app.get('/api/meeting-rooms', authenticateToken, async (req, res) => {
           orderBy: {
             startTime: 'asc'
           }
+        },
+        responsible: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true
+          }
         }
       },
       orderBy: { name: 'asc' }
@@ -1723,7 +1921,7 @@ app.post('/api/meeting-rooms', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Only admins can create meeting rooms' });
     }
 
-    const { name, capacity, location, description } = req.body;
+    const { name, capacity, location, description, responsibleId } = req.body;
 
     if (!name || !capacity || !location) {
       return res.status(400).json({ error: 'Name, capacity, and location are required' });
@@ -1743,13 +1941,54 @@ app.post('/api/meeting-rooms', authenticateToken, async (req, res) => {
         name: name.trim(),
         capacity: parseInt(capacity),
         location: location.trim(),
-        description: description?.trim() || null
+        description: description?.trim() || null,
+        responsibleId: responsibleId || null
       }
     });
 
     res.json(room);
   } catch (error) {
     console.error('Create meeting room error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update meeting room (admin only)
+app.put('/api/meeting-rooms/:id', authenticateToken, async (req, res) => {
+  try {
+    const user = req.user;
+    const isAdmin = user.roles && user.roles.includes('admin');
+
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can update meeting rooms' });
+    }
+
+    const { id } = req.params;
+    const { name, capacity, location, description, responsibleId } = req.body;
+
+    // Check if room exists
+    const existingRoom = await prisma.meetingRoom.findUnique({
+      where: { id }
+    });
+
+    if (!existingRoom) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    const updatedRoom = await prisma.meetingRoom.update({
+      where: { id },
+      data: {
+        name: name?.trim(),
+        capacity: capacity ? parseInt(capacity) : undefined,
+        location: location?.trim(),
+        description: description?.trim() || null,
+        responsibleId: responsibleId || null
+      }
+    });
+
+    res.json(updatedRoom);
+  } catch (error) {
+    console.error('Update meeting room error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1794,10 +2033,11 @@ app.get('/api/meeting-reservations', authenticateToken, async (req, res) => {
     const user = req.user;
     const isAdmin = user.roles && user.roles.includes('admin');
     const isDepartmentManager = user.roles && user.roles.includes('department_manager');
+    const isSecretary = user.roles && user.roles.includes('secretary');
 
     let reservations;
 
-    if (isAdmin) {
+    if (isAdmin || isSecretary) {
       // Admin can see all reservations
       reservations = await prisma.meetingReservation.findMany({
         include: {
@@ -1857,9 +2097,21 @@ app.get('/api/meeting-reservations', authenticateToken, async (req, res) => {
         orderBy: { createdAt: 'desc' }
       });
     } else {
-      // Employees can only see their own reservations
+      // Check if user is responsible for any room
+      const responsibleRooms = await prisma.meetingRoom.findMany({
+        where: { responsibleId: user.id },
+        select: { id: true }
+      });
+
+      const responsibleRoomIds = responsibleRooms.map(r => r.id);
+
       reservations = await prisma.meetingReservation.findMany({
-        where: { requestedBy: user.id },
+        where: {
+          OR: [
+            { requestedBy: user.id },
+            { roomId: { in: responsibleRoomIds } }
+          ]
+        },
         include: {
           room: true,
           requester: {
@@ -1991,32 +2243,44 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
       }
     });
 
-    // Notify department manager
-    const requesterProfile = await prisma.profile.findUnique({
-      where: { id: user.id },
-      include: { userRoles: true }
+    // Notify room responsible person
+    const roomWithResponsible = await prisma.meetingRoom.findUnique({
+      where: { id: roomId },
+      include: { responsible: true }
     });
 
-    if (requesterProfile) {
-      // Find department manager
-      const departmentManagers = await prisma.profile.findMany({
-        where: {
-          department: requesterProfile.department,
-          userRoles: {
-            some: {
-              role: 'department_manager'
-            }
-          }
-        }
+    if (roomWithResponsible && roomWithResponsible.responsibleId) {
+      const requesterProfile = await prisma.profile.findUnique({
+        where: { id: user.id }
       });
 
-      for (const manager of departmentManagers) {
+      await createNotification(
+        roomWithResponsible.responsibleId,
+        'system',
+        'medium',
+        '📅 Yeni Toplantı Odası Talebi',
+        `${requesterProfile ? requesterProfile.firstName + ' ' + requesterProfile.lastName : 'Biri'} "${roomWithResponsible.name}" odası için ${new Date(start).toLocaleString('tr-TR')} - ${new Date(end).toLocaleString('tr-TR')} tarihlerinde rezervasyon talep etti.`,
+        '/meeting-rooms'
+      );
+    } else {
+      // Fallback: Notify Admins if no responsible person assigned?
+      // Or keep Secretary/Manager logic as backup?
+      // For now, let's notify Admins as fallback to ensure someone sees it
+      const admins = await prisma.userRole.findMany({
+        where: { role: 'admin' }
+      });
+
+      const requesterProfile = await prisma.profile.findUnique({
+        where: { id: user.id }
+      });
+
+      for (const admin of admins) {
         await createNotification(
-          manager.id,
+          admin.userId,
           'system',
           'medium',
-          '📅 Yeni Toplantı Odası Talebi',
-          `${requesterProfile.firstName} ${requesterProfile.lastName} "${reservation.room.name}" odası için ${new Date(start).toLocaleString('tr-TR')} - ${new Date(end).toLocaleString('tr-TR')} tarihlerinde rezervasyon talep etti.`,
+          '📅 Yeni Toplantı Odası Talebi (Sorumlu Atanmamış)',
+          `${requesterProfile ? requesterProfile.firstName + ' ' + requesterProfile.lastName : 'Biri'} "${reservation.room.name}" odası için talep oluşturdu.`,
           '/meeting-rooms'
         );
       }
@@ -2052,11 +2316,7 @@ app.put('/api/meeting-reservations/:id/approve', authenticateToken, async (req, 
   try {
     const user = req.user;
     const isAdmin = user.roles && user.roles.includes('admin');
-    const isDepartmentManager = user.roles && user.roles.includes('department_manager');
-
-    if (!isAdmin && !isDepartmentManager) {
-      return res.status(403).json({ error: 'Only managers can approve reservations' });
-    }
+    const isSecretary = user.roles && user.roles.includes('secretary');
 
     const { id } = req.params;
 
@@ -2072,8 +2332,15 @@ app.put('/api/meeting-reservations/:id/approve', authenticateToken, async (req, 
       return res.status(404).json({ error: 'Reservation not found' });
     }
 
-    // Check if user can approve (admin or same department manager)
-    if (!isAdmin) {
+    // Check if user is the responsible person for this room
+    const isRoomResponsible = reservation.room.responsibleId === user.id;
+
+    if (!isAdmin && !isDepartmentManager && !isSecretary && !isRoomResponsible) {
+      return res.status(403).json({ error: 'Only managers, secretaries, or room responsibles can approve reservations' });
+    }
+
+    // Check if user can approve (admin, secretary, responsible, or same department manager)
+    if (!isAdmin && !isSecretary && !isRoomResponsible) {
       const userProfile = await prisma.profile.findUnique({
         where: { id: user.id }
       });
@@ -2219,9 +2486,10 @@ app.put('/api/meeting-reservations/:id/reject', authenticateToken, async (req, r
     const user = req.user;
     const isAdmin = user.roles && user.roles.includes('admin');
     const isDepartmentManager = user.roles && user.roles.includes('department_manager');
+    const isSecretary = user.roles && user.roles.includes('secretary');
 
-    if (!isAdmin && !isDepartmentManager) {
-      return res.status(403).json({ error: 'Only managers can reject reservations' });
+    if (!isAdmin && !isDepartmentManager && !isSecretary) {
+      return res.status(403).json({ error: 'Only managers or secretaries can reject reservations' });
     }
 
     const { id } = req.params;
@@ -2238,8 +2506,8 @@ app.put('/api/meeting-reservations/:id/reject', authenticateToken, async (req, r
       return res.status(404).json({ error: 'Reservation not found' });
     }
 
-    // Check if user can reject (admin or same department manager)
-    if (!isAdmin) {
+    // Check if user can reject (admin, secretary, or same department manager)
+    if (!isAdmin && !isSecretary) {
       const userProfile = await prisma.profile.findUnique({
         where: { id: user.id }
       });

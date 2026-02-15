@@ -11,16 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import UserDeactivationDialog from "../admin/UserDeactivationDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,7 +74,9 @@ export const UserManagement = () => {
   const [selectedRole, setSelectedRole] = useState('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+
+  // New State for Deactivation
+  const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
 
   const loading = adminLoading || kpiLoading || ticketsLoading;
 
@@ -100,15 +93,16 @@ export const UserManagement = () => {
       ).length;
 
       // Calculate KPI stats
-      const userKPIs = kpiStats.filter(k => k.assignedToId === profile.id);
+      // KPIStats has assignedUsers which is a string[] of user IDs
+      const userKPIs = kpiStats.filter(k => k.assignedUsers?.includes(profile.id));
       const totalKPIs = userKPIs.length;
       const completedKPIs = userKPIs.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
       const kpiPercentage = totalKPIs > 0 ? (completedKPIs / totalKPIs) * 100 : 0;
 
       return {
         ...profile,
-        role: profile.userRoles?.[0]?.role || 'employee',
-        isActive: true,
+        role: (profile.userRoles?.[0]?.role || 'employee') as 'admin' | 'department_manager' | 'employee',
+        isActive: profile.isActive ?? true,
         activeTickets: activeTicketsCount,
         kpiStats: {
           total: totalKPIs,
@@ -135,23 +129,25 @@ export const UserManagement = () => {
       processed = processed.filter(user => user.role === selectedRole);
     }
 
-    setFilteredUsers(processed);
+    setFilteredUsers(processed as User[]);
   }, [profiles, tickets, kpiStats, searchTerm, selectedDepartment, selectedRole]);
 
+  // Handlers
   const handleDeleteUser = (userId: string) => {
-    setUserToDelete(userId);
+    const user = filteredUsers.find(u => u.id === userId);
+    if (user) {
+      setUserToDeactivate(user);
+    }
   };
 
-  const confirmDeleteUser = async () => {
-    if (!userToDelete) return;
-
-    try {
-      await deleteProfile(userToDelete);
-    } catch (error) {
-      // Error handling is done in useAdmin
-    } finally {
-      setUserToDelete(null);
-    }
+  const handleDeactivationSuccess = () => {
+    refetch();
+    setUserToDeactivate(null);
+    toast({
+      title: "Başarılı",
+      description: "Kullanıcı pasife alındı ve varlıkları devredildi.",
+      variant: "default"
+    });
   };
 
   const handleUserCreated = () => {
@@ -310,15 +306,19 @@ export const UserManagement = () => {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => setEditingUser(user)}>
                                 <Edit2 className="w-4 h-4 mr-2" />
-                                Düzenle
+                                <span className={user.isActive ? '' : 'text-muted-foreground'}>
+                                  Düzenle
+                                </span>
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteUser(user.id)}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Sil
-                              </DropdownMenuItem>
+                              {user.isActive && (
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  className="text-orange-600 focus:text-orange-700 focus:bg-orange-50"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Pasife Al / Sil
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -357,22 +357,14 @@ export const UserManagement = () => {
         />
       )}
 
-      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Emin misiniz?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>İptal</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Sil
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {userToDeactivate && (
+        <UserDeactivationDialog
+          isOpen={!!userToDeactivate}
+          onClose={() => setUserToDeactivate(null)}
+          user={userToDeactivate}
+          onSuccess={handleDeactivationSuccess}
+        />
+      )}
     </div>
   );
 };

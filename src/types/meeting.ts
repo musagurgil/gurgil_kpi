@@ -4,6 +4,13 @@ export interface MeetingRoom {
     capacity: number;
     location: string;
     description?: string;
+    responsibleId?: string;
+    responsible?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+    };
     createdAt: string;
     updatedAt: string;
     reservations?: MeetingReservation[];

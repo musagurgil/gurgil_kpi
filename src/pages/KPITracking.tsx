@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Target, TrendingUp, AlertTriangle, Users, Plus, BarChart3, Download } from "lucide-react";
+import { Target, TrendingUp, AlertTriangle, Users, Plus, BarChart3, Download, LayoutGrid, List as ListIcon } from "lucide-react";
 import { useKPI } from '@/hooks/useKPI';
 import { KPIFiltersComponent } from '@/components/kpi/KPIFilters';
 import { CreateKPIDialog } from '@/components/kpi/CreateKPIDialog';
 import { KPIStatsCard } from '@/components/kpi/KPIStatsCard';
+import { KPITable } from '@/components/kpi/KPITable';
 import { KPIDetailDialog } from '@/components/kpi/KPIDetailDialog';
 import { toast } from '@/hooks/use-toast';
 import { KPIStats, CreateKPIData, KPIUser } from '@/types/kpi';
@@ -34,6 +35,7 @@ export default function KPITracking() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [availableDepartments, setAvailableDepartments] = useState<string[]>([]);
   const [availableUsers, setAvailableUsers] = useState<KPIUser[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     if (error) {
@@ -117,6 +119,7 @@ export default function KPITracking() {
 
   const canRecordProgress = (kpiStat: KPIStats) => {
     if (!currentUser) return false;
+    if (currentUser.role === 'board_member') return false;
     if (currentUser.role === 'admin') return true;
     if (currentUser.role === 'department_manager' && currentUser.department === kpiStat.department) return true;
     // Employee can record progress if assigned to the KPI OR if it's their department's KPI
@@ -127,12 +130,14 @@ export default function KPITracking() {
 
   const canEditKPI = (kpiStat: KPIStats) => {
     if (!currentUser) return false;
+    if (currentUser.role === 'board_member') return false;
     return currentUser.role === 'admin' ||
       (currentUser.role === 'department_manager' && currentUser.department === kpiStat.department);
   };
 
   const canDeleteKPI = (kpiStat: KPIStats) => {
     if (!currentUser) return false;
+    if (currentUser.role === 'board_member') return false;
     if (currentUser.role === 'admin') return true;
     if (currentUser.role === 'department_manager' && currentUser.department === kpiStat.department) return true;
     return false;
@@ -212,12 +217,14 @@ export default function KPITracking() {
               <span className="hidden sm:inline">({filteredKPIs.length})</span>
             </Button>
             <div className="w-full sm:w-auto">
-              <CreateKPIDialog
-                onCreateKPI={handleCreateKPI}
-                availableDepartments={availableDepartments}
-                availableUsers={availableUsers}
-                currentUser={currentUser}
-              />
+              {!currentUser?.role.includes('board_member') && (
+                <CreateKPIDialog
+                  onCreateKPI={handleCreateKPI}
+                  availableDepartments={availableDepartments}
+                  availableUsers={availableUsers}
+                  currentUser={currentUser}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -272,13 +279,42 @@ export default function KPITracking() {
           </Card>
         </div>
 
-        <KPIFiltersComponent
-          filters={filters}
-          onFiltersChange={setFilters}
-          availableDepartments={availableDepartments}
-          availableUsers={availableUsers}
-          currentUser={currentUser}
-        />
+        <div className="flex justify-between items-center mb-4">
+          {/* Filters are here by default via KPIFiltersComponent structure but let's add View Toggle near filters or just above grid */}
+        </div>
+
+        <div className="flex flex-col space-y-4">
+          <div className="flex justify-end items-center gap-2">
+            <div className="flex p-1 bg-muted rounded-md border text-muted-foreground">
+              <Button
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => setViewMode('list')}
+                title="Liste Görünümü"
+              >
+                <ListIcon className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => setViewMode('grid')}
+                title="Kart Görünümü"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
+          <KPIFiltersComponent
+            filters={filters}
+            onFiltersChange={setFilters}
+            availableDepartments={availableDepartments}
+            availableUsers={availableUsers}
+            currentUser={currentUser}
+          />
+        </div>
 
         {filteredKPIs.length === 0 ? (
           <Card className="shadow-card">
@@ -303,18 +339,31 @@ export default function KPITracking() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {filteredKPIs.map((kpiStat) => (
-              <KPIStatsCard
-                key={kpiStat.kpiId}
-                kpiStats={kpiStat}
-                onClick={() => handleKPIClick(kpiStat)}
-                canRecordProgress={canRecordProgress(kpiStat)}
-                canDelete={canDeleteKPI(kpiStat)}
-                onDelete={() => handleDeleteKPI(kpiStat.kpiId)}
+          <>
+            {viewMode === 'grid' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                {filteredKPIs.map((kpiStat) => (
+                  <KPIStatsCard
+                    key={kpiStat.kpiId}
+                    kpiStats={kpiStat}
+                    onClick={() => handleKPIClick(kpiStat)}
+                    canRecordProgress={canRecordProgress(kpiStat)}
+                    canDelete={canDeleteKPI(kpiStat)}
+                    onDelete={() => handleDeleteKPI(kpiStat.kpiId)}
+                  />
+                ))}
+              </div>
+            )}
+            {viewMode === 'list' && (
+              <KPITable
+                kpis={filteredKPIs}
+                onKPISelect={handleKPIClick}
+                canRecordProgress={canRecordProgress}
+                canDelete={canDeleteKPI}
+                onDelete={handleDeleteKPI}
               />
-            ))}
-          </div>
+            )}
+          </>
         )}
 
         {selectedKPI && (

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Filter, X } from "lucide-react";
 import { KPIFilters, KPI_PERIODS, KPI_PRIORITIES, KPI_STATUSES, KPIUser } from '@/types/kpi';
+import { cn } from "@/lib/utils";
 
 interface KPIFiltersProps {
   filters: KPIFilters;
@@ -22,6 +23,8 @@ export function KPIFiltersComponent({
   availableUsers,
   currentUser
 }: KPIFiltersProps) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
   const handleFilterChange = (key: keyof KPIFilters, value: string | undefined) => {
     const updatedValue = value === "all" ? undefined : value;
     onFiltersChange({
@@ -37,29 +40,44 @@ export function KPIFiltersComponent({
   const activeFiltersCount = Object.values(filters).filter(Boolean).length;
 
   return (
-    <Card className="shadow-card">
-      <CardHeader className="pb-4">
+    <Card className="shadow-card border-none bg-transparent sm:bg-card sm:border">
+      <CardHeader className="pb-0 p-0 sm:p-6 sm:pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="sm:hidden w-full flex justify-between"
+          >
+            <span className="flex items-center gap-2">
+              <Filter className="w-4 h-4" />
+              Filtreler
+            </span>
+            {activeFiltersCount > 0 && <span className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">{activeFiltersCount}</span>}
+          </Button>
+
+          <CardTitle className="text-lg font-semibold hidden sm:flex items-center gap-2">
             <Filter className="w-5 h-5 text-primary" />
             Filtreler
           </CardTitle>
-          {activeFiltersCount > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearFilters}
-              className="text-xs"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Temizle ({activeFiltersCount})
-            </Button>
-          )}
+
+          <div className="hidden sm:block">
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Temizle ({activeFiltersCount})
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <CardContent className={cn("space-y-4 pt-4 sm:block", isExpanded ? "block" : "hidden")}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 bg-card p-4 rounded-lg border sm:border-0 sm:bg-transparent sm:p-0">
           {/* Department Filter - Only show if user can access multiple departments */}
           {(currentUser?.role === 'admin' || availableDepartments.length > 1) && (
             <div className="space-y-2">
@@ -205,6 +223,20 @@ export function KPIFiltersComponent({
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
               className="text-sm"
             />
+          </div>
+
+          <div className="sm:hidden pt-2">
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="w-full text-xs"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Filtreleri Temizle ({activeFiltersCount})
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

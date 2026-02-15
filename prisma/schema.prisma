@@ -34,7 +34,7 @@ model Profile {
   lastLogin  DateTime?
   createdAt  DateTime  @default(now())
   
-  departmentRef Department @relation(fields: [department], references: [name])
+  departmentRef Department @relation(fields: [department], references: [name], onDelete: Cascade)
   userRoles     UserRole[]
   kpiTargets    KpiTarget[]
   kpiAssignments KpiAssignment[]
@@ -48,6 +48,7 @@ model Profile {
   notifications Notification[]
   meetingReservationsRequested MeetingReservation[] @relation("MeetingReservationRequester")
   meetingReservationsApproved MeetingReservation[] @relation("MeetingReservationApprover")
+  responsibleForRooms MeetingRoom[] @relation("RoomResponsible")
   
   @@map("profiles")
 }
@@ -81,7 +82,7 @@ model KpiTarget {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @default(now())
   
-  departmentRef Department @relation(fields: [department], references: [name])
+  departmentRef Department @relation(fields: [department], references: [name], onDelete: Cascade)
   creator       Profile    @relation(fields: [createdBy], references: [id])
   assignments   KpiAssignment[]
   progress      KpiProgress[]
@@ -150,10 +151,10 @@ model Ticket {
   resolvedAt      DateTime?
   closedAt        DateTime?
   
-  sourceDepartmentRef Department @relation("TicketSource", fields: [sourceDepartment], references: [name])
-  targetDepartmentRef Department @relation("TicketTarget", fields: [targetDepartment], references: [name])
+  sourceDepartmentRef Department @relation("TicketSource", fields: [sourceDepartment], references: [name], onDelete: Cascade)
+  targetDepartmentRef Department @relation("TicketTarget", fields: [targetDepartment], references: [name], onDelete: Cascade)
   creator              Profile   @relation("TicketCreated", fields: [createdBy], references: [id])
-  assignee             Profile?  @relation("TicketAssigned", fields: [assignedTo], references: [id])
+  assignee             Profile?  @relation("TicketAssigned", fields: [assignedTo], references: [id], onDelete: SetNull)
   comments             TicketComment[]
   
   @@map("tickets")
@@ -198,7 +199,7 @@ model CalendarActivity {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now())
   
-  user     Profile           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     Profile           @relation(fields: [userId], references: [id])
   category CalendarCategory? @relation(fields: [categoryId], references: [id])
   
   @@map("calendar_activities")
@@ -216,7 +217,7 @@ model Notification {
   metadata String? // JSON string
   createdAt DateTime            @default(now())
   
-  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user Profile @relation(fields: [userId], references: [id])
   
   @@map("notifications")
 }
@@ -227,10 +228,12 @@ model MeetingRoom {
   capacity    Int
   location    String
   description String?
+  responsibleId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now())
   
   reservations MeetingReservation[]
+  responsible Profile? @relation("RoomResponsible", fields: [responsibleId], references: [id])
   
   @@map("meeting_rooms")
 }

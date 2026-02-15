@@ -298,6 +298,20 @@ export const useAuth = () => {
     }
   }, [authState.user]);
 
+  const canEdit = useCallback((): boolean => {
+    if (!authState.user) return false;
+    // Board members generally have read-only access
+    if (hasRole('board_member')) return false;
+    return true;
+  }, [authState.user, hasRole]);
+
+  const canDelete = useCallback((): boolean => {
+    if (!authState.user) return false;
+    // Board members cannot delete
+    if (hasRole('board_member')) return false;
+    return hasRole('admin');
+  }, [authState.user, hasRole]);
+
   return {
     user: authState.user,
     isAuthenticated: authState.isAuthenticated,
@@ -309,5 +323,7 @@ export const useAuth = () => {
     hasPermission,
     canAccessDepartment,
     refreshAuth,
+    canEdit,
+    canDelete
   };
 };
