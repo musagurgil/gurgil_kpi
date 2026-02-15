@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Target, TrendingUp, AlertTriangle, Users, Plus, BarChart3, Download, LayoutGrid, List as ListIcon } from "lucide-react";
+import { Target, TrendingUp, AlertTriangle, Users, BarChart3, Download, LayoutGrid, List as ListIcon } from "lucide-react";
 import { useKPI } from '@/hooks/useKPI';
 import { KPIFiltersComponent } from '@/components/kpi/KPIFilters';
 import { CreateKPIDialog } from '@/components/kpi/CreateKPIDialog';
@@ -84,40 +83,34 @@ export default function KPITracking() {
     loadData();
   }, [getAvailableDepartments, getAccessibleUsers]);
 
-  const handleCreateKPI = async (data: CreateKPIData) => {
+  const handleCreateKPI = useCallback(async (data: CreateKPIData) => {
     await createKPI(data);
-  };
+  }, [createKPI]);
 
-  const handleRecordProgress = async (kpiId: string, value: number, note?: string) => {
+  const handleRecordProgress = useCallback(async (kpiId: string, value: number, note?: string) => {
     await recordProgress(kpiId, value, note);
-  };
+  }, [recordProgress]);
 
-  const handleAddComment = async (kpiId: string, content: string) => {
+  const handleAddComment = useCallback(async (kpiId: string, content: string) => {
     await addComment(kpiId, content);
-  };
+  }, [addComment]);
 
-  const handleKPIClick = (kpiStat: KPIStats) => {
+  const handleKPIClick = useCallback((kpiStat: KPIStats) => {
     setSelectedKPI(kpiStat);
     setIsDetailModalOpen(true);
-  };
+  }, []);
 
-  const handleUpdateKPI = async (kpiId: string, updates: Partial<CreateKPIData>) => {
+  const handleUpdateKPI = useCallback(async (kpiId: string, updates: Partial<CreateKPIData>) => {
     await updateKPI(kpiId, updates);
-    if (selectedKPI && selectedKPI.kpiId === kpiId) {
-      const updatedKPI = kpiStats.find(k => k.kpiId === kpiId);
-      if (updatedKPI) {
-        setSelectedKPI(updatedKPI);
-      }
-    }
-  };
+  }, [updateKPI]);
 
-  const handleDeleteKPI = async (kpiId: string) => {
+  const handleDeleteKPI = useCallback(async (kpiId: string) => {
     await deleteKPI(kpiId);
     setIsDetailModalOpen(false);
     setSelectedKPI(null);
-  };
+  }, [deleteKPI]);
 
-  const canRecordProgress = (kpiStat: KPIStats) => {
+  const canRecordProgress = useCallback((kpiStat: KPIStats) => {
     if (!currentUser) return false;
     if (currentUser.role === 'board_member') return false;
     if (currentUser.role === 'admin') return true;
@@ -126,34 +119,25 @@ export default function KPITracking() {
     const isAssigned = kpiStat.assignedUsers?.includes(currentUser.id);
     const isSameDepartment = kpiStat.department === currentUser.department;
     return isAssigned || isSameDepartment;
-  };
+  }, [currentUser]);
 
-  const canEditKPI = (kpiStat: KPIStats) => {
+  const canEditKPI = useCallback((kpiStat: KPIStats) => {
     if (!currentUser) return false;
     if (currentUser.role === 'board_member') return false;
     return currentUser.role === 'admin' ||
       (currentUser.role === 'department_manager' && currentUser.department === kpiStat.department);
-  };
+  }, [currentUser]);
 
-  const canDeleteKPI = (kpiStat: KPIStats) => {
+  const canDeleteKPI = useCallback((kpiStat: KPIStats) => {
     if (!currentUser) return false;
     if (currentUser.role === 'board_member') return false;
     if (currentUser.role === 'admin') return true;
     if (currentUser.role === 'department_manager' && currentUser.department === kpiStat.department) return true;
     return false;
-  };
-
-  const handleExportKPIs = () => {
-    try {
-      exportKPIsToCSV(filteredKPIs, 'kpi-raporu');
-      sonnerToast.success(`✅ ${filteredKPIs.length} KPI Excel dosyasına aktarıldı!`);
-    } catch (error) {
-      sonnerToast.error('❌ Export işlemi başarısız: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
-    }
-  };
+  }, [currentUser]);
 
   // Filter KPIs based on filters
-  const filteredKPIs = kpiStats.filter(kpi => {
+  const filteredKPIs = useMemo(() => kpiStats.filter(kpi => {
     if (filters.department && kpi.department !== filters.department) return false;
     if (filters.status && kpi.lifecycleStatus !== filters.status) return false;
     if (filters.priority && kpi.priority !== filters.priority) return false;
@@ -162,7 +146,32 @@ export default function KPITracking() {
     if (filters.startDate && new Date(kpi.startDate) < new Date(filters.startDate)) return false;
     if (filters.endDate && new Date(kpi.endDate) > new Date(filters.endDate)) return false;
     return true;
-  });
+  }), [kpiStats, filters]);
+
+  const handleExportKPIs = useCallback(() => {
+    try {
+      exportKPIsToCSV(filteredKPIs, 'kpi-raporu');
+      sonnerToast.success(`✅ ${filteredKPIs.length} KPI Excel dosyasına aktarıldı!`);
+    } catch (error) {
+      sonnerToast.error('❌ Export işlemi başarısız: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
+    }
+  }, [filteredKPIs]);
+
+  // Memoized stats calculation
+  const { totalKPIs, completedKPIs, atRiskKPIs, onTrackKPIs } = useMemo(() => {
+    let completed = 0;
+    let atRisk = 0;
+    let onTrack = 0;
+    const total = kpiStats.length;
+
+    kpiStats.forEach(kpi => {
+      if (kpi.progressPercentage >= 100) completed++;
+      if (kpi.status === 'danger' || (kpi.status === 'warning' && kpi.progressPercentage < 50)) atRisk++;
+      if (kpi.status === 'success' || (kpi.status === 'warning' && kpi.progressPercentage >= 50 && kpi.remainingDays > 7)) onTrack++;
+    });
+
+    return { totalKPIs: total, completedKPIs: completed, atRiskKPIs: atRisk, onTrackKPIs: onTrack };
+  }, [kpiStats]);
 
   if (loading) {
     return (
@@ -178,17 +187,6 @@ export default function KPITracking() {
       </div>
     );
   }
-
-  const totalKPIs = kpiStats.length;
-  const completedKPIs = kpiStats.filter(kpi => kpi.progressPercentage >= 100).length;
-  // At risk: danger status or warning status with low progress
-  const atRiskKPIs = kpiStats.filter(kpi =>
-    kpi.status === 'danger' || (kpi.status === 'warning' && kpi.progressPercentage < 50)
-  ).length;
-  // On track: success status (completed) or normal status with good progress and time remaining
-  const onTrackKPIs = kpiStats.filter(kpi =>
-    kpi.status === 'success' || (kpi.status === 'warning' && kpi.progressPercentage >= 50 && kpi.remainingDays > 7)
-  ).length;
 
   return (
     <div className="min-h-screen bg-dashboard-bg p-4 sm:p-6">
