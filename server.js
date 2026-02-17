@@ -1661,20 +1661,36 @@ app.delete('/api/notifications', authenticateToken, async (req, res) => {
 // Dashboard stats
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
-    const totalKPIs = await prisma.kpiTarget.count();
-    const completedKPIs = await prisma.kpiTarget.count({
-      where: { status: 'completed' }
-    });
-    const activeKPIs = await prisma.kpiTarget.count({
-      where: { status: 'active' }
-    });
+    // Parallelize queries to reduce database round-trips
+    const [kpiStats, ticketStats, ticketDeptGroup] = await Promise.all([
+      // 1. Group KPIs by status
+      prisma.kpiTarget.groupBy({
+        by: ['status'],
+        _count: { id: true }
+      }),
+      // 2. Group Tickets by status
+      prisma.ticket.groupBy({
+        by: ['status'],
+        _count: { id: true }
+      }),
+      // 3. Group Tickets by Department
+      prisma.ticket.groupBy({
+        by: ['targetDepartment'],
+        _count: { id: true }
+      })
+    ]);
 
-    // Ticket Stats
-    const totalTickets = await prisma.ticket.count();
-    const openTickets = await prisma.ticket.count({ where: { status: 'open' } });
-    const inProgressTickets = await prisma.ticket.count({ where: { status: 'in_progress' } });
-    const resolvedTickets = await prisma.ticket.count({ where: { status: 'resolved' } });
-    const closedTickets = await prisma.ticket.count({ where: { status: 'closed' } });
+    // Parse KPI stats
+    const totalKPIs = kpiStats.reduce((acc, curr) => acc + curr._count.id, 0);
+    const completedKPIs = kpiStats.find(s => s.status === 'completed')?._count.id || 0;
+    const activeKPIs = kpiStats.find(s => s.status === 'active')?._count.id || 0;
+
+    // Parse Ticket stats
+    const totalTickets = ticketStats.reduce((acc, curr) => acc + curr._count.id, 0);
+    const openTickets = ticketStats.find(s => s.status === 'open')?._count.id || 0;
+    const inProgressTickets = ticketStats.find(s => s.status === 'in_progress')?._count.id || 0;
+    const resolvedTickets = ticketStats.find(s => s.status === 'resolved')?._count.id || 0;
+    const closedTickets = ticketStats.find(s => s.status === 'closed')?._count.id || 0;
 
     // Tickets by Status for Pie Chart
     const ticketsByStatus = [
@@ -1683,14 +1699,6 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
       { name: 'Çözüldü', value: resolvedTickets, color: '#10b981' }, // emerald-500
       { name: 'Kapandı', value: closedTickets, color: '#6b7280' } // gray-500
     ];
-
-    // Tickets by Department (Target)
-    const ticketDeptGroup = await prisma.ticket.groupBy({
-      by: ['targetDepartment'],
-      _count: {
-        id: true
-      }
-    });
 
     const ticketsByDepartment = ticketDeptGroup.map(item => ({
       name: item.targetDepartment,
