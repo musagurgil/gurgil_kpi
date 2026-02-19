@@ -5,10 +5,20 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { useCalendar } from '@/hooks/useCalendar';
 import { useCategories } from '@/hooks/useCategories';
 import { useKPI } from '@/hooks/useKPI';
-import { Building2, Users, Clock, BarChart3 } from 'lucide-react';
+import { Building2, Users, Clock, BarChart3, Target } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
+
+const COLORS = [
+  '#6366f1', '#8b5cf6', '#a855f7', '#ec4899',
+  '#f43f5e', '#f97316', '#eab308', '#22c55e',
+  '#14b8a6', '#06b6d4', '#3b82f6', '#6b7280'
+];
 
 export const DepartmentAnalytics = () => {
-  const { profiles, loading: adminLoading, error } = useAdmin();
+  const { filteredProfiles, loading: adminLoading, error } = useAdmin();
   const { activities, loading: calendarLoading } = useCalendar();
   const { categories } = useCategories();
   const { kpiStats, loading: kpiLoading } = useKPI();
@@ -16,24 +26,18 @@ export const DepartmentAnalytics = () => {
   const loading = adminLoading || calendarLoading || kpiLoading;
 
   const departmentStats = useMemo(() => {
-    if (!profiles || profiles.length === 0) return [];
+    if (!filteredProfiles || filteredProfiles.length === 0) return [];
 
     const statsMap = new Map();
 
-    profiles.forEach(profile => {
+    filteredProfiles.forEach(profile => {
       const dept = profile.department || 'Diğer';
 
       if (!statsMap.has(dept)) {
         statsMap.set(dept, {
-          id: dept,
-          name: dept,
-          department: dept,
-          employeeCount: 0,
-          totalEmployees: 0,
-          totalHours: 0,
-          categoryDistribution: {},
-          kpiCount: 0,
-          completedKPIs: 0
+          id: dept, name: dept, department: dept,
+          employeeCount: 0, totalEmployees: 0, totalHours: 0,
+          categoryDistribution: {}, kpiCount: 0, completedKPIs: 0
         });
       }
 
@@ -41,34 +45,55 @@ export const DepartmentAnalytics = () => {
       deptStats.employeeCount += 1;
       deptStats.totalEmployees += 1;
 
-      // Add user hours
       const userActivities = activities.filter(a => a.userId === profile.id);
       const userHours = userActivities.reduce((acc, a) => acc + (a.duration || 0) / 60, 0);
       deptStats.totalHours += userHours;
 
-      // Add category hours
       userActivities.forEach(a => {
         const catId = a.categoryId;
         deptStats.categoryDistribution[catId] = (deptStats.categoryDistribution[catId] || 0) + (a.duration || 0) / 60;
       });
 
-      // Add KPI stats
-      const userKPIs = kpiStats.filter(k => k.assignedToId === profile.id);
+      const userKPIs = kpiStats.filter(k => k.assignedUsers?.includes(profile.id));
       deptStats.kpiCount += userKPIs.length;
-      deptStats.completedKPIs += userKPIs.filter(k => k.status === 'success').length;
+      deptStats.completedKPIs += userKPIs.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
     });
 
     return Array.from(statsMap.values()).map((d: any) => ({
       ...d,
       averageHours: d.totalEmployees > 0 ? d.totalHours / d.totalEmployees : 0,
-      performance: d.kpiCount > 0 ? (d.completedKPIs / d.kpiCount) * 100 : 0 // Simple KPI based perf for dept
+      performance: d.kpiCount > 0 ? (d.completedKPIs / d.kpiCount) * 100 : 0
     })).sort((a, b) => b.totalHours - a.totalHours);
+  }, [filteredProfiles, activities, kpiStats]);
 
-  }, [profiles, activities, kpiStats]);
+  // Chart data
+  const barChartData = useMemo(() =>
+    departmentStats.map(d => ({
+      name: d.department,
+      saat: parseFloat(d.totalHours.toFixed(1)),
+      çalışan: d.totalEmployees
+    }))
+    , [departmentStats]);
+
+  const categoryPieData = useMemo(() => {
+    const catMap: Record<string, number> = {};
+    departmentStats.forEach(d => {
+      Object.entries(d.categoryDistribution).forEach(([catId, hours]) => {
+        catMap[catId] = (catMap[catId] || 0) + (hours as number);
+      });
+    });
+    return Object.entries(catMap)
+      .map(([catId, hours]) => {
+        const cat = categories.find(c => c.id === catId);
+        return { name: cat?.name || 'Bilinmeyen', value: parseFloat((hours as number).toFixed(1)), color: cat?.color || '#999' };
+      })
+      .filter(d => d.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [departmentStats, categories]);
 
   if (loading) {
     return (
-      <Card>
+      <Card className="border-border/50 shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-center justify-center min-h-[200px]">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -80,182 +105,224 @@ export const DepartmentAnalytics = () => {
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-destructive">
-            <p>Hata: {error}</p>
-          </div>
+      <Card className="border-border/50 shadow-sm">
+        <CardContent className="p-6 text-center text-destructive">
+          <p>Hata: {error}</p>
         </CardContent>
       </Card>
     );
   }
 
-  const maxHours = departmentStats && departmentStats.length > 0
-    ? Math.max(...departmentStats.map(dept => dept.totalHours || 0), 1)
-    : 1;
-  const totalEmployees = (departmentStats || []).reduce((sum, dept) => sum + (dept.totalEmployees || 0), 0);
-  const totalHours = (departmentStats || []).reduce((sum, dept) => sum + (dept.totalHours || 0), 0);
+  const totalEmployees = departmentStats.reduce((sum, d) => sum + d.totalEmployees, 0);
+  const totalHours = departmentStats.reduce((sum, d) => sum + d.totalHours, 0);
+  const avgKPIPerf = departmentStats.length > 0
+    ? departmentStats.reduce((sum, d) => sum + d.performance, 0) / departmentStats.length
+    : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Building2 className="w-6 h-6 text-primary" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <Card className="border-border/50 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600">
+                <Building2 className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Toplam Departman</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {departmentStats.length}
-                </p>
+                <p className="text-xs text-muted-foreground font-medium">Departman</p>
+                <p className="text-xl font-bold text-foreground">{departmentStats.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-success/10 rounded-lg">
-                <Users className="w-6 h-6 text-success" />
+        <Card className="border-border/50 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+                <Users className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Toplam Çalışan</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {totalEmployees}
-                </p>
+                <p className="text-xs text-muted-foreground font-medium">Çalışan</p>
+                <p className="text-xl font-bold text-foreground">{totalEmployees}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-warning/10 rounded-lg">
-                <Clock className="w-6 h-6 text-warning" />
+        <Card className="border-border/50 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-violet-50 text-violet-600">
+                <Clock className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Toplam Saat</p>
-                <p className="text-2xl font-bold text-foreground">
-                  {(totalHours || 0).toFixed(1)}h
-                </p>
+                <p className="text-xs text-muted-foreground font-medium">Toplam Saat</p>
+                <p className="text-xl font-bold text-foreground">{totalHours.toFixed(1)}h</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/50 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
+                <Target className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">KPI Başarı</p>
+                <p className="text-xl font-bold text-foreground">{avgKPIPerf.toFixed(1)}%</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Department Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5" />
-            Departman Analizi
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Bar Chart */}
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="pb-2 pt-4 px-5">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-indigo-500" />
+              Departman Bazlı Aktivite (Saat)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-2 pb-4">
+            {barChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={barChartData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
+                  <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                  <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value: number) => [`${value}h`, 'Toplam Saat']}
+                  />
+                  <Bar dataKey="saat" radius={[0, 6, 6, 0]} maxBarSize={28}>
+                    {barChartData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
+                Veri bulunamadı
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Pie Chart */}
+        <Card className="border-border/50 shadow-sm">
+          <CardHeader className="pb-2 pt-4 px-5">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-purple-500" />
+              Kategori Dağılımı (Saat)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-2 pb-4">
+            {categoryPieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={categoryPieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={3}
+                    dataKey="value"
+                    nameKey="name"
+                  >
+                    {categoryPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value: number) => [`${value}h`, 'Saat']}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground text-sm">
+                Veri bulunamadı
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Department Details Table */}
+      <Card className="border-border/50 shadow-sm overflow-hidden">
+        <CardHeader className="pb-3 pt-4 px-5">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-indigo-500" />
+            Departman Detayları
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="p-0">
           {departmentStats.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-12 text-muted-foreground text-sm">
               Seçilen kriterlere göre departman verisi bulunamadı
             </div>
           ) : (
-            (departmentStats || []).map(department => {
-              const performancePercentage = Math.min((department.totalHours / 100) * 100, 100); // Demo scaling
-              const totalCategoryHours = Object.values<number>(department.categoryDistribution || {})
-                .reduce((sum, hours) => sum + (hours || 0), 0);
+            <div className="overflow-x-auto">
+              {/* Header */}
+              <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1.5fr] gap-2 px-5 py-2.5 bg-muted/40 border-y border-border/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <div>Departman</div>
+                <div className="text-center">Çalışan</div>
+                <div className="text-center">Toplam Saat</div>
+                <div className="text-center">KPI Başarı</div>
+                <div className="text-center">Aktivite Yoğunluğu</div>
+              </div>
 
-              return (
-                <div key={department.department} className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-medium text-foreground">
-                      {department.department}
-                    </h4>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{department.totalEmployees} çalışan</span>
-                      <span>{(department.totalHours || 0).toFixed(1)}h toplam</span>
-                      <span>{(department.averageHours || 0).toFixed(1)}h ortalama</span>
+              {/* Rows */}
+              {departmentStats.map((dept, index) => {
+                const intensity = Math.min((dept.totalHours / 50) * 100, 100);
+
+                return (
+                  <div
+                    key={dept.department}
+                    className="grid grid-cols-[2fr_1fr_1fr_1fr_1.5fr] gap-2 px-5 py-3.5 items-center border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                      />
+                      <span className="font-medium text-sm text-foreground truncate">{dept.department}</span>
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Aktivite Yoğunluğu</span>
-                      <span className="text-sm font-medium text-foreground">
-                        {(performancePercentage || 0).toFixed(1)}%
+                    <div className="text-center text-sm font-semibold text-foreground">{dept.totalEmployees}</div>
+                    <div className="text-center text-sm font-semibold text-foreground">{dept.totalHours.toFixed(1)}h</div>
+                    <div className="text-center">
+                      <span className={`text-sm font-semibold ${dept.performance >= 80 ? 'text-emerald-600' :
+                        dept.performance >= 50 ? 'text-amber-600' :
+                          dept.performance > 0 ? 'text-orange-600' : 'text-muted-foreground'
+                        }`}>
+                        {dept.performance.toFixed(1)}%
                       </span>
                     </div>
-                    <Progress value={performancePercentage} className="h-3" />
-                  </div>
-
-                  {/* Category Distribution */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <h5 className="text-sm font-medium text-foreground">Kategori Dağılımı</h5>
-                      {categories.map(category => {
-                        const hours = department.categoryDistribution[category.id] || 0;
-                        const percentage = totalCategoryHours > 0 ? (hours / totalCategoryHours) * 100 : 0;
-
-                        if (hours === 0) return null;
-
-                        return (
-                          <div key={category.id} className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: category.color }}
-                                />
-                                <span className="text-sm text-foreground">
-                                  {category.name}
-                                </span>
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {(hours || 0).toFixed(1)}h ({(percentage || 0).toFixed(1)}%)
-                              </div>
-                            </div>
-                            <Progress
-                              value={percentage}
-                              className="h-2"
-                              style={{
-                                '--progress-foreground': category.color
-                              } as React.CSSProperties}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className="space-y-2">
-                      <h5 className="text-sm font-medium text-foreground">Performans Metrikleri</h5>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Çalışan Başına Ortalama:</span>
-                          <span className="font-medium text-foreground">
-                            {(department.averageHours || 0).toFixed(1)}h
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Toplam Aktivite Saati:</span>
-                          <span className="font-medium text-foreground">
-                            {(department.totalHours || 0).toFixed(1)}h
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">KPI Başarısı:</span>
-                          <span className="font-medium text-foreground">
-                            {(department.performance || 0).toFixed(1)}%
-                          </span>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2 px-2">
+                      <Progress value={intensity} className="h-2 flex-1" />
+                      <span className="text-xs text-muted-foreground w-12 text-right">{intensity.toFixed(0)}%</span>
                     </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </CardContent>
       </Card>

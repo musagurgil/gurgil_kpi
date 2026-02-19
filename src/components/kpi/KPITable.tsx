@@ -47,9 +47,9 @@ export function KPITable({
 
     const getStatusColor = (status: KPIStats['status']) => {
         switch (status) {
-            case 'success': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800';
-            case 'warning': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800';
-            case 'danger': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
+            case 'success': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            case 'warning': return 'bg-amber-100 text-amber-700 border-amber-200';
+            case 'danger': return 'bg-rose-100 text-rose-700 border-rose-200';
             default: return 'bg-muted text-muted-foreground border-border';
         }
     };
@@ -78,100 +78,128 @@ export function KPITable({
     };
 
     return (
-        <div className="rounded-md border bg-card">
+        <div className="rounded-xl border border-border/50 bg-card overflow-hidden shadow-sm">
             <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-[250px]">KPI Adı</TableHead>
-                        <TableHead>Departman</TableHead>
-                        <TableHead className="w-[100px]">Durum</TableHead>
-                        <TableHead className="w-[150px]">İlerleme</TableHead>
-                        <TableHead className="hidden md:table-cell">Hedef / Mevcut</TableHead>
-                        <TableHead className="hidden lg:table-cell">Dönem</TableHead>
-                        <TableHead className="hidden lg:table-cell">Bitiş Tarihi</TableHead>
+                <TableHeader className="bg-muted/50">
+                    <TableRow className="hover:bg-muted/50 border-white/5">
+                        <TableHead className="w-[300px] font-semibold text-foreground">KPI Adı</TableHead>
+                        <TableHead className="font-semibold text-foreground">Departman</TableHead>
+                        <TableHead className="w-[120px] font-semibold text-foreground">Durum</TableHead>
+                        <TableHead className="w-[180px] font-semibold text-foreground">İlerleme</TableHead>
+                        <TableHead className="font-semibold text-foreground hidden md:table-cell">Hedef / Mevcut</TableHead>
+                        <TableHead className="font-semibold text-foreground hidden lg:table-cell">Dönem</TableHead>
+                        <TableHead className="font-semibold text-foreground hidden lg:table-cell">Bitiş Tarihi</TableHead>
                         <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {kpis.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                                KPI bulunamadı.
+                            <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                                <div className="flex flex-col items-center justify-center gap-2">
+                                    <Target className="w-8 h-8 opacity-20" />
+                                    <p>Görüntülenecek KPI bulunamadı.</p>
+                                </div>
                             </TableCell>
                         </TableRow>
                     ) : (
-                        kpis.map((kpi) => (
-                            <TableRow key={kpi.kpiId} className="cursor-pointer hover:bg-muted/50" onClick={() => onKPISelect(kpi)}>
+                        kpis.map((kpi, index) => (
+                            <TableRow
+                                key={kpi.kpiId}
+                                className={cn(
+                                    "cursor-pointer transition-colors hover:bg-muted/50",
+                                    index % 2 === 0 ? "bg-background/50" : "bg-muted/20"
+                                )}
+                                onClick={() => onKPISelect(kpi)}
+                            >
                                 <TableCell>
-                                    <div className="font-medium truncate max-w-[200px]" title={kpi.title}>
-                                        {kpi.title}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                    <div className="flex flex-col gap-1">
+                                        <div className={cn("font-medium truncate max-w-[280px] border-l-2 pl-2",
+                                            kpi.priority === 'high' ? "border-l-red-500" :
+                                                kpi.priority === 'medium' ? "border-l-yellow-500" : "border-l-blue-500"
+                                        )} title={kpi.title}>
+                                            {kpi.title}
+                                        </div>
                                         {kpi.priority && (
-                                            <Badge variant="outline" className="text-[10px] h-4 px-1">
-                                                {KPI_PRIORITIES[kpi.priority]}
-                                            </Badge>
+                                            <div className="pl-2.5">
+                                                <Badge variant="outline" className="text-[10px] h-4 px-1 text-muted-foreground border-border/50">
+                                                    {KPI_PRIORITIES[kpi.priority]}
+                                                </Badge>
+                                            </div>
                                         )}
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant="secondary" className="font-normal">
+                                    <Badge variant="secondary" className="font-normal bg-secondary/50 text-secondary-foreground hover:bg-secondary/60">
                                         {kpi.department}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant="outline" className={cn("text-xs font-medium flex items-center gap-1 w-fit", getStatusColor(kpi.status))}>
+                                    <Badge variant="outline" className={cn("text-[10px] font-medium flex items-center gap-1.5 w-fit px-2 py-0.5 min-w-[90px] justify-center", getStatusColor(kpi.status))}>
                                         {getStatusIcon(kpi.status)}
                                         <span className="hidden sm:inline">{getStatusText(kpi)}</span>
                                     </Badge>
                                 </TableCell>
                                 <TableCell>
-                                    <div className="space-y-1 min-w-[100px]">
-                                        <div className="flex justify-between text-xs">
-                                            <span className="font-bold">%{kpi.progressPercentage.toFixed(0)}</span>
+                                    <div className="space-y-1.5 w-[160px]">
+                                        <div className="flex justify-between text-xs items-center">
+                                            <span className={cn("font-bold", kpi.progressPercentage >= 100 ? "text-emerald-600" : "text-foreground")}>
+                                                %{kpi.progressPercentage.toFixed(0)}
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground">
+                                                {kpi.remainingDays < 0 ? 'Gecikti' : `${kpi.remainingDays} gün`}
+                                            </span>
                                         </div>
-                                        <Progress
-                                            value={Math.min(kpi.progressPercentage, 100)}
-                                            className={cn("h-2",
-                                                kpi.status === 'success' ? "[&>div]:bg-green-600" :
-                                                    kpi.status === 'warning' ? "[&>div]:bg-yellow-500" :
-                                                        kpi.status === 'danger' ? "[&>div]:bg-red-500" : "[&>div]:bg-primary"
-                                            )}
-                                        />
+                                        <div className="h-2 w-full bg-secondary/30 rounded-full overflow-hidden">
+                                            <div
+                                                className={cn(
+                                                    "h-full rounded-full transition-all duration-500",
+                                                    kpi.status === 'success' ? "bg-gradient-to-r from-emerald-500 to-green-400" :
+                                                        kpi.status === 'warning' ? "bg-gradient-to-r from-amber-500 to-yellow-400" :
+                                                            kpi.status === 'danger' ? "bg-gradient-to-r from-rose-500 to-red-400" :
+                                                                "bg-primary"
+                                                )}
+                                                style={{ width: `${Math.min(kpi.progressPercentage, 100)}%` }}
+                                            />
+                                        </div>
                                     </div>
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell">
                                     <div className="text-sm">
-                                        <span className="font-medium">{kpi.currentValue.toLocaleString('tr-TR')}</span>
+                                        <span className="font-medium text-foreground">{kpi.currentValue.toLocaleString('tr-TR')}</span>
                                         <span className="text-muted-foreground mx-1">/</span>
-                                        <span className="text-muted-foreground">{kpi.targetValue.toLocaleString('tr-TR')} {kpi.unit}</span>
+                                        <span className="text-muted-foreground text-xs">{kpi.targetValue.toLocaleString('tr-TR')} {kpi.unit}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                                     {KPI_PERIODS[kpi.period]}
                                 </TableCell>
                                 <TableCell className="hidden lg:table-cell">
-                                    <div className={cn("text-sm", kpi.remainingDays < 0 ? "text-red-500 font-medium" : "text-muted-foreground")}>
-                                        {formatDate(kpi.endDate)}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {kpi.remainingDays < 0 ? `${Math.abs(kpi.remainingDays)} gün gecikti` : `${kpi.remainingDays} gün kaldı`}
+                                    <div className="flex flex-col text-xs">
+                                        <span className="text-foreground font-medium">
+                                            {formatDate(kpi.endDate)}
+                                        </span>
+                                        <span className={cn("text-[10px]", kpi.remainingDays < 0 ? "text-rose-500 font-medium" : "text-muted-foreground")}>
+                                            {kpi.remainingDays < 0 ? `${Math.abs(kpi.remainingDays)} gün gecikti` : `${kpi.remainingDays} gün kaldı`}
+                                        </span>
                                     </div>
                                 </TableCell>
                                 <TableCell>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                <MoreHorizontal className="w-4 h-4" />
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-secondary/80">
+                                                <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                             <DropdownMenuLabel>İşlemler</DropdownMenuLabel>
-                                            <DropdownMenuItem onClick={() => onKPISelect(kpi)}>
+                                            <DropdownMenuItem onClick={() => onKPISelect(kpi)} className="cursor-pointer">
+                                                <ArrowRight className="w-4 h-4 mr-2 text-muted-foreground" />
                                                 Detayları Görüntüle
                                             </DropdownMenuItem>
                                             {canDelete(kpi) && (
-                                                <DropdownMenuItem onClick={() => onDelete(kpi.kpiId)} className="text-destructive focus:text-destructive">
+                                                <DropdownMenuItem onClick={() => onDelete(kpi.kpiId)} className="text-destructive focus:text-destructive cursor-pointer">
+                                                    <X className="w-4 h-4 mr-2" />
                                                     Sil
                                                 </DropdownMenuItem>
                                             )}

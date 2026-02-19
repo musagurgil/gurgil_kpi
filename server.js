@@ -5,6 +5,12 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
@@ -2771,6 +2777,593 @@ app.delete('/api/meeting-reservations/:id', authenticateToken, async (req, res) 
   } catch (error) {
     console.error('Delete meeting reservation error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ==========================================
+// BACKUP & RECOVERY ENDPOINTS
+// ==========================================
+
+const BACKUPS_DIR = path.join(__dirname, 'backups');
+
+// Table display name mapping (Turkish)
+const TABLE_DISPLAY_NAMES = {
+  departments: 'Departmanlar',
+  profiles: 'Kullanıcılar',
+  user_roles: 'Kullanıcı Rolleri',
+  kpi_targets: 'KPI Hedefleri',
+  kpi_assignments: 'KPI Atamaları',
+  kpi_progress: 'KPI İlerleme',
+  kpi_comments: 'KPI Yorumları',
+  tickets: 'Talepler',
+  ticket_comments: 'Talep Yorumları',
+  calendar_categories: 'Takvim Kategorileri',
+  calendar_activities: 'Takvim Aktiviteleri',
+  notifications: 'Bildirimler',
+  meeting_rooms: 'Toplantı Odaları',
+  meeting_reservations: 'Toplantı Rezervasyonları'
+};
+
+// Helper: Calculate approximate JSON size of records
+function calculateJsonSize(data) {
+  return Buffer.byteLength(JSON.stringify(data), 'utf8');
+}
+
+// Helper: Ensure backups directory exists
+function ensureBackupsDir() {
+  if (!fs.existsSync(BACKUPS_DIR)) {
+    fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+  }
+}
+
+// POST /api/admin/backup — Create a new backup
+app.post('/api/admin/backup', authenticateToken, async (req, res) => {
+  try {
+    // Admin check
+    if (!req.user.roles.includes('admin')) {
+      return res.status(403).json({ error: 'Yalnızca yöneticiler yedek alabilir' });
+    }
+
+    ensureBackupsDir();
+
+    const now = new Date();
+    const backupId = `backup_${now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19)}`;
+    const backupDir = path.join(BACKUPS_DIR, backupId);
+    fs.mkdirSync(backupDir, { recursive: true });
+
+    console.log(`[BACKUP] Starting backup: ${backupId} by ${req.user.email}`);
+
+    // Export all tables
+    const [
+      departments,
+      profiles,
+      userRoles,
+      kpiTargets,
+      kpiAssignments,
+      kpiProgress,
+      kpiComments,
+      tickets,
+      ticketComments,
+      calendarCategories,
+      calendarActivities,
+      notifications,
+      meetingRooms,
+      meetingReservations
+    ] = await Promise.all([
+      prisma.department.findMany(),
+      prisma.profile.findMany(),
+      prisma.userRole.findMany(),
+      prisma.kpiTarget.findMany(),
+      prisma.kpiAssignment.findMany(),
+      prisma.kpiProgress.findMany(),
+      prisma.kpiComment.findMany(),
+      prisma.ticket.findMany(),
+      prisma.ticketComment.findMany(),
+      prisma.calendarCategory.findMany(),
+      prisma.calendarActivity.findMany(),
+      prisma.notification.findMany(),
+      prisma.meetingRoom.findMany(),
+      prisma.meetingReservation.findMany()
+    ]);
+
+    const allData = {
+      departments,
+      profiles,
+      user_roles: userRoles,
+      kpi_targets: kpiTargets,
+      kpi_assignments: kpiAssignments,
+      kpi_progress: kpiProgress,
+      kpi_comments: kpiComments,
+      tickets,
+      ticket_comments: ticketComments,
+      calendar_categories: calendarCategories,
+      calendar_activities: calendarActivities,
+      notifications,
+      meeting_rooms: meetingRooms,
+      meeting_reservations: meetingReservations
+    };
+
+    // Calculate table stats
+    const tables = Object.entries(allData).map(([name, records]) => ({
+      name,
+      displayName: TABLE_DISPLAY_NAMES[name] || name,
+      count: records.length,
+      size: calculateJsonSize(records)
+    }));
+
+    const totalRecords = tables.reduce((sum, t) => sum + t.count, 0);
+
+    // Write data.json
+    const dataJson = JSON.stringify(allData, null, 2);
+    fs.writeFileSync(path.join(backupDir, 'data.json'), dataJson, 'utf8');
+    const dataSize = Buffer.byteLength(dataJson, 'utf8');
+
+    // Copy SQLite database
+    const dbSourcePath = path.join(__dirname, 'prisma', 'dev.db');
+    const dbDestPath = path.join(backupDir, 'database.db');
+    let dbFileSize = 0;
+
+    if (fs.existsSync(dbSourcePath)) {
+      fs.copyFileSync(dbSourcePath, dbDestPath);
+      dbFileSize = fs.statSync(dbDestPath).size;
+    }
+
+    const totalSize = dataSize + dbFileSize;
+
+    // Write metadata
+    const metadata = {
+      id: backupId,
+      createdAt: now.toISOString(),
+      createdBy: req.user.id,
+      createdByName: `${req.user.firstName} ${req.user.lastName}`,
+      version: '1.0',
+      totalSize,
+      dbFileSize,
+      tables,
+      totalRecords
+    };
+
+    fs.writeFileSync(
+      path.join(backupDir, 'metadata.json'),
+      JSON.stringify(metadata, null, 2),
+      'utf8'
+    );
+
+    console.log(`[BACKUP] Completed: ${backupId} — ${totalRecords} records, ${(totalSize / 1024).toFixed(1)} KB`);
+
+    res.json({
+      success: true,
+      backup: metadata,
+      message: `Yedek başarıyla oluşturuldu. ${totalRecords} kayıt yedeklendi.`
+    });
+  } catch (error) {
+    console.error('Backup create error:', error);
+    res.status(500).json({ error: 'Yedek oluşturulurken bir hata oluştu: ' + error.message });
+  }
+});
+
+// GET /api/admin/backup/list — List all backups
+app.get('/api/admin/backup/list', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.roles.includes('admin')) {
+      return res.status(403).json({ error: 'Yetkisiz erişim' });
+    }
+
+    ensureBackupsDir();
+
+    const backupDirs = fs.readdirSync(BACKUPS_DIR)
+      .filter(d => d.startsWith('backup_'))
+      .filter(d => fs.statSync(path.join(BACKUPS_DIR, d)).isDirectory());
+
+    const backups = [];
+    for (const dir of backupDirs) {
+      const metadataPath = path.join(BACKUPS_DIR, dir, 'metadata.json');
+      if (fs.existsSync(metadataPath)) {
+        try {
+          const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+          backups.push({
+            id: metadata.id,
+            createdAt: metadata.createdAt,
+            createdBy: metadata.createdBy,
+            createdByName: metadata.createdByName,
+            totalSize: metadata.totalSize,
+            dbFileSize: metadata.dbFileSize,
+            totalRecords: metadata.totalRecords,
+            tableCount: metadata.tables.length,
+            tables: metadata.tables
+          });
+        } catch (e) {
+          console.warn(`[BACKUP] Invalid metadata in ${dir}:`, e.message);
+        }
+      }
+    }
+
+    // Sort by date descending (newest first)
+    backups.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json(backups);
+  } catch (error) {
+    console.error('Backup list error:', error);
+    res.status(500).json({ error: 'Yedekler listelenirken hata oluştu' });
+  }
+});
+
+// GET /api/admin/backup/:id/download — Download a backup
+app.get('/api/admin/backup/:id/download', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.roles.includes('admin')) {
+      return res.status(403).json({ error: 'Yetkisiz erişim' });
+    }
+
+    const { id } = req.params;
+    const backupDir = path.join(BACKUPS_DIR, id);
+
+    if (!fs.existsSync(backupDir)) {
+      return res.status(404).json({ error: 'Yedek bulunamadı' });
+    }
+
+    const dataPath = path.join(backupDir, 'data.json');
+    if (!fs.existsSync(dataPath)) {
+      return res.status(404).json({ error: 'Yedek veri dosyası bulunamadı' });
+    }
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${id}.json"`);
+    const stream = fs.createReadStream(dataPath);
+    stream.pipe(res);
+  } catch (error) {
+    console.error('Backup download error:', error);
+    res.status(500).json({ error: 'Yedek indirilirken hata oluştu' });
+  }
+});
+
+// POST /api/admin/backup/:id/restore — Restore from a backup
+app.post('/api/admin/backup/:id/restore', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.roles.includes('admin')) {
+      return res.status(403).json({ error: 'Yalnızca yöneticiler geri yükleme yapabilir' });
+    }
+
+    const { id } = req.params;
+    const backupDir = path.join(BACKUPS_DIR, id);
+
+    if (!fs.existsSync(backupDir)) {
+      return res.status(404).json({ error: 'Yedek bulunamadı' });
+    }
+
+    const dataPath = path.join(backupDir, 'data.json');
+    if (!fs.existsSync(dataPath)) {
+      return res.status(404).json({ error: 'Yedek veri dosyası bulunamadı' });
+    }
+
+    console.log(`[RESTORE] Starting restore from: ${id} by ${req.user.email}`);
+
+    const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+
+    // Delete existing data in reverse dependency order
+    await prisma.$transaction([
+      prisma.meetingReservation.deleteMany(),
+      prisma.meetingRoom.deleteMany(),
+      prisma.notification.deleteMany(),
+      prisma.calendarActivity.deleteMany(),
+      prisma.calendarCategory.deleteMany(),
+      prisma.ticketComment.deleteMany(),
+      prisma.ticket.deleteMany(),
+      prisma.kpiComment.deleteMany(),
+      prisma.kpiProgress.deleteMany(),
+      prisma.kpiAssignment.deleteMany(),
+      prisma.kpiTarget.deleteMany(),
+      prisma.userRole.deleteMany(),
+      prisma.profile.deleteMany(),
+      prisma.department.deleteMany()
+    ]);
+
+    let restoredRecords = 0;
+
+    // Restore in dependency order
+    // 1. Departments
+    if (data.departments?.length) {
+      for (const dept of data.departments) {
+        await prisma.department.create({ data: dept });
+      }
+      restoredRecords += data.departments.length;
+    }
+
+    // 2. Profiles
+    if (data.profiles?.length) {
+      for (const profile of data.profiles) {
+        await prisma.profile.create({
+          data: {
+            id: profile.id,
+            email: profile.email,
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            department: profile.department,
+            avatar: profile.avatar,
+            isActive: profile.isActive,
+            lastLogin: profile.lastLogin ? new Date(profile.lastLogin) : null,
+            createdAt: new Date(profile.createdAt)
+          }
+        });
+      }
+      restoredRecords += data.profiles.length;
+    }
+
+    // 3. User Roles
+    if (data.user_roles?.length) {
+      for (const role of data.user_roles) {
+        await prisma.userRole.create({
+          data: {
+            id: role.id,
+            userId: role.userId,
+            role: role.role,
+            createdAt: new Date(role.createdAt)
+          }
+        });
+      }
+      restoredRecords += data.user_roles.length;
+    }
+
+    // 4. KPI Targets
+    if (data.kpi_targets?.length) {
+      for (const kpi of data.kpi_targets) {
+        await prisma.kpiTarget.create({
+          data: {
+            id: kpi.id,
+            title: kpi.title,
+            description: kpi.description,
+            department: kpi.department,
+            targetValue: kpi.targetValue,
+            currentValue: kpi.currentValue,
+            unit: kpi.unit,
+            startDate: kpi.startDate,
+            endDate: kpi.endDate,
+            period: kpi.period,
+            priority: kpi.priority,
+            status: kpi.status,
+            createdBy: kpi.createdBy,
+            createdAt: new Date(kpi.createdAt),
+            updatedAt: new Date(kpi.updatedAt)
+          }
+        });
+      }
+      restoredRecords += data.kpi_targets.length;
+    }
+
+    // 5. KPI Assignments
+    if (data.kpi_assignments?.length) {
+      for (const assignment of data.kpi_assignments) {
+        await prisma.kpiAssignment.create({
+          data: {
+            id: assignment.id,
+            kpiId: assignment.kpiId,
+            userId: assignment.userId,
+            assignedAt: new Date(assignment.assignedAt)
+          }
+        });
+      }
+      restoredRecords += data.kpi_assignments.length;
+    }
+
+    // 6. KPI Progress
+    if (data.kpi_progress?.length) {
+      for (const progress of data.kpi_progress) {
+        await prisma.kpiProgress.create({
+          data: {
+            id: progress.id,
+            kpiId: progress.kpiId,
+            userId: progress.userId,
+            value: progress.value,
+            note: progress.note,
+            recordedAt: new Date(progress.recordedAt),
+            recordedBy: progress.recordedBy
+          }
+        });
+      }
+      restoredRecords += data.kpi_progress.length;
+    }
+
+    // 7. KPI Comments
+    if (data.kpi_comments?.length) {
+      for (const comment of data.kpi_comments) {
+        await prisma.kpiComment.create({
+          data: {
+            id: comment.id,
+            kpiId: comment.kpiId,
+            userId: comment.userId,
+            userName: comment.userName,
+            content: comment.content,
+            createdAt: new Date(comment.createdAt)
+          }
+        });
+      }
+      restoredRecords += data.kpi_comments.length;
+    }
+
+    // 8. Tickets
+    if (data.tickets?.length) {
+      for (const ticket of data.tickets) {
+        await prisma.ticket.create({
+          data: {
+            id: ticket.id,
+            title: ticket.title,
+            description: ticket.description,
+            priority: ticket.priority,
+            status: ticket.status,
+            sourceDepartment: ticket.sourceDepartment,
+            targetDepartment: ticket.targetDepartment,
+            createdBy: ticket.createdBy,
+            creatorName: ticket.creatorName,
+            creatorEmail: ticket.creatorEmail,
+            assignedTo: ticket.assignedTo,
+            createdAt: new Date(ticket.createdAt),
+            updatedAt: new Date(ticket.updatedAt),
+            resolvedAt: ticket.resolvedAt ? new Date(ticket.resolvedAt) : null,
+            closedAt: ticket.closedAt ? new Date(ticket.closedAt) : null
+          }
+        });
+      }
+      restoredRecords += data.tickets.length;
+    }
+
+    // 9. Ticket Comments
+    if (data.ticket_comments?.length) {
+      for (const comment of data.ticket_comments) {
+        await prisma.ticketComment.create({
+          data: {
+            id: comment.id,
+            ticketId: comment.ticketId,
+            authorId: comment.authorId,
+            authorName: comment.authorName,
+            content: comment.content,
+            isInternal: comment.isInternal,
+            createdAt: new Date(comment.createdAt)
+          }
+        });
+      }
+      restoredRecords += data.ticket_comments.length;
+    }
+
+    // 10. Calendar Categories
+    if (data.calendar_categories?.length) {
+      for (const cat of data.calendar_categories) {
+        await prisma.calendarCategory.create({
+          data: {
+            id: cat.id,
+            name: cat.name,
+            color: cat.color,
+            createdAt: new Date(cat.createdAt)
+          }
+        });
+      }
+      restoredRecords += data.calendar_categories.length;
+    }
+
+    // 11. Calendar Activities
+    if (data.calendar_activities?.length) {
+      for (const activity of data.calendar_activities) {
+        await prisma.calendarActivity.create({
+          data: {
+            id: activity.id,
+            userId: activity.userId,
+            title: activity.title,
+            description: activity.description,
+            date: activity.date,
+            startTime: activity.startTime,
+            endTime: activity.endTime,
+            duration: activity.duration,
+            categoryId: activity.categoryId,
+            createdAt: new Date(activity.createdAt),
+            updatedAt: new Date(activity.updatedAt)
+          }
+        });
+      }
+      restoredRecords += data.calendar_activities.length;
+    }
+
+    // 12. Notifications
+    if (data.notifications?.length) {
+      for (const notif of data.notifications) {
+        await prisma.notification.create({
+          data: {
+            id: notif.id,
+            userId: notif.userId,
+            category: notif.category,
+            priority: notif.priority,
+            title: notif.title,
+            message: notif.message,
+            isRead: notif.isRead,
+            link: notif.link,
+            metadata: notif.metadata,
+            createdAt: new Date(notif.createdAt)
+          }
+        });
+      }
+      restoredRecords += data.notifications.length;
+    }
+
+    // 13. Meeting Rooms
+    if (data.meeting_rooms?.length) {
+      for (const room of data.meeting_rooms) {
+        await prisma.meetingRoom.create({
+          data: {
+            id: room.id,
+            name: room.name,
+            capacity: room.capacity,
+            location: room.location,
+            description: room.description,
+            responsibleId: room.responsibleId,
+            createdAt: new Date(room.createdAt),
+            updatedAt: new Date(room.updatedAt)
+          }
+        });
+      }
+      restoredRecords += data.meeting_rooms.length;
+    }
+
+    // 14. Meeting Reservations
+    if (data.meeting_reservations?.length) {
+      for (const reservation of data.meeting_reservations) {
+        await prisma.meetingReservation.create({
+          data: {
+            id: reservation.id,
+            roomId: reservation.roomId,
+            requestedBy: reservation.requestedBy,
+            approvedBy: reservation.approvedBy,
+            startTime: new Date(reservation.startTime),
+            endTime: new Date(reservation.endTime),
+            status: reservation.status,
+            notes: reservation.notes,
+            createdAt: new Date(reservation.createdAt),
+            updatedAt: new Date(reservation.updatedAt)
+          }
+        });
+      }
+      restoredRecords += data.meeting_reservations.length;
+    }
+
+    const restoredTables = Object.keys(data).filter(k => data[k]?.length > 0).length;
+
+    console.log(`[RESTORE] Completed: ${id} — ${restoredRecords} records in ${restoredTables} tables`);
+
+    res.json({
+      success: true,
+      message: `Geri yükleme başarıyla tamamlandı. ${restoredRecords} kayıt geri yüklendi.`,
+      restoredTables,
+      restoredRecords
+    });
+  } catch (error) {
+    console.error('Backup restore error:', error);
+    res.status(500).json({ error: 'Geri yükleme sırasında hata oluştu: ' + error.message });
+  }
+});
+
+// DELETE /api/admin/backup/:id — Delete a backup
+app.delete('/api/admin/backup/:id', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user.roles.includes('admin')) {
+      return res.status(403).json({ error: 'Yetkisiz erişim' });
+    }
+
+    const { id } = req.params;
+    const backupDir = path.join(BACKUPS_DIR, id);
+
+    if (!fs.existsSync(backupDir)) {
+      return res.status(404).json({ error: 'Yedek bulunamadı' });
+    }
+
+    // Recursive delete
+    fs.rmSync(backupDir, { recursive: true, force: true });
+
+    console.log(`[BACKUP] Deleted: ${id} by ${req.user.email}`);
+
+    res.json({
+      success: true,
+      message: 'Yedek başarıyla silindi'
+    });
+  } catch (error) {
+    console.error('Backup delete error:', error);
+    res.status(500).json({ error: 'Yedek silinirken hata oluştu' });
   }
 });
 

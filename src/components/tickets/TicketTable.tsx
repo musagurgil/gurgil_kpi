@@ -1,34 +1,17 @@
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     Clock,
-    AlertTriangle,
     CheckCircle,
     XCircle,
     Pause,
-    ArrowRight,
-    MoreHorizontal
+    AlertTriangle,
+    ArrowRight
 } from "lucide-react";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import { Ticket, TICKET_PRIORITIES, TICKET_STATUSES } from "@/types/ticket";
+import { Ticket, TICKET_STATUSES, TICKET_PRIORITIES } from "@/types/ticket";
 import { User } from "@/types/user";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { tr } from "date-fns/locale";
 
 interface TicketTableProps {
     tickets: Ticket[];
@@ -41,109 +24,121 @@ interface TicketTableProps {
 export function TicketTable({
     tickets,
     users,
-    currentUser,
-    onViewTicket
+    onViewTicket,
 }: TicketTableProps) {
 
-    const getPriorityColor = (priority: Ticket['priority']) => {
-        switch (priority) {
-            case 'low': return 'bg-success/10 text-success border-success/20';
-            case 'medium': return 'bg-warning/10 text-warning border-warning/20';
-            case 'high': return 'bg-destructive/10 text-destructive border-destructive/20';
-            case 'urgent': return 'bg-destructive text-destructive-foreground border-destructive';
+    const getStatusBadge = (status: Ticket['status']) => {
+        switch (status) {
+            case 'open': return 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
+            case 'in_progress': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+            case 'resolved': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+            case 'closed': return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
         }
     };
 
-    const getStatusColor = (status: Ticket['status']) => {
+    const getStatusIcon = (status: Ticket['status']) => {
         switch (status) {
-            case 'open': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-            case 'in_progress': return 'bg-warning/10 text-warning border-warning/20';
-            case 'resolved': return 'bg-success/10 text-success border-success/20';
-            case 'closed': return 'bg-muted text-muted-foreground border-border';
+            case 'open': return <Clock className="w-3 h-3" />;
+            case 'in_progress': return <Pause className="w-3 h-3" />;
+            case 'resolved': return <CheckCircle className="w-3 h-3" />;
+            case 'closed': return <XCircle className="w-3 h-3" />;
         }
+    };
+
+    const getPriorityBadge = (priority: Ticket['priority']) => {
+        switch (priority) {
+            case 'low': return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+            case 'medium': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
+            case 'high': return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20';
+            case 'urgent': return 'bg-red-500 text-white border-red-600';
+        }
+    };
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString('tr-TR', {
+            day: '2-digit', month: 'short', year: 'numeric'
+        });
     };
 
     return (
-        <div className="rounded-md border bg-card">
+        <div className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden">
             <Table>
                 <TableHeader>
-                    <TableRow>
-                        <TableHead className="w-[100px]">ID</TableHead>
-                        <TableHead>Başlık</TableHead>
-                        <TableHead className="w-[120px]">Durum</TableHead>
-                        <TableHead className="w-[100px]">Öncelik</TableHead>
-                        <TableHead className="hidden md:table-cell">Departmanlar</TableHead>
-                        <TableHead className="hidden lg:table-cell">Dahil Olanlar</TableHead>
-                        <TableHead className="hidden lg:table-cell w-[140px]">Tarih</TableHead>
-                        <TableHead className="w-[50px]"></TableHead>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                        <TableHead className="text-xs font-semibold w-[110px]">ID</TableHead>
+                        <TableHead className="text-xs font-semibold">Başlık</TableHead>
+                        <TableHead className="text-xs font-semibold w-[100px]">Durum</TableHead>
+                        <TableHead className="text-xs font-semibold w-[90px]">Öncelik</TableHead>
+                        <TableHead className="text-xs font-semibold w-[200px] hidden md:table-cell">Departmanlar</TableHead>
+                        <TableHead className="text-xs font-semibold w-[80px] hidden lg:table-cell">Kişiler</TableHead>
+                        <TableHead className="text-xs font-semibold w-[100px] hidden sm:table-cell">Tarih</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {tickets.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
-                                Ticket bulunamadı.
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        tickets.map((ticket) => {
-                            const assignedUser = ticket.assignedTo ? users.find(u => u.id === ticket.assignedTo) : null;
+                    {tickets.map((ticket, index) => {
+                        const assignedUser = ticket.assignedTo ? users.find(u => u.id === ticket.assignedTo) : null;
 
-                            return (
-                                <TableRow key={ticket.id} className="cursor-pointer hover:bg-muted/50" onClick={() => onViewTicket(ticket)}>
-                                    <TableCell className="font-mono text-xs font-medium">
-                                        #{ticket.ticketNumber || ticket.id.substring(0, 8)}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="font-medium truncate max-w-[200px] sm:max-w-[300px]">
-                                            {ticket.title}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className={cn("text-xs whitespace-nowrap", getStatusColor(ticket.status))}>
-                                            {TICKET_STATUSES[ticket.status]}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className={cn("text-xs whitespace-nowrap", getPriorityColor(ticket.priority))}>
-                                            {TICKET_PRIORITIES[ticket.priority]}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="hidden md:table-cell">
-                                        <div className="flex items-center text-xs text-muted-foreground">
-                                            <span className="truncate max-w-[80px]">{ticket.sourceDepartment}</span>
-                                            <ArrowRight className="w-3 h-3 mx-1 shrink-0" />
-                                            <span className="truncate max-w-[80px]">{ticket.targetDepartment}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="hidden lg:table-cell">
-                                        <div className="flex items-center -space-x-2">
-                                            <Avatar className="w-6 h-6 border-2 border-background">
-                                                <AvatarFallback className="text-[10px] bg-muted">
-                                                    {ticket.creatorName ? ticket.creatorName.split(' ').map(n => n.charAt(0)).join('') : 'U'}
+                        return (
+                            <TableRow
+                                key={ticket.id}
+                                onClick={() => onViewTicket(ticket)}
+                                className={cn(
+                                    "cursor-pointer transition-colors hover:bg-indigo-500/5",
+                                    index % 2 === 1 && "bg-muted/10"
+                                )}
+                            >
+                                <TableCell className="font-mono text-xs text-indigo-600 dark:text-indigo-400 font-semibold">
+                                    #{ticket.ticketNumber || ticket.id.substring(0, 8)}
+                                </TableCell>
+                                <TableCell>
+                                    <span className="text-sm font-medium line-clamp-1">{ticket.title}</span>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className={cn("text-[10px] h-5 gap-0.5", getStatusBadge(ticket.status))}>
+                                        {getStatusIcon(ticket.status)}
+                                        {TICKET_STATUSES[ticket.status]}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className={cn("text-[10px] h-5 gap-0.5", getPriorityBadge(ticket.priority))}>
+                                        {(ticket.priority === 'urgent' || ticket.priority === 'high') &&
+                                            <AlertTriangle className="w-2.5 h-2.5" />
+                                        }
+                                        {TICKET_PRIORITIES[ticket.priority]}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="hidden md:table-cell">
+                                    <div className="flex items-center gap-1 text-xs">
+                                        <span className="truncate max-w-[80px]">{ticket.sourceDepartment}</span>
+                                        <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                                        <span className="truncate max-w-[80px] text-indigo-600 dark:text-indigo-400 font-medium">{ticket.targetDepartment}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="hidden lg:table-cell">
+                                    <div className="flex items-center -space-x-1.5">
+                                        <Avatar className="w-5 h-5 border-2 border-background">
+                                            <AvatarFallback className="text-[8px] bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold">
+                                                {ticket.creatorName?.split(' ').map(n => n.charAt(0)).join('') || 'U'}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        {(assignedUser || ticket.assignedToName) && (
+                                            <Avatar className="w-5 h-5 border-2 border-background">
+                                                <AvatarFallback className="text-[8px] bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-semibold">
+                                                    {assignedUser
+                                                        ? `${assignedUser.firstName.charAt(0)}${assignedUser.lastName.charAt(0)}`
+                                                        : ticket.assignedToName?.split(' ').map(n => n.charAt(0)).join('') || 'U'
+                                                    }
                                                 </AvatarFallback>
                                             </Avatar>
-                                            {assignedUser && (
-                                                <Avatar className="w-6 h-6 border-2 border-background">
-                                                    <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                                                        {assignedUser.firstName.charAt(0)}{assignedUser.lastName.charAt(0)}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
-                                        {format(new Date(ticket.createdAt), "d MMM yyyy", { locale: tr })}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                            <MoreHorizontal className="w-4 h-4" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })
-                    )}
+                                        )}
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground hidden sm:table-cell">
+                                    {formatDate(ticket.createdAt)}
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })}
                 </TableBody>
             </Table>
         </div>

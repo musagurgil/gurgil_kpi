@@ -259,7 +259,7 @@ export const useKPI = () => {
         if (kpi.kpiId === kpiId) {
           return {
             ...kpi,
-            comments: [optimisticComment as KPIComment, ...(kpi.comments || [])]
+            comments: [...(kpi.comments || []), optimisticComment as KPIComment]
           };
         }
         return kpi;

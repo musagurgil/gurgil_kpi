@@ -1,10 +1,8 @@
-import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Search, Filter, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { TicketFilter, TICKET_STATUSES, TICKET_PRIORITIES } from "@/types/ticket";
 import { DEPARTMENTS, User } from "@/types/user";
 
@@ -15,8 +13,6 @@ interface TicketFiltersProps {
 }
 
 export function TicketFilters({ filter, onFilterChange, users }: TicketFiltersProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   const updateFilter = (updates: Partial<TicketFilter>) => {
     onFilterChange({ ...filter, ...updates });
   };
@@ -25,153 +21,139 @@ export function TicketFilters({ filter, onFilterChange, users }: TicketFiltersPr
     onFilterChange({});
   };
 
-  const hasActiveFilters = Object.keys(filter).length > 0;
+  const hasActiveFilters = Object.values(filter).some(v => v !== undefined && v !== '');
 
   return (
-    <Card className="border-border">
-      <CardContent className="p-4">
-        <div className="space-y-4">
-          {/* Search and Filter Toggle */}
-          <div className="flex items-center space-x-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Ticket ID, başlık veya açıklama ile ara..."
-                value={filter.search || ''}
-                onChange={(e) => updateFilter({ search: e.target.value })}
-                className="pl-9"
-              />
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="shrink-0"
-            >
-              <Filter className="w-4 h-4 mr-1" />
-              Filtreler
-            </Button>
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="shrink-0 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4 mr-1" />
-                Temizle
-              </Button>
-            )}
-          </div>
+    <div className="bg-card/60 backdrop-blur-sm rounded-xl border border-border/50 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Ticket ara..."
+            value={filter.search || ''}
+            onChange={(e) => updateFilter({ search: e.target.value || undefined })}
+            className="pl-9 h-9 bg-background/50 border-border/50 text-sm"
+          />
+        </div>
 
-          {/* Expanded Filters */}
-          {isExpanded && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-border">
-              <div className="space-y-2">
-                <Label>Durum</Label>
-                <Select
-                  value={filter.status || ''}
-                  onValueChange={(value) => updateFilter({ status: value === 'all' ? undefined : value as TicketFilter['status'] })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tüm durumlar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tüm durumlar</SelectItem>
-                    {Object.entries(TICKET_STATUSES).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Status */}
+        <Select
+          value={filter.status || 'all'}
+          onValueChange={(value) => updateFilter({ status: value === 'all' ? undefined : value as TicketFilter['status'] })}
+        >
+          <SelectTrigger className="w-[130px] h-9 bg-background/50 border-border/50 text-sm">
+            <SelectValue placeholder="Durum" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tüm Durumlar</SelectItem>
+            {Object.entries(TICKET_STATUSES).map(([key, label]) => (
+              <SelectItem key={key} value={key}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-              <div className="space-y-2">
-                <Label>Öncelik</Label>
-                <Select
-                  value={filter.priority || ''}
-                  onValueChange={(value) => updateFilter({ priority: value === 'all' ? undefined : value as TicketFilter['priority'] })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tüm öncelikler" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tüm öncelikler</SelectItem>
-                    {Object.entries(TICKET_PRIORITIES).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Priority */}
+        <Select
+          value={filter.priority || 'all'}
+          onValueChange={(value) => updateFilter({ priority: value === 'all' ? undefined : value as TicketFilter['priority'] })}
+        >
+          <SelectTrigger className="w-[130px] h-9 bg-background/50 border-border/50 text-sm">
+            <SelectValue placeholder="Öncelik" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tüm Öncelikler</SelectItem>
+            {Object.entries(TICKET_PRIORITIES).map(([key, label]) => (
+              <SelectItem key={key} value={key}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-              <div className="space-y-2">
-                <Label>Departman</Label>
-                <Select
-                  value={filter.department || ''}
-                  onValueChange={(value) => updateFilter({ department: value === 'all' ? undefined : value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tüm departmanlar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tüm departmanlar</SelectItem>
-                    {DEPARTMENTS.map((dept) => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Department */}
+        <Select
+          value={filter.department || 'all'}
+          onValueChange={(value) => updateFilter({ department: value === 'all' ? undefined : value })}
+        >
+          <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/50 text-sm hidden md:flex">
+            <SelectValue placeholder="Departman" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tüm Departmanlar</SelectItem>
+            {DEPARTMENTS.map((dept) => (
+              <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-              <div className="space-y-2">
-                <Label>Atanan Kişi</Label>
-                <Select
-                  value={filter.assignedTo || ''}
-                  onValueChange={(value) => updateFilter({ assignedTo: value === 'all' ? undefined : value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tüm atananlar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tüm atananlar</SelectItem>
-                    <SelectItem value="unassigned">Atanmamış</SelectItem>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.firstName} {user.lastName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+        {/* Assigned To */}
+        <Select
+          value={filter.assignedTo || 'all'}
+          onValueChange={(value) => updateFilter({ assignedTo: value === 'all' ? undefined : value })}
+        >
+          <SelectTrigger className="w-[140px] h-9 bg-background/50 border-border/50 text-sm hidden lg:flex">
+            <SelectValue placeholder="Atanan" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tüm Atananlar</SelectItem>
+            <SelectItem value="unassigned">Atanmamış</SelectItem>
+            {users.map((user) => (
+              <SelectItem key={user.id} value={user.id}>
+                {user.firstName} {user.lastName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Clear */}
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearFilters}
+            className="h-9 px-2.5 text-muted-foreground hover:text-foreground"
+          >
+            <X className="w-4 h-4 mr-1" />
+            Temizle
+          </Button>
+        )}
+      </div>
+
+      {/* Active Filters Summary */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-border/30">
+          {filter.status && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
+              {TICKET_STATUSES[filter.status as keyof typeof TICKET_STATUSES]}
+              <button onClick={() => updateFilter({ status: undefined })} className="ml-1 hover:text-indigo-800">×</button>
+            </span>
           )}
-
-          {/* Active Filters Summary */}
-          {hasActiveFilters && (
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-              {filter.status && (
-                <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-xs">
-                  Durum: {TICKET_STATUSES[filter.status as keyof typeof TICKET_STATUSES]}
-                </span>
-              )}
-              {filter.priority && (
-                <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-xs">
-                  Öncelik: {TICKET_PRIORITIES[filter.priority as keyof typeof TICKET_PRIORITIES]}
-                </span>
-              )}
-              {filter.department && (
-                <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-xs">
-                  Departman: {filter.department}
-                </span>
-              )}
-              {filter.assignedTo && (
-                <span className="inline-flex items-center px-2 py-1 rounded-md bg-primary/10 text-primary text-xs">
-                  Atanan: {filter.assignedTo === 'unassigned' ? 'Atanmamış' : 
-                    users.find(u => u.id === filter.assignedTo)?.firstName || 'Bilinmiyor'}
-                </span>
-              )}
-            </div>
+          {filter.priority && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium">
+              {TICKET_PRIORITIES[filter.priority as keyof typeof TICKET_PRIORITIES]}
+              <button onClick={() => updateFilter({ priority: undefined })} className="ml-1 hover:text-amber-800">×</button>
+            </span>
+          )}
+          {filter.department && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-medium">
+              {filter.department}
+              <button onClick={() => updateFilter({ department: undefined })} className="ml-1 hover:text-purple-800">×</button>
+            </span>
+          )}
+          {filter.assignedTo && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+              {filter.assignedTo === 'unassigned' ? 'Atanmamış' :
+                users.find(u => u.id === filter.assignedTo)?.firstName || 'Bilinmiyor'}
+              <button onClick={() => updateFilter({ assignedTo: undefined })} className="ml-1 hover:text-emerald-800">×</button>
+            </span>
+          )}
+          {filter.search && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-500/10 text-gray-600 dark:text-gray-400 text-xs font-medium">
+              "{filter.search}"
+              <button onClick={() => updateFilter({ search: undefined })} className="ml-1 hover:text-gray-800">×</button>
+            </span>
           )}
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }

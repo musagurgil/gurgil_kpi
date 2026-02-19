@@ -191,144 +191,149 @@ export default function KPITracking() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-dashboard-bg p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
-              <Target className="w-6 h-6 sm:w-8 sm:h-8 text-primary shrink-0" />
-              <span className="truncate">KPI Takip Sistemi</span>
+    <div className="min-h-screen bg-dashboard-bg p-4 sm:p-6 space-y-6">
+      {/* Premium Header Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 shadow-xl text-white">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+        <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
+              <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                <Target className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              </div>
+              <span>KPI Takip Sistemi</span>
             </h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              Departman bazlı performans hedeflerini takip edin ve ilerlemelerinizi kaydedin
+            <p className="text-blue-100 text-sm sm:text-base max-w-2xl">
+              Departman bazlı performans hedeflerini takip edin, ilerlemeleri kaydedin ve başarı oranlarını analiz edin.
             </p>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-3 w-full md:w-auto">
             <Button
-              variant="outline"
+              variant="secondary"
+              className="bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-sm transition-all duration-300"
               onClick={handleExportKPIs}
               disabled={filteredKPIs.length === 0}
-              className="gap-2 w-full sm:w-auto justify-center"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Excel'e Aktar</span>
               <span className="sm:hidden">Aktar</span>
-              <span className="hidden sm:inline">({filteredKPIs.length})</span>
             </Button>
-            <div className="w-full sm:w-auto">
-              {!currentUser?.role.includes('board_member') && (
+
+            {currentUser?.role !== 'board_member' && (
+              <div className="w-full sm:w-auto">
                 <CreateKPIDialog
                   onCreateKPI={handleCreateKPI}
                   availableDepartments={availableDepartments}
                   availableUsers={availableUsers}
                   currentUser={currentUser}
                 />
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <BarChart3 className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Toplam KPI</p>
-                  <p className="text-2xl font-bold">{totalKPIs}</p>
-                </div>
+        {/* Quick Stats in Header */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-white" />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="w-5 h-5 text-kpi-success" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Hedefte</p>
-                  <p className="text-2xl font-bold text-kpi-success">{onTrackKPIs}</p>
-                </div>
+              <div>
+                <p className="text-xs text-blue-200">Toplam KPI</p>
+                <p className="text-xl font-bold">{totalKPIs}</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <AlertTriangle className="w-5 h-5 text-kpi-danger" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Risk Altında</p>
-                  <p className="text-2xl font-bold text-kpi-danger">{atRiskKPIs}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Users className="w-5 h-5 text-kpi-success" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Tamamlanan</p>
-                  <p className="text-2xl font-bold text-kpi-success">{completedKPIs}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="flex justify-between items-center mb-4">
-          {/* Filters are here by default via KPIFiltersComponent structure but let's add View Toggle near filters or just above grid */}
-        </div>
-
-        <div className="flex flex-col space-y-4">
-          <div className="flex justify-end items-center gap-2">
-            <div className="flex p-1 bg-muted rounded-md border text-muted-foreground">
-              <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => setViewMode('list')}
-                title="Liste Görünümü"
-              >
-                <ListIcon className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => setViewMode('grid')}
-                title="Kart Görünümü"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </Button>
             </div>
           </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/30 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-emerald-300" />
+              </div>
+              <div>
+                <p className="text-xs text-blue-200">Hedefte</p>
+                <p className="text-xl font-bold text-emerald-300">{onTrackKPIs}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-rose-500/30 flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4 text-rose-300" />
+              </div>
+              <div>
+                <p className="text-xs text-blue-200">Risk Altında</p>
+                <p className="text-xl font-bold text-rose-300">{atRiskKPIs}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/30 flex items-center justify-center">
+                <Users className="w-4 h-4 text-blue-300" />
+              </div>
+              <div>
+                <p className="text-xs text-blue-200">Tamamlanan</p>
+                <p className="text-xl font-bold text-blue-300">{completedKPIs}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          <KPIFiltersComponent
-            filters={filters}
-            onFiltersChange={setFilters}
-            availableDepartments={availableDepartments}
-            availableUsers={availableUsers}
-            currentUser={currentUser}
-          />
+      <div className="flex flex-col space-y-4">
+        {/* Controls Bar */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          {/* Re-using the filter component but passing a prop to style it better if needed, 
+               or wrapping it to constrain width if it's too wide in the new design. 
+               For now, placing it directly. The internal redesign of KPIFiltersComponent will handle its look. */}
+          <div className="w-full sm:flex-1">
+            <KPIFiltersComponent
+              filters={filters}
+              onFiltersChange={setFilters}
+              availableDepartments={availableDepartments}
+              availableUsers={availableUsers}
+              currentUser={currentUser}
+            />
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-center bg-card/50 p-1 rounded-lg border border-border/50 backdrop-blur-sm">
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setViewMode('list')}
+              title="Liste Görünümü"
+            >
+              <ListIcon className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => setViewMode('grid')}
+              title="Kart Görünümü"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {filteredKPIs.length === 0 ? (
-          <Card className="shadow-card">
-            <CardContent className="p-8 text-center">
-              <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <Card className="border-dashed shadow-none bg-transparent">
+            <CardContent className="p-12 text-center">
+              <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Target className="w-8 h-8 text-muted-foreground" />
+              </div>
               <h3 className="text-lg font-medium text-foreground mb-2">
                 {kpiStats.length === 0 ? 'Henüz KPI hedefi bulunmuyor' : 'Filtrelerinize uygun KPI bulunamadı'}
               </h3>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 {kpiStats.length === 0
-                  ? 'İlk KPI hedefinizi oluşturarak performans takibine başlayın'
-                  : 'Farklı filtreler deneyebilir veya filtreleri temizleyebilirsiniz'}
+                  ? 'Departmanınızın performans hedeflerini takip etmek için ilk KPI kaydınızı oluşturun.'
+                  : 'Arama kriterlerinizi değiştirerek veya filtreleri temizleyerek tekrar deneyin.'}
               </p>
-              {kpiStats.length === 0 && (currentUser?.role === 'admin' || currentUser?.role === 'department_manager') && (
+              {kpiStats.length === 0 && (currentUser?.role !== 'board_member') && (
                 <CreateKPIDialog
                   onCreateKPI={handleCreateKPI}
                   availableDepartments={availableDepartments}
@@ -341,7 +346,7 @@ export default function KPITracking() {
         ) : (
           <>
             {viewMode === 'grid' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredKPIs.map((kpiStat) => (
                   <KPIStatsCard
                     key={kpiStat.kpiId}

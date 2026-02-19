@@ -364,6 +364,50 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Backup & Recovery methods
+  async createBackup() {
+    return this.request<any>('/admin/backup', {
+      method: 'POST',
+    });
+  }
+
+  async getBackups() {
+    return this.request<any[]>('/admin/backup/list');
+  }
+
+  async downloadBackup(id: string) {
+    const token = this.token;
+    const response = await fetch(`${this.baseURL}/admin/backup/${id}/download`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Yedek indirilirken hata oluştu');
+    }
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${id}.json`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }
+
+  async restoreBackup(id: string) {
+    return this.request<any>(`/admin/backup/${id}/restore`, {
+      method: 'POST',
+    });
+  }
+
+  async deleteBackup(id: string) {
+    return this.request<any>(`/admin/backup/${id}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

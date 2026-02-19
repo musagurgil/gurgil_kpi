@@ -5,6 +5,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -26,6 +28,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Edit,
   Trash2,
@@ -42,10 +47,15 @@ import {
   CheckCircle,
   User,
   Download,
-  Loader2
+  Loader2,
+  Printer,
+  History,
+  Settings,
+  Send,
+  ArrowUpRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { KPIStats, KPI_PERIODS, KPI_PRIORITIES, CreateKPIData, KPIComment, KPIProgress, KPIUser } from '@/types/kpi';
+import { KPIStats, KPI_PERIODS, KPI_PRIORITIES, CreateKPIData, KPIUser } from '@/types/kpi';
 import { toast } from '@/hooks/use-toast';
 import { KPIProgressChart } from './KPIProgressChart';
 import { toast as sonnerToast } from 'sonner';
@@ -237,12 +247,13 @@ export function KPIDetailDialog({
     try {
       const element = printRef.current;
       const canvas = await html2canvas(element, {
-        scale: 2, // Higher quality
+        scale: 1.5,
         useCORS: true,
         logging: false
-      });
+      } as any);
 
-      const imgData = canvas.toDataURL('image/png');
+      // Use JPEG with 0.8 quality for significant size reduction compared to PNG
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -255,16 +266,11 @@ export function KPIDetailDialog({
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
 
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0; // Top align
-
-      // Calculate scaled image dimensions in PDF units
       const scaledWidth = pdfWidth;
       const scaledHeight = (imgHeight * pdfWidth) / imgWidth;
 
       // Create PDF
-      pdf.addImage(imgData, 'PNG', 0, 0, scaledWidth, scaledHeight);
+      pdf.addImage(imgData, 'JPEG', 0, 0, scaledWidth, scaledHeight, undefined, 'FAST');
       pdf.save(`${kpiStats.title.replace(/\s+/g, '_')}_Raporu.pdf`);
 
       sonnerToast.success('✅ PDF raporu başarıyla indirildi!');
@@ -276,473 +282,424 @@ export function KPIDetailDialog({
     }
   };
 
+  // Safe progress data for chart
+  const progressData = kpiStats.recentProgress ? [...kpiStats.recentProgress].reverse() : [];
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
-        {/* Hidden Print Container */}
-        <div style={{ position: 'absolute', top: -9999, left: -9999 }}>
-          <KPIPrintView ref={printRef} kpiStats={kpiStats} />
+      <DialogContent className="max-w-4xl max-h-[90vh] h-[90vh] overflow-hidden flex flex-col p-0 gap-0 border-0 shadow-2xl bg-card [&>button]:hidden">
+        {/* Header with Gradient */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white shrink-0">
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+          <div className="relative z-10 flex flex-col gap-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-blue-100 text-xs mb-1">
+                  <span className="bg-white/10 px-2 py-0.5 rounded backdrop-blur-sm">{kpiStats.department}</span>
+                  <span>•</span>
+                  <span>{KPI_PERIODS[kpiStats.period]}</span>
+                </div>
+                <DialogTitle className="text-2xl font-bold leading-tight">
+                  {kpiStats.title}
+                </DialogTitle>
+                <DialogDescription className="text-blue-100/80 text-sm mt-1 max-w-2xl">
+                  KPI detaylarını görüntüleyin, ilerleme kaydedin ve ekip üyeleriyle işbirliği yapın.
+                </DialogDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-sm px-3 py-1 font-semibold shadow-sm",
+                    kpiStats.status === 'success' && "bg-emerald-400/20 text-emerald-100 border-emerald-400/30",
+                    kpiStats.status === 'warning' && "bg-amber-400/20 text-amber-100 border-amber-400/30",
+                    kpiStats.status === 'danger' && "bg-rose-400/20 text-rose-100 border-rose-400/30",
+
+                  )}
+                >
+                  {getStatusIcon()}
+                  <span className="ml-1.5">{getStatusText()}</span>
+                </Badge>
+                <DialogClose asChild>
+                  <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10 rounded-full h-8 w-8">
+                    <X className="w-5 h-5" />
+                  </Button>
+                </DialogClose>
+              </div>
+            </div>
+
+            {/* Header Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                <span className="text-xs text-blue-200 block mb-1">İlerleme</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-bold">{kpiStats.progressPercentage.toFixed(0)}%</span>
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                <span className="text-xs text-blue-200 block mb-1">Mevcut Değer</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-bold">{kpiStats.currentValue.toLocaleString('tr-TR')}</span>
+                  <span className="text-xs opacity-70">{kpiStats.unit}</span>
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                <span className="text-xs text-blue-200 block mb-1">Hedef</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-bold">{kpiStats.targetValue.toLocaleString('tr-TR')}</span>
+                  <span className="text-xs opacity-70">{kpiStats.unit}</span>
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                <span className="text-xs text-blue-200 block mb-1">Kalan Süre</span>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4 opacity-70" />
+                  <span className="text-lg font-bold">
+                    {kpiStats.remainingDays < 0 ? 'Süre Doldu' : `${kpiStats.remainingDays} Gün`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <DialogHeader>
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-            <div className="space-y-1 flex-1">
-              <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
-                {getStatusIcon()}
-                <span className="line-clamp-2">{kpiStats.title}</span>
-              </DialogTitle>
-              <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                <Badge variant="outline" className="text-xs">{kpiStats.department}</Badge>
-                <Badge variant="outline" className="text-xs">{KPI_PERIODS[kpiStats.period]}</Badge>
-                <Badge variant="secondary" className="text-xs">{KPI_PRIORITIES[kpiStats.priority]}</Badge>
-                <Badge variant={kpiStats.status === 'success' ? 'default' : kpiStats.status === 'danger' ? 'destructive' : 'secondary'} className="text-xs">
-                  {getStatusText()}
-                </Badge>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadPDF}
-                disabled={isExporting}
-                title="PDF Rapor İndir"
+        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
+          <div className="border-b px-6 bg-muted/30 shrink-0">
+            <TabsList className="bg-transparent h-12 w-full justify-start gap-6 p-0">
+              <TabsTrigger
+                value="overview"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-0 font-medium text-muted-foreground data-[state=active]:text-foreground"
               >
-                {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                <span className="ml-2 hidden sm:inline">PDF İndir</span>
-              </Button>
-              {canEdit && (
-                <Button
-                  variant={isEditing ? "secondary" : "outline"}
-                  size="sm"
-                  onClick={() => setIsEditing(!isEditing)}
-                  title={isEditing ? "Düzenlemeyi İptal Et" : "Düzenle"}
-                >
-                  {isEditing ? <X className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-                </Button>
-              )}
-              {canDelete && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>KPI'yı Sil</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Bu KPI'yı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>İptal</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Sil
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
-          </div>
-        </DialogHeader>
-
-        {isEditing ? (
-          <div className="mt-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Edit className="w-4 h-4" />
-                  KPI Düzenle
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-title">Başlık</Label>
-                    <Input
-                      id="edit-title"
-                      value={editForm.title || ''}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-department">Departman</Label>
-                    <Select
-                      value={editForm.department || ''}
-                      onValueChange={(value) => setEditForm(prev => ({ ...prev, department: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Departman seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableDepartments.map((dept) => (
-                          <SelectItem key={dept} value={dept}>
-                            {dept}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-target">Hedef Değer</Label>
-                    <Input
-                      id="edit-target"
-                      type="number"
-                      value={editForm.targetValue || ''}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, targetValue: Number(e.target.value) }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-unit">Birim</Label>
-                    <Input
-                      id="edit-unit"
-                      value={editForm.unit || ''}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, unit: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-start-date">Başlangıç Tarihi</Label>
-                    <Input
-                      id="edit-start-date"
-                      type="date"
-                      value={editForm.startDate || ''}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, startDate: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-end-date">Bitiş Tarihi</Label>
-                    <Input
-                      id="edit-end-date"
-                      type="date"
-                      value={editForm.endDate || ''}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, endDate: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-period">Periyod</Label>
-                    <Select
-                      value={editForm.period || ''}
-                      onValueChange={(value: any) => setEditForm(prev => ({ ...prev, period: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Periyod seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="monthly">Aylık</SelectItem>
-                        <SelectItem value="quarterly">Üç Aylık</SelectItem>
-                        <SelectItem value="yearly">Yıllık</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-priority">Öncelik</Label>
-                    <Select
-                      value={editForm.priority || ''}
-                      onValueChange={(value: any) => setEditForm(prev => ({ ...prev, priority: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Öncelik seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Düşük</SelectItem>
-                        <SelectItem value="medium">Orta</SelectItem>
-                        <SelectItem value="high">Yüksek</SelectItem>
-                        <SelectItem value="critical">Kritik</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-description">Açıklama</Label>
-                  <Textarea
-                    id="edit-description"
-                    value={editForm.description || ''}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                    className="min-h-[80px]"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleSave} className="flex-1">
-                    <Save className="w-4 h-4 mr-2" />
-                    Kaydet
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsEditing(false)} className="flex-1">
-                    <X className="w-4 h-4 mr-2" />
-                    İptal
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="overview" className="text-xs sm:text-sm">Genel Bakış</TabsTrigger>
-              <TabsTrigger value="progress" className="text-xs sm:text-sm">İlerleme</TabsTrigger>
-              <TabsTrigger value="comments" className="text-xs sm:text-sm">Yorumlar</TabsTrigger>
+                Genel Bakış
+              </TabsTrigger>
+              <TabsTrigger
+                value="progress"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-0 font-medium text-muted-foreground data-[state=active]:text-foreground"
+              >
+                İlerleme Geçmişi
+              </TabsTrigger>
+              <TabsTrigger
+                value="comments"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none h-full px-0 font-medium text-muted-foreground data-[state=active]:text-foreground relative"
+              >
+                Yorumlar
+                {kpiStats.comments && kpiStats.comments.length > 0 && (
+                  <span className="ml-2 bg-muted-foreground/20 text-muted-foreground text-[10px] px-1.5 py-0.5 rounded-full">
+                    {kpiStats.comments.length}
+                  </span>
+                )}
+              </TabsTrigger>
             </TabsList>
+          </div>
 
-            <TabsContent value="overview" className="space-y-4 mt-4">
-              {/* KPI Overview */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Current Progress */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Target className="w-4 h-4" />
-                      Mevcut Durum
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-baseline justify-between">
-                        <span className="text-2xl font-bold">
-                          {kpiStats.currentValue.toLocaleString('tr-TR')}
-                        </span>
-                        <span className="text-sm text-muted-foreground">{kpiStats.unit}</span>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Hedef: {kpiStats.targetValue.toLocaleString('tr-TR')} {kpiStats.unit}
-                      </div>
-                      <Progress
-                        value={Math.min(kpiStats.progressPercentage, 100)}
-                        className={cn("h-2", `[&>div]:bg-${getStatusColor()}`)}
-                      />
-                      <div className="text-xs text-muted-foreground">
-                        %{(kpiStats.progressPercentage || 0).toFixed(1)} tamamlandı
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Timeline */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Zaman Çizelgesi
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="space-y-1">
-                      <div className="text-sm font-medium">Başlangıç - Bitiş</div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatDate(kpiStats.startDate)} - {formatDate(kpiStats.endDate)}
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-sm font-medium">Kalan Süre</div>
-                      <div className={cn(
-                        "text-sm font-medium",
-                        isOverdue ? "text-kpi-danger" :
-                          (kpiStats.remainingDays || 0) <= 7 ? "text-kpi-warning" : "text-foreground"
-                      )}>
-                        {isOverdue ?
-                          `${Math.abs(kpiStats.remainingDays || 0)} gün gecikme` :
-                          `${kpiStats.remainingDays || 0} gün`
-                        }
-                      </div>
-                    </div>
-                    {(kpiStats.velocity || 0) > 0 && (
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium">Günlük Hız</div>
-                        <div className="text-sm text-muted-foreground">
-                          {(kpiStats.velocity || 0).toFixed(2)} {kpiStats.unit || ''}/gün
+          <div className="flex-1 overflow-hidden bg-muted/5 relative min-h-0">
+            <TabsContent value="overview" className="h-full mt-0 border-0">
+              <ScrollArea className="h-full p-6">
+                <div className="space-y-6 animate-in fade-in-50 pb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-2 space-y-6">
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <span className="w-1 h-4 bg-primary rounded-full" />
+                          Açıklama
+                        </h3>
+                        <div className="bg-card p-4 rounded-lg text-sm text-foreground/80 leading-relaxed border border-border/50 shadow-sm">
+                          {kpiStats.description || 'Açıklama bulunmuyor.'}
                         </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                            <span className="w-1 h-4 bg-primary rounded-full" />
+                            İlerleme Grafiği
+                          </h3>
+                          <span className="text-xs text-muted-foreground">Son 30 Gün</span>
+                        </div>
+                        <div className="h-[250px] w-full border border-border/50 rounded-lg p-4 bg-card shadow-sm">
+                          <KPIProgressChart
+                            progress={progressData}
+                            targetValue={kpiStats.targetValue}
+                            unit={kpiStats.unit}
+                            compact={true}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Card className="shadow-sm border-border/50 bg-card">
+                        <CardHeader className="pb-2 pt-4 px-4 bg-muted/30 border-b border-border/50">
+                          <CardTitle className="text-sm font-semibold">Detaylar</CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-4 py-4 space-y-3">
+                          <div className="grid grid-cols-2 gap-y-3 text-sm">
+                            <div className="text-muted-foreground text-xs">Başlangıç</div>
+                            <div className="text-right font-medium">{formatDate(kpiStats.startDate)}</div>
+
+                            <div className="text-muted-foreground text-xs">Bitiş</div>
+                            <div className="text-right font-medium">{formatDate(kpiStats.endDate)}</div>
+
+                            <div className="text-muted-foreground text-xs">Atananlar</div>
+                            <div className="text-right">
+                              {kpiStats.assignedUsers && kpiStats.assignedUsers.length > 0 ? (
+                                <div className="flex flex-wrap justify-end gap-1">
+                                  {kpiStats.assignedUsers.map((u: any) => {
+                                    const user = availableUsers.find(au => au.id === u) || { firstName: u, lastName: '' };
+                                    return (
+                                      <Badge key={u} variant="secondary" className="text-[10px] px-1.5 h-5 bg-muted/50">
+                                        {user.firstName} {user.lastName?.[0]}.
+                                      </Badge>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground italic text-xs">Atanmamış</span>
+                              )}
+                            </div>
+
+                            <div className="text-muted-foreground text-xs">Öncelik</div>
+                            <div className="text-right">
+                              {kpiStats.priority && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 h-5">
+                                  {KPI_PRIORITIES[kpiStats.priority]}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          <Separator className="my-2" />
+
+                          <div className="space-y-2">
+                            {canEdit && (
+                              <Button variant="outline" size="sm" className="w-full text-xs h-8" onClick={() => setIsEditing(true)} disabled>
+                                <Settings className="w-3 h-3 mr-2" />
+                                Düzenle (Yakında)
+                              </Button>
+                            )}
+                            <Button variant="outline" size="sm" className="w-full text-xs h-8" onClick={handleDownloadPDF} disabled={isExporting}>
+                              {isExporting ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Printer className="w-3 h-3 mr-2" />}
+                              Yazdır / PDF
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full text-xs text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/20 h-8 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                                  disabled={!canDelete}
+                                >
+                                  <Trash2 className="w-3 h-3 mr-2" />
+                                  Sil
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>KPI Silinecek</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Bu işlem geri alınamaz. Devam etmek istiyor musunuz?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>İptal</AlertDialogCancel>
+                                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                                    Sil
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {canRecordProgress && (
+                        <Card className="shadow-sm border-blue-200 bg-blue-50/50 dark:bg-blue-900/10">
+                          <CardContent className="p-4">
+                            <h4 className="font-medium text-sm text-blue-800 dark:text-blue-300 mb-2">Hızlı İlerleme Ekle</h4>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mb-3">
+                              Mevcut hedefe yönelik yeni bir ilerleme kaydı oluşturun.
+                            </p>
+                            <Button
+                              className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                              size="sm"
+                              onClick={() => setActiveTab("progress")}
+                            >
+                              <TrendingUp className="w-4 h-4 mr-2" />
+                              İlerleme Kaydet
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="progress" className="h-full mt-0 border-0 flex flex-col overflow-hidden">
+              <ScrollArea className="flex-1 p-6 h-full">
+                <div className="space-y-6 animate-in fade-in-50 pb-6">
+                  {canRecordProgress && (
+                    <Card className="border border-border/50 shadow-sm bg-card">
+                      <CardHeader className="pb-3 pt-4 px-4 bg-muted/30 border-b border-border/50">
+                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-primary" />
+                          Yeni İlerleme Ekle
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="px-4 py-4">
+                        <div className="flex flex-col sm:flex-row gap-3 items-start">
+                          <div className="grid gap-1.5 flex-1 w-full">
+                            <Label htmlFor="progress-value" className="text-xs">Değer ({kpiStats.unit})</Label>
+                            <Input
+                              id="progress-value"
+                              type="number"
+                              placeholder="0.00"
+                              value={progressValue}
+                              onChange={(e) => setProgressValue(e.target.value)}
+                              step="0.01"
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="grid gap-1.5 flex-[2] w-full">
+                            <Label htmlFor="progress-note" className="text-xs">Not (Opsiyonel)</Label>
+                            <Input
+                              id="progress-note"
+                              placeholder="İlerleme hakkında kısa bir not..."
+                              value={progressNote}
+                              onChange={(e) => setProgressNote(e.target.value)}
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="pt-6 w-full sm:w-auto">
+                            <Button onClick={handleRecordProgress} size="sm" className="h-9 px-6 w-full sm:w-auto">
+                              Kaydet
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold flex items-center gap-2 px-1">
+                      <History className="w-4 h-4 text-muted-foreground" />
+                      Geçmiş Kayıtlar
+                    </h3>
+
+                    {(!kpiStats.recentProgress || kpiStats.recentProgress.length === 0) ? (
+                      <div className="text-center py-12 text-muted-foreground bg-muted/10 rounded-lg border border-dashed text-sm">
+                        <History className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                        Henüz ilerleme kaydı bulunmuyor.
+                      </div>
+                    ) : (
+                      <div className="relative border-l-2 border-muted/50 pl-6 space-y-6 ml-3 my-4">
+                        {kpiStats.recentProgress.map((record: any, index: number) => (
+                          <div key={record.id || index} className="relative group">
+                            <div className="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full bg-background border-2 border-primary group-hover:scale-125 transition-transform duration-200" />
+                            <div className="bg-card border border-border/50 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200">
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="font-bold text-primary text-lg">
+                                  +{record.value} <span className="text-sm font-normal text-muted-foreground">{kpiStats.unit}</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                                  {formatDateTime(record.recordedAt)}
+                                </span>
+                              </div>
+                              <div className="text-xs text-foreground/80 mb-2 flex items-center gap-2">
+                                <Avatar className="h-5 w-5">
+                                  <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                                    {(record.recordedByName || record.recordedBy || 'U').substring(0, 1).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="font-medium">{record.recordedByName || record.recordedBy}</span>
+                                <span className="text-muted-foreground">tarafından kaydedildi.</span>
+                              </div>
+                              {record.note && (
+                                <div className="text-sm text-foreground/90 bg-muted/30 p-2.5 rounded-md mt-2 border border-border/30 italic">
+                                  "{record.note}"
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Description */}
-              {kpiStats.description && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Açıklama</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{kpiStats.description}</p>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Assigned Users */}
-              {(kpiStats.assignedUsers || []).length > 0 && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      Atanan Kişiler ({(kpiStats.assignedUsers || []).length})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {(kpiStats.assignedUsers || []).map((userId, index) => {
-                        const user = availableUsers.find(u => u.id === userId);
-                        return (
-                          <Badge key={index} variant="secondary" className="text-xs flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            {user ? `${user.firstName} ${user.lastName}` : userId}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                </div>
+              </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="progress" className="space-y-4 mt-4">
-              {/* Progress Chart */}
-              {(kpiStats.recentProgress || []).length > 0 && (
-                <KPIProgressChart
-                  progress={kpiStats.recentProgress || []}
-                  targetValue={kpiStats.targetValue}
-                  unit={kpiStats.unit}
-                  title="İlerleme Grafiği"
-                />
-              )}
-
-              {/* Record New Progress */}
-              {canRecordProgress && !isCompleted && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Plus className="w-4 h-4" />
-                      Yeni İlerleme Kaydet
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="progress-value">Değer ({kpiStats.unit})</Label>
-                        <Input
-                          id="progress-value"
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          value={progressValue}
-                          onChange={(e) => setProgressValue(e.target.value)}
-                          placeholder="İlerleme değeri girin"
-                        />
+            <TabsContent value="comments" className="absolute inset-0 mt-0 border-0 flex flex-col overflow-hidden bg-background/50 data-[state=inactive]:hidden">
+              <ScrollArea className="flex-1 p-6 w-full">
+                <div className="space-y-6 pb-4 animate-in fade-in-50">
+                  {(!kpiStats.comments || kpiStats.comments.length === 0) ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <div className="bg-muted/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <MessageSquare className="w-8 h-8 opacity-40" />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="progress-note">Not (İsteğe Bağlı)</Label>
-                        <Input
-                          id="progress-note"
-                          value={progressNote}
-                          onChange={(e) => setProgressNote(e.target.value)}
-                          placeholder="Açıklama ekleyin"
-                        />
-                      </div>
+                      <p className="text-base font-medium mb-1">Henüz yorum yapılmamış.</p>
+                      <p className="text-sm opacity-80">Ekip arkadaşlarınızla iletişim kurmak için ilk yorumu siz yapın!</p>
                     </div>
-                    <Button onClick={handleRecordProgress} disabled={!progressValue} className="w-full">
-                      İlerleme Kaydet
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Progress History */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    İlerleme Geçmişi ({(kpiStats.recentProgress || []).length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {(kpiStats.recentProgress || []).length > 0 ? (
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
-                      {(kpiStats.recentProgress || []).map((progress) => (
-                        <div key={progress.id} className="bg-muted/30 p-3 rounded">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-medium">
-                              +{progress.value.toLocaleString('tr-TR')} {kpiStats.unit}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDateTime(progress.recordedAt)}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Kaydeden: {progress.recordedByName || progress.recordedBy}
-                          </div>
-                          {progress.note && (
-                            <div className="text-sm text-muted-foreground mt-1">
-                              {progress.note}
+                  ) : (
+                    kpiStats.comments.map((comment: any, index: number) => {
+                      const isCurrentUser = comment.userId === currentUser?.id || comment.userId === currentUser?.email;
+                      return (
+                        <div key={comment.id || index} className={cn("flex gap-3 max-w-[85%]", isCurrentUser ? "ml-auto flex-row-reverse" : "")}>
+                          <Avatar className="w-8 h-8 border shadow-sm mt-1">
+                            <AvatarImage src={`https://ui-avatars.com/api/?name=${comment.userName}&background=random`} />
+                            <AvatarFallback>{comment.userName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className={cn(
+                            "group p-4 rounded-2xl text-sm shadow-sm border",
+                            isCurrentUser
+                              ? "bg-primary text-primary-foreground rounded-tr-none border-primary/20"
+                              : "bg-muted text-foreground rounded-tl-none border-border/50"
+                          )}>
+                            <div className={cn("flex justify-between items-baseline gap-4 mb-2 pb-1 border-b opacity-80", isCurrentUser ? "border-primary-foreground/20" : "border-border/50")}>
+                              <span className="font-semibold text-xs">{comment.userName}</span>
+                              <span className="text-[10px]">
+                                {formatDateTime(comment.createdAt)}
+                              </span>
                             </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Henüz ilerleme kaydı bulunmuyor.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="comments" className="space-y-4 mt-4">
-              {/* Add New Comment */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    Yeni Yorum Ekle
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Yorumunuzu yazın..."
-                    className="min-h-[80px]"
-                  />
-                  <Button onClick={handleAddComment} disabled={!newComment.trim()} className="w-full">
-                    Yorum Ekle
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Comments List */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4" />
-                    Yorumlar ({kpiStats.comments?.length || 0})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {(kpiStats.comments || []).length > 0 ? (
-                    <div className="space-y-3 max-h-60 overflow-y-auto">
-                      {(kpiStats.comments || []).map((comment) => (
-                        <div key={comment.id} className="bg-muted/30 p-3 rounded">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="font-medium text-foreground">{comment.userName}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDateTime(comment.createdAt)}
-                            </span>
+                            <p className="leading-relaxed whitespace-pre-wrap">{comment.content}</p>
                           </div>
-                          <p className="text-sm text-muted-foreground">{comment.content}</p>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Henüz yorum bulunmuyor.
-                    </p>
+                      );
+                    })
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </ScrollArea>
+
+              <div className="p-4 bg-background border-t border-border mt-auto z-10 shadow-lg relative">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent opacity-50" />
+                <div className="flex gap-3 items-end max-w-3xl mx-auto">
+                  <div className="relative flex-1">
+                    <Textarea
+                      placeholder="Yorumunuzu buraya yazın..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      className="min-h-[50px] max-h-[150px] resize-none bg-muted/20 focus:bg-background transition-all border-muted-foreground/30 focus:border-primary pr-2 rounded-xl"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleAddComment}
+                    size="icon"
+                    className="h-11 w-11 shrink-0 rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
+                    disabled={!newComment.trim()}
+                  >
+                    <Send className="w-5 h-5 ml-0.5" />
+                  </Button>
+                </div>
+              </div>
             </TabsContent>
-          </Tabs>
-        )}
+          </div>
+        </Tabs>
       </DialogContent>
+
+      <div style={{ position: 'absolute', top: -9999, left: -9999 }}>
+        <KPIPrintView ref={printRef} kpiStats={kpiStats} />
+      </div>
     </Dialog>
   );
 }

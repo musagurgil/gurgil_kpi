@@ -13,10 +13,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { 
-  TrendingUp, 
-  Target, 
-  Clock, 
+import {
+  TrendingUp,
+  Target,
+  Clock,
   Calendar,
   Users,
   AlertTriangle,
@@ -24,8 +24,10 @@ import {
   X,
   MessageSquare,
   User,
-  Trash2
+  Trash2,
+  ArrowUpRight
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { KPIStats, KPI_PERIODS, KPI_PRIORITIES } from '@/types/kpi';
 
@@ -38,8 +40,8 @@ interface KPIStatsCardProps {
   onDelete?: () => void;
 }
 
-export function KPIStatsCard({ 
-  kpiStats, 
+export function KPIStatsCard({
+  kpiStats,
   onClick,
   canRecordProgress,
   showProgressHistory = true,
@@ -103,242 +105,132 @@ export function KPIStatsCard({
   const isOverdue = (kpiStats.remainingDays || 0) < 0;
 
   return (
-    <Card 
-      className="shadow-card hover:shadow-elevated transition-smooth cursor-pointer"
+    <Card
+      className={cn(
+        "group relative overflow-hidden transition-all duration-300 hover:shadow-elevated hover:-translate-y-1 cursor-pointer border-l-4",
+        kpiStats.priority === 'high' ? "border-l-red-500" :
+          kpiStats.priority === 'medium' ? "border-l-yellow-500" : "border-l-blue-500"
+      )}
       onClick={onClick}
     >
-      <CardHeader className="pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-          <div className="space-y-1 flex-1">
-            <CardTitle className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 hover:text-primary transition-colors">
-              {kpiStats.title}
-            </CardTitle>
-            <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs text-muted-foreground">
-              <Badge variant="outline" className="text-xs">
-                {kpiStats.department}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {KPI_PERIODS[kpiStats.period]}
-              </Badge>
-              {kpiStats.priority && (
-                <Badge variant="secondary" className="text-xs">
-                  {KPI_PRIORITIES[kpiStats.priority]}
+      <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+      </div>
+
+      <CardHeader className="pb-3 pt-4 px-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-between items-start gap-2">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-background/50 backdrop-blur-sm">
+                  {kpiStats.department}
                 </Badge>
-              )}
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                  {KPI_PERIODS[kpiStats.period]}
+                </Badge>
+              </div>
+              <CardTitle className="text-base font-semibold leading-tight line-clamp-2 min-h-[2.5rem] group-hover:text-primary transition-colors">
+                {kpiStats.title}
+              </CardTitle>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge 
-              variant={getStatusBadgeVariant()} 
+            <Badge
+              variant={getStatusBadgeVariant()}
               className={cn(
-                "text-xs flex items-center gap-1 w-fit font-medium",
-                kpiStats.status === 'success' && "bg-green-100 text-green-800 border-green-200",
-                kpiStats.status === 'warning' && "bg-yellow-100 text-yellow-800 border-yellow-200",
-                kpiStats.status === 'danger' && "bg-red-100 text-red-800 border-red-200"
+                "text-[10px] px-2 py-0.5 h-6 flex items-center gap-1.5 shrink-0 shadow-sm",
+                kpiStats.status === 'success' && "bg-emerald-100 text-emerald-700 border-emerald-200",
+                kpiStats.status === 'warning' && "bg-amber-100 text-amber-700 border-amber-200",
+                kpiStats.status === 'danger' && "bg-rose-100 text-rose-700 border-rose-200"
               )}
             >
               {getStatusIcon()}
-              <span className="hidden sm:inline">{getStatusText()}</span>
-              <span className="sm:hidden">{getStatusText().charAt(0)}</span>
+              <span className="font-medium">{getStatusText()}</span>
             </Badge>
-            {canDelete && onDelete && (
-              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                <AlertDialogTrigger asChild>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-                className="p-1 hover:bg-destructive/10 rounded-md transition-colors text-destructive hover:text-destructive/80"
-                title="KPI'yı Sil"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>KPI'yı Silmek İstediğinize Emin misiniz?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      <span className="font-semibold text-foreground">{kpiStats.title}</span> KPI'sını silmek üzeresiniz. 
-                      Bu işlem geri alınamaz ve tüm ilerleme kayıtları, yorumlar ve atamalar da silinecektir.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-                      İptal
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete();
-                        setShowDeleteDialog(false);
-                      }}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Evet, Sil
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
           </div>
         </div>
       </CardHeader>
-      
-      <CardContent className="space-y-4">
+
+      <CardContent className="px-4 pb-4 space-y-4">
         {/* Value and Target */}
-        <div className="space-y-2">
-          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-xl sm:text-2xl font-bold text-foreground">
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-bold tracking-tight">
                 {(kpiStats.currentValue || 0).toLocaleString('tr-TR')}
               </span>
-              <span className="text-xs sm:text-sm text-muted-foreground">{kpiStats.unit || ''}</span>
+              <span className="text-xs font-medium text-muted-foreground">{kpiStats.unit || ''}</span>
             </div>
-            <div className="text-left sm:text-right">
-              <div className="text-xs text-muted-foreground">Hedef</div>
-              <div className="text-base sm:text-lg font-semibold">
+            <div className="text-right">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Hedef</div>
+              <div className="text-sm font-semibold">
                 {(kpiStats.targetValue || 0).toLocaleString('tr-TR')} {kpiStats.unit || ''}
               </div>
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center text-sm">
-              <span className="font-medium text-foreground">
-                İlerleme: %{(kpiStats.progressPercentage || 0).toFixed(1)}
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center text-xs">
+              <span className={cn("font-medium",
+                (kpiStats.progressPercentage || 0) >= 100 ? "text-emerald-600" : "text-muted-foreground"
+              )}>
+                %{(kpiStats.progressPercentage || 0).toFixed(0)} Tamamlandı
               </span>
               <span className="text-muted-foreground">
-                {((kpiStats.targetValue || 0) - (kpiStats.currentValue || 0)).toLocaleString('tr-TR')} kalan
+                {((kpiStats.targetValue || 0) - (kpiStats.currentValue || 0)) > 0
+                  ? `${((kpiStats.targetValue || 0) - (kpiStats.currentValue || 0)).toLocaleString('tr-TR')} ${kpiStats.unit} kalan`
+                  : 'Hedefe ulaşıldı'
+                }
               </span>
             </div>
-            <Progress 
-              value={Math.min(kpiStats.progressPercentage || 0, 100)} 
-              className={cn("h-3", `[&>div]:bg-${getStatusColor()}`)}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>
-                {kpiStats.currentValue || 0} / {kpiStats.targetValue || 0} {kpiStats.unit || ''}
-              </span>
-              <span>
-                {kpiStats.remainingDays > 0 ? `${kpiStats.remainingDays} gün kaldı` : 
-                 kpiStats.remainingDays < 0 ? `${Math.abs(kpiStats.remainingDays)} gün gecikti` : 
-                 'Bugün bitiyor'}
-              </span>
+            <div className="h-2 w-full bg-secondary/30 rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-500",
+                  kpiStats.status === 'success' ? "bg-gradient-to-r from-emerald-500 to-green-400" :
+                    kpiStats.status === 'warning' ? "bg-gradient-to-r from-amber-500 to-yellow-400" :
+                      kpiStats.status === 'danger' ? "bg-gradient-to-r from-rose-500 to-red-400" :
+                        "bg-primary"
+                )}
+                style={{ width: `${Math.min(kpiStats.progressPercentage || 0, 100)}%` }}
+              />
             </div>
           </div>
         </div>
 
-        {/* Timeline and Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Calendar className="w-3 h-3 flex-shrink-0" />
-              <span className="text-xs">Tarih Aralığı</span>
-            </div>
-            <div className="text-xs line-clamp-1">
-              {formatDate(kpiStats.startDate)} - {formatDate(kpiStats.endDate)}
-            </div>
-          </div>
-          
-          <div className="space-y-1">
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Clock className="w-3 h-3 flex-shrink-0" />
-              <span className="text-xs">Kalan Süre</span>
-            </div>
+        {/* Footer Info */}
+        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] text-muted-foreground">Kalan Süre</span>
             <div className={cn(
-              "text-xs font-medium",
-              isOverdue ? "text-kpi-danger" : 
-              (kpiStats.remainingDays || 0) <= 7 ? "text-kpi-warning" : "text-foreground"
+              "text-xs font-medium flex items-center gap-1",
+              isOverdue ? "text-rose-600" : (kpiStats.remainingDays || 0) <= 7 ? "text-amber-600" : "text-foreground"
             )}>
-              {isOverdue ? 
-                `${Math.abs(kpiStats.remainingDays || 0)} gün gecikme` : 
-                `${kpiStats.remainingDays || 0} gün`
-              }
+              <Clock className="w-3 h-3" />
+              {kpiStats.remainingDays > 0 ? `${kpiStats.remainingDays} gün` : Math.abs(kpiStats.remainingDays) + ' gün gecikti'}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-0.5 items-end">
+            <span className="text-[10px] text-muted-foreground">Son Aktivite</span>
+            <div className="flex items-center gap-2">
+              {(kpiStats.comments || []).length > 0 && (
+                <div className="flex items-center gap-0.5 text-xs text-muted-foreground" title="Yorumlar">
+                  <MessageSquare className="w-3 h-3" />
+                  {kpiStats.comments.length}
+                </div>
+              )}
+              <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                {kpiStats.recentProgress && kpiStats.recentProgress.length > 0 ? (
+                  <span title="Son ilerleme">{formatDate(kpiStats.recentProgress[0].recordedAt)}</span>
+                ) : (
+                  <span>-</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Velocity and Estimation */}
-        {(kpiStats.velocity || 0) > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <div className="space-y-1">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <TrendingUp className="w-3 h-3 flex-shrink-0" />
-                <span className="text-xs">Günlük Hız</span>
-              </div>
-              <div className="text-xs line-clamp-1">
-                {(kpiStats.velocity || 0).toFixed(2)} {kpiStats.unit || ''}/gün
-              </div>
-            </div>
-            
-            {kpiStats.estimatedCompletion && !isCompleted && (
-              <div className="space-y-1">
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Target className="w-3 h-3 flex-shrink-0" />
-                  <span className="text-xs">Tahmini Bitiş</span>
-                </div>
-                <div className="text-xs line-clamp-1">
-                  {formatDate(kpiStats.estimatedCompletion)}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Recent Progress */}
-        {showProgressHistory && (kpiStats.recentProgress || []).length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Users className="w-3 h-3" />
-              <span className="text-xs">Son İlerlemeler</span>
-            </div>
-            <div className="space-y-1 max-h-20 overflow-y-auto">
-              {(kpiStats.recentProgress || []).slice(0, 3).map((progress) => (
-                <div key={progress.id} className="text-xs bg-muted/30 p-2 rounded">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">
-                      +{(progress.value || 0).toLocaleString('tr-TR')} {kpiStats.unit || ''}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {formatDateTime(progress.recordedAt)}
-                    </span>
-                  </div>
-                  <div className="text-muted-foreground mt-1">
-                    {progress.recordedByName || progress.recordedBy}
-                  </div>
-                  {progress.note && (
-                    <div className="text-muted-foreground mt-1 line-clamp-1">
-                      {progress.note}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Quick Actions Hint */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2 text-xs text-muted-foreground">
-          <span className="hidden sm:inline">Detaylar için tıklayın</span>
-          <span className="sm:hidden">Detaylar için tıklayın</span>
-          <div className="flex items-center gap-2">
-            {(kpiStats.comments || []).length > 0 && (
-              <span className="flex items-center gap-1">
-                <MessageSquare className="w-3 h-3 flex-shrink-0" />
-                <span className="hidden sm:inline">{(kpiStats.comments || []).length}</span>
-                <span className="sm:hidden">{(kpiStats.comments || []).length}</span>
-              </span>
-            )}
-            {(kpiStats.recentProgress || []).length > 0 && (
-              <span className="flex items-center gap-1">
-                <TrendingUp className="w-3 h-3 flex-shrink-0" />
-                <span className="hidden sm:inline">{(kpiStats.recentProgress || []).length}</span>
-                <span className="sm:hidden">{(kpiStats.recentProgress || []).length}</span>
-              </span>
-            )}
-          </div>
-        </div>
+        {/* Actions Overlay Removed as per user request */}
       </CardContent>
     </Card>
   );

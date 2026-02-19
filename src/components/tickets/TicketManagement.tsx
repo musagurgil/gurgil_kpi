@@ -1,22 +1,21 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Ticket,
   Plus,
-  Filter,
-  BarChart3,
   Clock,
   CheckCircle,
   XCircle,
   AlertTriangle,
-  Users,
   Download,
   LayoutGrid,
   List as ListIcon,
-  KanbanSquare
+  KanbanSquare,
+  TrendingUp,
+  Loader2
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTickets } from "@/hooks/useTickets";
@@ -35,14 +34,13 @@ import { toast as sonnerToast } from 'sonner';
 export function TicketManagement() {
   const { user } = useAuth();
 
-  // Create a mock user object for useTickets hook compatibility
   const mockUser = user ? {
     id: user.id,
     department: user.department,
     role: user.roles.includes('admin') ? 'admin' as const :
       user.roles.includes('department_manager') ? 'department_manager' as const :
         user.roles.includes('board_member') ? 'board_member' as const : 'employee' as const,
-    roles: user.roles, // Add missing roles property
+    roles: user.roles,
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
@@ -65,8 +63,8 @@ export function TicketManagement() {
   const [filter, setFilter] = useState<TicketFilter>({});
   const [activeTab, setActiveTab] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'board'>('grid');
-
   const [users, setUsers] = useState<User[]>([]);
+  const [showCharts, setShowCharts] = useState(true);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -81,14 +79,12 @@ export function TicketManagement() {
     fetchUsers();
   }, []);
 
-  // Local helper to filter tickets
   const filterTickets = (tickets: TicketType[], currentFilter: TicketFilter) => {
     return tickets.filter(ticket => {
       if (currentFilter.status && ticket.status !== currentFilter.status) return false;
       if (currentFilter.priority && ticket.priority !== currentFilter.priority) return false;
       if (currentFilter.department && ticket.targetDepartment !== currentFilter.department) return false;
       if (currentFilter.search && !ticket.title.toLowerCase().includes(currentFilter.search.toLowerCase())) return false;
-      // Assigned To filter
       if (currentFilter.assignedTo) {
         if (currentFilter.assignedTo === 'unassigned') {
           if (ticket.assignedTo) return false;
@@ -100,29 +96,21 @@ export function TicketManagement() {
     });
   };
 
-  // Local helper to get stats
   const getTicketStats = (ticketList: TicketType[]) => {
     const total = ticketList.length;
     const open = ticketList.filter(t => t.status === 'open').length;
     const inProgress = ticketList.filter(t => t.status === 'in_progress').length;
     const resolved = ticketList.filter(t => t.status === 'resolved').length;
     const closed = ticketList.filter(t => t.status === 'closed').length;
-
-    return {
-      total,
-      open,
-      inProgress,
-      resolved,
-      closed
-    };
+    return { total, open, inProgress, resolved, closed };
   };
 
   const filteredTickets = filterTickets(tickets, filter);
   const stats = getTicketStats(filteredTickets);
+  const completionRate = stats.total > 0 ? Math.round(((stats.resolved + stats.closed) / stats.total) * 100) : 0;
 
   const getTicketsByTab = (tab: string) => {
     if (!user) return [];
-
     switch (tab) {
       case 'my-tickets':
         return filteredTickets.filter(ticket => ticket.createdBy === user.id);
@@ -163,8 +151,6 @@ export function TicketManagement() {
 
   const handleAddComment = async (ticketId: string, content: string, isInternal?: boolean) => {
     const success = await addComment(ticketId, content, isInternal);
-
-    // Force update selected ticket with latest data from tickets state
     if (success && selectedTicket) {
       setTimeout(() => {
         const updatedTicket = tickets.find(t => t.id === ticketId);
@@ -205,164 +191,173 @@ export function TicketManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
       </div>
     );
   }
 
+  const statCards = [
+    { label: 'Toplam', value: stats.total, icon: Ticket, gradient: 'from-blue-500 to-indigo-600', bg: 'bg-blue-500/10' },
+    { label: 'Açık', value: stats.open, icon: Clock, gradient: 'from-sky-400 to-blue-500', bg: 'bg-sky-500/10' },
+    { label: 'İşlemde', value: stats.inProgress, icon: AlertTriangle, gradient: 'from-amber-400 to-orange-500', bg: 'bg-amber-500/10' },
+    { label: 'Çözüldü', value: stats.resolved, icon: CheckCircle, gradient: 'from-emerald-400 to-green-600', bg: 'bg-emerald-500/10' },
+    { label: 'Kapatıldı', value: stats.closed, icon: XCircle, gradient: 'from-slate-400 to-gray-500', bg: 'bg-slate-500/10' },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Ticket Yönetimi</h1>
-          <p className="text-muted-foreground">
-            Departmanlar arası destek talepleri ve çözüm süreçleri
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex p-1 bg-muted rounded-md border text-muted-foreground mr-2">
-            <Button
-              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setViewMode('list')}
-              title="Liste Görünümü"
-            >
-              <ListIcon className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'board' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setViewMode('board')}
-              title="Board Görünümü"
-            >
-              <KanbanSquare className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setViewMode('grid')}
-              title="Kart Görünümü"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </Button>
+    <div className="space-y-5">
+      {/* Premium Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 p-6 shadow-xl">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djZoLTZWMzRoLTR2LTRoNHYtNmg2djZoNHY0aC00eiIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 shadow-lg">
+              <Ticket className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Ticket Yönetimi</h1>
+              <p className="text-white/70 text-sm mt-0.5">
+                Departmanlar arası destek talepleri ve çözüm süreçleri
+              </p>
+            </div>
           </div>
-          <Button
-            variant="outline"
-            onClick={handleExportTickets}
-            disabled={currentTabTickets.length === 0}
-            className="gap-2 hidden sm:flex"
-          >
-            <Download className="w-4 h-4" />
-            Excel
-          </Button>
-          {!user?.roles.includes('board_member') && (
-            <CreateTicketDialog onCreateTicket={handleCreateTicket} />
-          )}
+          <div className="flex items-center gap-2">
+            {/* View Mode Toggle */}
+            <div className="flex p-1 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+              {[
+                { mode: 'list' as const, icon: ListIcon, title: 'Liste' },
+                { mode: 'board' as const, icon: KanbanSquare, title: 'Board' },
+                { mode: 'grid' as const, icon: LayoutGrid, title: 'Kartlar' },
+              ].map(({ mode, icon: Icon, title }) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  title={title}
+                  className={`p-1.5 rounded-md transition-all duration-200 ${viewMode === mode
+                      ? 'bg-white/25 text-white shadow-sm'
+                      : 'text-white/60 hover:text-white hover:bg-white/10'
+                    }`}
+                >
+                  <Icon className="w-4 h-4" />
+                </button>
+              ))}
+            </div>
+
+            {/* Charts Toggle */}
+            <button
+              onClick={() => setShowCharts(!showCharts)}
+              title={showCharts ? 'Grafikleri Gizle' : 'Grafikleri Göster'}
+              className={`p-2 rounded-lg transition-all duration-200 border ${showCharts
+                  ? 'bg-white/20 text-white border-white/30'
+                  : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white/70'
+                }`}
+            >
+              <TrendingUp className="w-4 h-4" />
+            </button>
+
+            {/* Export */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportTickets}
+              disabled={currentTabTickets.length === 0}
+              className="hidden sm:flex gap-1.5 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
+            >
+              <Download className="w-4 h-4" />
+              Excel
+            </Button>
+
+            {/* Create */}
+            {!user?.roles.includes('board_member') && (
+              <CreateTicketDialog onCreateTicket={handleCreateTicket} />
+            )}
+          </div>
+        </div>
+
+        {/* Completion Rate Indicator */}
+        <div className="relative mt-4 flex items-center gap-3">
+          <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-400 to-green-300 rounded-full transition-all duration-700"
+              style={{ width: `${completionRate}%` }}
+            />
+          </div>
+          <span className="text-xs text-white/70 font-medium whitespace-nowrap">
+            %{completionRate} tamamlandı
+          </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4">
-        <Card className="shadow-sm">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0">
-                <Ticket className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Toplam</p>
-                <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500/10 rounded-lg flex items-center justify-center shrink-0">
-                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Açık</p>
-                <p className="text-xl sm:text-2xl font-bold">{stats.open}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-warning/10 rounded-lg flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-warning" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">İşlemde</p>
-                <p className="text-xl sm:text-2xl font-bold">{stats.inProgress}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-success/10 rounded-lg flex items-center justify-center shrink-0">
-                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Çözüldü</p>
-                <p className="text-xl sm:text-2xl font-bold">{stats.resolved}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-muted rounded-lg flex items-center justify-center shrink-0">
-                <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Kapatıldı</p>
-                <p className="text-xl sm:text-2xl font-bold">{stats.closed}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.label} className="border-0 shadow-md hover:shadow-lg transition-all duration-300 bg-card/80 backdrop-blur-sm">
+              <CardContent className="p-3.5">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-sm`}>
+                    <Icon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
+                    <p className="text-2xl font-bold tracking-tight">{stat.value}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
+      {/* Filters */}
       <TicketFilters
         filter={filter}
         onFilterChange={setFilter}
         users={users}
       />
 
-      {/* Ticket Charts */}
-      {tickets.length > 0 && viewMode === 'grid' && (
+      {/* Charts */}
+      {showCharts && tickets.length > 0 && (
         <TicketCharts tickets={filteredTickets} />
       )}
 
+      {/* Tabs & Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mb-4">
-          <TabsTrigger value="all" className="text-xs sm:text-sm">Tüm Ticketlar</TabsTrigger>
-          <TabsTrigger value="my-tickets" className="text-xs sm:text-sm">Oluşturduklarım</TabsTrigger>
-          <TabsTrigger value="assigned" className="text-xs sm:text-sm">Atananlar</TabsTrigger>
-          <TabsTrigger value="open" className="text-xs sm:text-sm">Açık</TabsTrigger>
-          <TabsTrigger value="in-progress" className="text-xs sm:text-sm">Devam Eden</TabsTrigger>
-        </TabsList>
+        <div className="bg-card/50 backdrop-blur-sm rounded-xl border border-border/50 p-1 mb-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 bg-transparent gap-1">
+            {[
+              { value: 'all', label: 'Tüm Ticketlar', count: filteredTickets.length },
+              { value: 'my-tickets', label: 'Oluşturduklarım', count: getTicketsByTab('my-tickets').length },
+              { value: 'assigned', label: 'Atananlar', count: getTicketsByTab('assigned').length },
+              { value: 'open', label: 'Açık', count: getTicketsByTab('open').length },
+              { value: 'in-progress', label: 'Devam Eden', count: getTicketsByTab('in-progress').length },
+            ].map(tab => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+              >
+                {tab.label}
+                {tab.count > 0 && (
+                  <Badge variant="secondary" className="ml-1.5 text-[10px] h-4 min-w-4 px-1 data-[state=active]:bg-white/20 data-[state=active]:text-white">
+                    {tab.count}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         <TabsContent value={activeTab} className="space-y-4 m-0">
           {currentTabTickets.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Ticket className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-semibold mb-2">Ticket bulunamadı</h3>
-                <p className="text-muted-foreground">
+            <Card className="border-dashed border-2 border-border/50">
+              <CardContent className="p-12 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 flex items-center justify-center mx-auto mb-4">
+                  <Ticket className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold text-lg mb-1">Ticket bulunamadı</h3>
+                <p className="text-muted-foreground text-sm">
                   Seçilen kriterlere uygun ticket bulunmuyor.
                 </p>
               </CardContent>
@@ -408,7 +403,6 @@ export function TicketManagement() {
         </TabsContent>
       </Tabs>
 
-
       <TicketDetails
         ticket={selectedTicket}
         users={users}
@@ -419,7 +413,6 @@ export function TicketManagement() {
         onAddComment={handleAddComment}
         onDeleteTicket={handleDeleteTicket}
         onRefreshTicket={() => {
-          // Refresh the selected ticket by finding it in the updated tickets list
           if (selectedTicket) {
             const updatedTicket = tickets.find(t => t.id === selectedTicket.id);
             if (updatedTicket) {

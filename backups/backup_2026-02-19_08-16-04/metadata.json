@@ -1,0 +1,96 @@
+{
+  "id": "backup_2026-02-19_08-16-04",
+  "createdAt": "2026-02-19T08:16:04.320Z",
+  "createdBy": "cmh04hb4j0009sjkfdax7va1q",
+  "createdByName": "Admin User",
+  "version": "1.0",
+  "totalSize": 224924,
+  "dbFileSize": 176128,
+  "tables": [
+    {
+      "name": "departments",
+      "displayName": "Departmanlar",
+      "count": 16,
+      "size": 1511
+    },
+    {
+      "name": "profiles",
+      "displayName": "Kullanıcılar",
+      "count": 20,
+      "size": 4311
+    },
+    {
+      "name": "user_roles",
+      "displayName": "Kullanıcı Rolleri",
+      "count": 18,
+      "size": 2356
+    },
+    {
+      "name": "kpi_targets",
+      "displayName": "KPI Hedefleri",
+      "count": 5,
+      "size": 2070
+    },
+    {
+      "name": "kpi_assignments",
+      "displayName": "KPI Atamaları",
+      "count": 7,
+      "size": 1037
+    },
+    {
+      "name": "kpi_progress",
+      "displayName": "KPI İlerleme",
+      "count": 8,
+      "size": 1999
+    },
+    {
+      "name": "kpi_comments",
+      "displayName": "KPI Yorumları",
+      "count": 5,
+      "size": 1335
+    },
+    {
+      "name": "tickets",
+      "displayName": "Talepler",
+      "count": 12,
+      "size": 5236
+    },
+    {
+      "name": "ticket_comments",
+      "displayName": "Talep Yorumları",
+      "count": 2,
+      "size": 462
+    },
+    {
+      "name": "calendar_categories",
+      "displayName": "Takvim Kategorileri",
+      "count": 6,
+      "size": 713
+    },
+    {
+      "name": "calendar_activities",
+      "displayName": "Takvim Aktiviteleri",
+      "count": 14,
+      "size": 5692
+    },
+    {
+      "name": "notifications",
+      "displayName": "Bildirimler",
+      "count": 17,
+      "size": 6116
+    },
+    {
+      "name": "meeting_rooms",
+      "displayName": "Toplantı Odaları",
+      "count": 6,
+      "size": 1500
+    },
+    {
+      "name": "meeting_reservations",
+      "displayName": "Toplantı Rezervasyonları",
+      "count": 9,
+      "size": 3315
+    }
+  ],
+  "totalRecords": 145
+}

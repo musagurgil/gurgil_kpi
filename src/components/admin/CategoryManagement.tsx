@@ -155,24 +155,22 @@ export const CategoryManagement = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {categories.map(category => (
-          <Card key={category.id} className="hover:shadow-md transition-smooth">
+          <Card key={category.id} className="border-border/50 shadow-sm hover:shadow-md transition-all duration-200 group">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className="w-4 h-4 rounded-full flex-shrink-0"
+                    className="w-5 h-5 rounded-lg flex-shrink-0 shadow-sm ring-2 ring-offset-2 ring-offset-background"
                     style={{ backgroundColor: category.color }}
                   />
-                  <div>
-                    <h3 className="font-medium text-foreground">{category.name}</h3>
-                    <p className="text-sm text-muted-foreground">#{category.id}</p>
-                  </div>
+                  <h3 className="font-semibold text-foreground truncate">{category.name}</h3>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleEdit(category)}
+                    className="h-8 w-8 p-0"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -180,7 +178,7 @@ export const CategoryManagement = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDelete(category.id)}
-                    className="text-destructive hover:text-destructive"
+                    className="text-destructive hover:text-destructive h-8 w-8 p-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

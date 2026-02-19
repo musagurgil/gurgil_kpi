@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './useAuth';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 import { User, CreateUserData } from '@/types/user';
+import { useAdminFilters, AdminFiltersState } from '@/stores/adminFilterStore';
+
+export type { AdminFiltersState } from '@/stores/adminFilterStore';
 
 export const useAdmin = () => {
   const { user, hasRole } = useAuth();
@@ -10,14 +13,8 @@ export const useAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Mock filters
-  const [filters, setFilters] = useState({
-    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
-    department: '',
-    user: '',
-    status: ''
-  });
+  // Use shared Zustand store for filters
+  const { filters, setFilters } = useAdminFilters();
 
   // Load profiles
   const loadProfiles = useCallback(async () => {
@@ -44,6 +41,21 @@ export const useAdmin = () => {
   useEffect(() => {
     loadProfiles();
   }, [loadProfiles]);
+
+  // Filtered profiles based on department and user filters
+  const filteredProfiles = useMemo(() => {
+    let result = profiles;
+
+    if (filters.department) {
+      result = result.filter(p => p.department === filters.department);
+    }
+
+    if (filters.userId) {
+      result = result.filter(p => p.id === filters.userId);
+    }
+
+    return result;
+  }, [profiles, filters.department, filters.userId]);
 
   const createProfile = async (profileData: CreateUserData) => {
     try {
@@ -88,23 +100,56 @@ export const useAdmin = () => {
     }
   };
 
-  const getAvailableDepartments = () => [
-    'Yönetim', 'Satış', 'Pazarlama', 'İnsan Kaynakları',
-    'IT', 'Finans', 'Operasyon', 'Müşteri Hizmetleri'
-  ];
+  // Get real departments from DB profiles
+  const getAvailableDepartments = useCallback(() => {
+    const deptSet = new Set(profiles.map(p => p.department).filter(Boolean));
+    return Array.from(deptSet).sort();
+  }, [profiles]);
 
-  const getAvailableUsers = () => profiles.map(p => ({
+  const getAvailableUsers = useCallback(() => profiles.map(p => ({
     id: p.id,
     name: `${p.firstName} ${p.lastName}`,
     email: p.email
-  }));
+  })), [profiles]);
 
-  const exportToCSV = () => {
-    console.log('Export to CSV functionality would be implemented here');
-  };
+  // Real CSV export implementation
+  const exportToCSV = useCallback(() => {
+    if (filteredProfiles.length === 0) {
+      toast.error('Dışa aktarılacak veri bulunamadı');
+      return;
+    }
+
+    const headers = ['Ad', 'Soyad', 'E-posta', 'Departman', 'Durum'];
+    const rows = filteredProfiles.map(p => [
+      p.firstName,
+      p.lastName,
+      p.email,
+      p.department || '-',
+      p.isActive !== false ? 'Aktif' : 'Pasif'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `yonetici_rapor_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`${filteredProfiles.length} kayıt CSV olarak indirildi`);
+  }, [filteredProfiles]);
 
   return {
     profiles,
+    filteredProfiles,
     loading,
     error,
     filters,
@@ -117,7 +162,7 @@ export const useAdmin = () => {
     deleteProfile,
     currentUser: user ? {
       id: user.id,
-      roles: user.roles, // Updated to use roles
+      roles: user.roles,
       department: user.department
     } : null,
     refetch: loadProfiles

@@ -69,13 +69,13 @@ export const KPIPrintView = forwardRef<HTMLDivElement, KPIPrintViewProps>(({ kpi
                 </div>
 
                 <div className="flex gap-2 mt-4">
-                    <Badge variant="outline" className="text-xs bg-white text-black border-gray-300">
+                    <Badge variant="outline" className="text-xs bg-white text-black border-gray-300 px-4 flex items-center justify-center h-8 whitespace-nowrap">
                         {KPI_PERIODS[kpiStats.period]}
                     </Badge>
-                    <Badge variant="secondary" className="text-xs bg-gray-200 text-black">
+                    <Badge variant="secondary" className="text-xs bg-gray-200 text-black px-4 flex items-center justify-center h-8 whitespace-nowrap">
                         {KPI_PRIORITIES[kpiStats.priority]} Öncelik
                     </Badge>
-                    <Badge className={cn("text-xs text-white",
+                    <Badge className={cn("text-xs text-white px-4 flex items-center justify-center h-8 whitespace-nowrap",
                         kpiStats.status === 'success' ? 'bg-green-600' :
                             kpiStats.status === 'warning' ? 'bg-yellow-600' :
                                 kpiStats.status === 'danger' ? 'bg-red-600' : 'bg-blue-600'
@@ -103,12 +103,11 @@ export const KPIPrintView = forwardRef<HTMLDivElement, KPIPrintViewProps>(({ kpi
                     </div>
                     <Progress
                         value={Math.min(kpiStats.progressPercentage, 100)}
-                        className="h-2 mb-2 bg-gray-200"
-                        indicatorClassName={
-                            kpiStats.status === 'success' ? 'bg-green-600' :
-                                kpiStats.status === 'warning' ? 'bg-yellow-600' :
-                                    kpiStats.status === 'danger' ? 'bg-red-600' : 'bg-blue-600'
-                        }
+                        className={cn("h-2 mb-2 bg-gray-200",
+                            kpiStats.status === 'success' ? '[&>div]:bg-green-600' :
+                                kpiStats.status === 'warning' ? '[&>div]:bg-yellow-600' :
+                                    kpiStats.status === 'danger' ? '[&>div]:bg-red-600' : '[&>div]:bg-blue-600'
+                        )}
                     />
                     <div className="text-right text-xs font-medium text-gray-600">
                         %{(kpiStats.progressPercentage || 0).toFixed(1)} tamamlandı
@@ -127,7 +126,7 @@ export const KPIPrintView = forwardRef<HTMLDivElement, KPIPrintViewProps>(({ kpi
                         </div>
                         <div className="flex justify-between text-sm border-b border-gray-200 pb-2">
                             <span className="text-gray-500">Bitiş:</span>
-                            <span className="font-medium">{formatDate(kpiStats.startDate)}</span>
+                            <span className="font-medium">{formatDate(kpiStats.endDate)}</span>
                         </div>
                         <div className="flex justify-between text-sm pt-1">
                             <span className="text-gray-500">Kalan Süre:</span>
@@ -150,7 +149,8 @@ export const KPIPrintView = forwardRef<HTMLDivElement, KPIPrintViewProps>(({ kpi
                         progress={kpiStats.recentProgress || []}
                         targetValue={kpiStats.targetValue}
                         unit={kpiStats.unit}
-                        title="" // Hide title in chart component as we have custom header
+                        showHeader={false}
+                        showSummary={false}
                     />
                 </div>
             </div>

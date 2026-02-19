@@ -7,8 +7,7 @@ import {
     Clock,
     PlayCircle,
     CheckCircle,
-    XCircle,
-    MoreHorizontal
+    XCircle
 } from "lucide-react";
 
 interface TicketBoardProps {
@@ -28,10 +27,10 @@ export function TicketBoard({
 }: TicketBoardProps) {
 
     const columns = [
-        { id: 'open', label: 'Açık', icon: Clock, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-        { id: 'in_progress', label: 'Devam Eden', icon: PlayCircle, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-        { id: 'resolved', label: 'Çözüldü', icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-500/10' },
-        { id: 'closed', label: 'Kapatıldı', icon: XCircle, color: 'text-gray-500', bg: 'bg-gray-500/10' },
+        { id: 'open', label: 'Açık', icon: Clock, gradient: 'from-blue-500 to-indigo-600', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+        { id: 'in_progress', label: 'Devam Eden', icon: PlayCircle, gradient: 'from-amber-400 to-orange-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+        { id: 'resolved', label: 'Çözüldü', icon: CheckCircle, gradient: 'from-emerald-400 to-green-600', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+        { id: 'closed', label: 'Kapatıldı', icon: XCircle, gradient: 'from-gray-400 to-slate-500', bg: 'bg-gray-500/10', border: 'border-gray-500/20' },
     ] as const;
 
     return (
@@ -41,21 +40,18 @@ export function TicketBoard({
                 const Icon = column.icon;
 
                 return (
-                    <div key={column.id} className="min-w-[300px] w-[350px] flex flex-col rounded-lg border bg-muted/40">
+                    <div key={column.id} className={`min-w-[300px] w-[350px] flex flex-col rounded-xl border bg-card/50 backdrop-blur-sm overflow-hidden ${column.border}`}>
                         {/* Column Header */}
-                        <div className="p-3 border-b flex items-center justify-between bg-card rounded-t-lg sticky top-0 z-10">
+                        <div className={`p-3 flex items-center justify-between bg-gradient-to-r ${column.gradient}`}>
                             <div className="flex items-center gap-2">
-                                <div className={`p-1.5 rounded-md ${column.bg}`}>
-                                    <Icon className={`w-4 h-4 ${column.color}`} />
+                                <div className="p-1 rounded-md bg-white/20">
+                                    <Icon className="w-4 h-4 text-white" />
                                 </div>
-                                <h3 className="font-semibold text-sm">{column.label}</h3>
-                                <Badge variant="secondary" className="ml-1 text-xs px-1.5 h-5 min-w-5 flex items-center justify-center">
-                                    {columnTickets.length}
-                                </Badge>
+                                <h3 className="font-semibold text-sm text-white">{column.label}</h3>
                             </div>
-                            <button className="text-muted-foreground hover:text-foreground">
-                                <MoreHorizontal className="w-4 h-4" />
-                            </button>
+                            <Badge className="bg-white/20 text-white border-0 text-xs px-1.5 h-5 min-w-5 flex items-center justify-center hover:bg-white/30">
+                                {columnTickets.length}
+                            </Badge>
                         </div>
 
                         {/* Column Content */}
@@ -72,7 +68,7 @@ export function TicketBoard({
                                     />
                                 ))}
                                 {columnTickets.length === 0 && (
-                                    <div className="h-24 border-2 border-dashed border-muted-foreground/20 rounded-lg flex items-center justify-center text-muted-foreground text-sm">
+                                    <div className="h-24 border-2 border-dashed border-muted-foreground/15 rounded-lg flex items-center justify-center text-muted-foreground/50 text-xs">
                                         Ticket yok
                                     </div>
                                 )}

@@ -1,197 +1,201 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { BarChart3, PieChart as PieIcon } from 'lucide-react';
-import { Ticket } from '@/types/ticket';
+import {
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Legend
+} from "recharts";
+import { PieChart as PieIcon, BarChart3, Target } from "lucide-react";
+import { Ticket, TICKET_STATUSES, TICKET_PRIORITIES } from "@/types/ticket";
 
 interface TicketChartsProps {
   tickets: Ticket[];
 }
 
 export function TicketCharts({ tickets }: TicketChartsProps) {
-  // Status distribution
+  // ⎯ Status Distribution ⎯
   const statusData = [
-    { name: 'Açık', value: tickets.filter(t => t.status === 'open').length, color: '#3b82f6' },
+    { name: 'Açık', value: tickets.filter(t => t.status === 'open').length, color: '#6366f1' },
     { name: 'Devam Ediyor', value: tickets.filter(t => t.status === 'in_progress').length, color: '#f59e0b' },
     { name: 'Çözüldü', value: tickets.filter(t => t.status === 'resolved').length, color: '#10b981' },
-    { name: 'Kapatıldı', value: tickets.filter(t => t.status === 'closed').length, color: '#6b7280' }
-  ].filter(item => item.value > 0);
+    { name: 'Kapatıldı', value: tickets.filter(t => t.status === 'closed').length, color: '#94a3b8' },
+  ].filter(d => d.value > 0);
 
-  // Priority distribution
+  // ⎯ Priority Distribution ⎯
   const priorityData = [
     { name: 'Düşük', value: tickets.filter(t => t.priority === 'low').length, color: '#10b981' },
     { name: 'Orta', value: tickets.filter(t => t.priority === 'medium').length, color: '#f59e0b' },
-    { name: 'Yüksek', value: tickets.filter(t => t.priority === 'high').length, color: '#ef4444' },
-    { name: 'Acil', value: tickets.filter(t => t.priority === 'urgent').length, color: '#dc2626' }
-  ].filter(item => item.value > 0);
+    { name: 'Yüksek', value: tickets.filter(t => t.priority === 'high').length, color: '#f97316' },
+    { name: 'Acil', value: tickets.filter(t => t.priority === 'urgent').length, color: '#ef4444' },
+  ].filter(d => d.value > 0);
 
-  // Department statistics
-  const departmentStats = tickets.reduce((acc: any[], ticket) => {
-    const existing = acc.find(d => d.department === ticket.targetDepartment);
-    if (existing) {
-      existing.total++;
-      if (ticket.status === 'open') existing.open++;
-      if (ticket.status === 'in_progress') existing.inProgress++;
-      if (ticket.status === 'resolved' || ticket.status === 'closed') existing.completed++;
-    } else {
-      acc.push({
-        department: ticket.targetDepartment,
-        total: 1,
-        open: ticket.status === 'open' ? 1 : 0,
-        inProgress: ticket.status === 'in_progress' ? 1 : 0,
-        completed: (ticket.status === 'resolved' || ticket.status === 'closed') ? 1 : 0
-      });
+  // ⎯ Department Statistics ⎯
+  const departmentMap = new Map<string, { total: number; open: number; inProgress: number; resolved: number }>();
+  tickets.forEach(ticket => {
+    const dept = ticket.targetDepartment;
+    if (!departmentMap.has(dept)) {
+      departmentMap.set(dept, { total: 0, open: 0, inProgress: 0, resolved: 0 });
     }
-    return acc;
-  }, []);
+    const d = departmentMap.get(dept)!;
+    d.total++;
+    if (ticket.status === 'open') d.open++;
+    if (ticket.status === 'in_progress') d.inProgress++;
+    if (ticket.status === 'resolved' || ticket.status === 'closed') d.resolved++;
+  });
+  const departmentData = Array.from(departmentMap.entries()).map(([name, data]) => ({
+    name: name.length > 12 ? name.substring(0, 12) + '…' : name,
+    ...data
+  }));
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-card border border-border rounded-lg shadow-lg p-3">
-          <p className="text-sm font-semibold">{payload[0].name}</p>
-          <p className="text-xs text-muted-foreground">
-            Adet: <span className="font-medium text-foreground">{payload[0].value}</span>
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Oran: <span className="font-medium text-primary">
-              %{((payload[0].value / tickets.length) * 100).toFixed(1)}
-            </span>
-          </p>
+        <div className="bg-popover/95 backdrop-blur-sm border border-border rounded-lg p-2.5 shadow-xl text-xs">
+          {label && <p className="font-semibold text-foreground mb-1">{label}</p>}
+          {payload.map((entry: any, idx: number) => (
+            <div key={idx} className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+              <span className="text-muted-foreground">{entry.name}:</span>
+              <span className="font-semibold">{entry.value}</span>
+            </div>
+          ))}
         </div>
       );
     }
     return null;
   };
 
-  if (tickets.length === 0) {
+  const renderCustomLegend = (data: { name: string; value: number; color: string }[]) => {
+    const total = data.reduce((sum, d) => sum + d.value, 0);
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Ticket İstatistikleri
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-8">
-            Grafik oluşturmak için yeterli ticket bulunmuyor.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 justify-center mt-2">
+        {data.map((item, idx) => (
+          <div key={idx} className="flex items-center gap-1.5 text-xs">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+            <span className="text-muted-foreground">{item.name}:</span>
+            <span className="font-semibold">{item.value}</span>
+            <span className="text-muted-foreground/60">(%{total > 0 ? Math.round((item.value / total) * 100) : 0})</span>
+          </div>
+        ))}
+      </div>
     );
-  }
+  };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Status Distribution */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <PieIcon className="w-4 h-4" />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+      {/* Status Donut */}
+      <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+        <CardHeader className="pb-2 p-4">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm">
+              <PieIcon className="w-3.5 h-3.5 text-white" />
+            </div>
             Durum Dağılımı
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={statusData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={(entry) => `${entry.name} (${entry.value})`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {statusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            {statusData.map((item) => (
-              <div key={item.name} className="flex items-center gap-2 text-xs">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-muted-foreground">
-                  {item.name}: <span className="font-semibold text-foreground">{item.value}</span>
-                </span>
-              </div>
-            ))}
-          </div>
+        <CardContent className="p-4 pt-0">
+          {statusData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={65}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              {renderCustomLegend(statusData)}
+            </>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
+              Veri bulunmuyor
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Priority Distribution */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
+      {/* Priority Donut */}
+      <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+        <CardHeader className="pb-2 p-4">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
+              <Target className="w-3.5 h-3.5 text-white" />
+            </div>
             Öncelik Dağılımı
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={priorityData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={(entry) => `${entry.name} (${entry.value})`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {priorityData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomTooltip />} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            {priorityData.map((item) => (
-              <div key={item.name} className="flex items-center gap-2 text-xs">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-muted-foreground">
-                  {item.name}: <span className="font-semibold text-foreground">{item.value}</span>
-                </span>
-              </div>
-            ))}
-          </div>
+        <CardContent className="p-4 pt-0">
+          {priorityData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={160}>
+                <PieChart>
+                  <Pie
+                    data={priorityData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={65}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {priorityData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              {renderCustomLegend(priorityData)}
+            </>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
+              Veri bulunmuyor
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Department Statistics */}
-      {departmentStats.length > 0 && (
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Departman Bazlı İstatistikler
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Department Bar Chart */}
+      <Card className="border-border/50 bg-card/80 backdrop-blur-sm md:col-span-2 lg:col-span-1">
+        <CardHeader className="pb-2 p-4">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-400 to-green-600 shadow-sm">
+              <BarChart3 className="w-3.5 h-3.5 text-white" />
+            </div>
+            Departman İstatistikleri
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          {departmentData.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={departmentStats}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="department" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ fontSize: '12px' }} />
-                <Bar dataKey="open" stackId="a" fill="#3b82f6" name="Açık" />
-                <Bar dataKey="inProgress" stackId="a" fill="#f59e0b" name="Devam Ediyor" />
-                <Bar dataKey="completed" stackId="a" fill="#10b981" name="Tamamlanan" />
+              <BarChart data={departmentData} barSize={16}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} className="text-muted-foreground" />
+                <YAxis tick={{ fontSize: 10 }} className="text-muted-foreground" allowDecimals={false} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="open" name="Açık" fill="#6366f1" radius={[2, 2, 0, 0]} stackId="a" />
+                <Bar dataKey="inProgress" name="Devam E." fill="#f59e0b" radius={[0, 0, 0, 0]} stackId="a" />
+                <Bar dataKey="resolved" name="Çözüldü" fill="#10b981" radius={[2, 2, 0, 0]} stackId="a" />
+                <Legend wrapperStyle={{ fontSize: '10px' }} />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
+              Veri bulunmuyor
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
