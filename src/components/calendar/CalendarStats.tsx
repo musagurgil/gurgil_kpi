@@ -24,14 +24,14 @@ export const CalendarStats = ({ stats }: CalendarStatsProps) => {
   return (
     <div className="space-y-4">
       {/* Monthly Overview */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <LucideIcons.Calendar className="w-4 h-4" />
+      <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
+        <CardHeader className="pb-3 border-b border-border/30">
+          <CardTitle className="text-base flex items-center gap-2 font-semibold">
+            <LucideIcons.Calendar className="w-4 h-4 text-primary" />
             Aylık Özet
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-4">
           {/* Total Hours */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -68,17 +68,18 @@ export const CalendarStats = ({ stats }: CalendarStatsProps) => {
       </Card>
 
       {/* Category Distribution */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <LucideIcons.BarChart3 className="w-4 h-4" />
+      <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
+        <CardHeader className="pb-3 border-b border-border/30">
+          <CardTitle className="text-base flex items-center gap-2 font-semibold">
+            <LucideIcons.BarChart3 className="w-4 h-4 text-primary" />
             Kategori Dağılımı
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           {stats?.categoryStats && Object.keys(stats.categoryStats).length > 0 ? (
             <div className="space-y-3">
-              {Object.entries(stats.categoryStats).map(([categoryId, hours]) => {
+              {Object.entries(stats.categoryStats).map(([categoryId, hoursValue]) => {
+                const hours = Number(hoursValue);
                 const totalHours = stats.monthlyTotalHours || 0;
                 const percentage = totalHours > 0 ? Math.min((hours / totalHours) * 100, 100) : 0;
 
@@ -98,13 +99,15 @@ export const CalendarStats = ({ stats }: CalendarStatsProps) => {
                         {hours.toFixed(1)}h ({percentage.toFixed(0)}%)
                       </span>
                     </div>
-                    <Progress
-                      value={percentage}
-                      className="h-2"
-                      style={{
-                        '--progress-background': getCategoryColor(categoryId)
-                      } as React.CSSProperties}
-                    />
+                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-secondary/30">
+                      <div
+                        className="h-full bg-foreground transition-all duration-500 rounded-full"
+                        style={{
+                          width: `${percentage}%`,
+                          backgroundColor: getCategoryColor(categoryId)
+                        }}
+                      />
+                    </div>
                   </div>
                 );
               })}
@@ -120,11 +123,11 @@ export const CalendarStats = ({ stats }: CalendarStatsProps) => {
       </Card>
 
       {/* Quick Stats */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Hızlı İstatistikler</CardTitle>
+      <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
+        <CardHeader className="pb-3 border-b border-border/30">
+          <CardTitle className="text-base font-semibold">Hızlı İstatistikler</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-2 pt-4">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">En Aktif Gün</span>
             <span className="font-medium">

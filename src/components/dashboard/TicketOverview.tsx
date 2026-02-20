@@ -8,7 +8,7 @@ import { TICKET_PRIORITIES, TICKET_STATUSES, PRIORITY_COLORS, STATUS_COLORS } fr
 
 export function TicketOverview() {
   const { stats, loading } = useDashboard();
-  
+
   // Mock recent tickets data
   const recentTickets = [
     {
@@ -31,7 +31,7 @@ export function TicketOverview() {
 
   if (loading) {
     return (
-      <Card className="shadow-card">
+      <Card className="shadow-sm border-border/50 hover:shadow-md transition-smooth bg-card/50 backdrop-blur-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold">Son Ticket'lar</CardTitle>
@@ -40,7 +40,7 @@ export function TicketOverview() {
             </Button>
           </div>
         </CardHeader>
-        
+
         <CardContent className="p-0">
           <div className="space-y-1">
             {[...Array(3)].map((_, index) => (
@@ -71,7 +71,7 @@ export function TicketOverview() {
 
   if (!recentTickets || recentTickets.length === 0) {
     return (
-      <Card className="shadow-card">
+      <Card className="shadow-sm border-border/50 hover:shadow-md transition-smooth bg-card/50 backdrop-blur-sm">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold">Son Ticket'lar</CardTitle>
@@ -80,7 +80,7 @@ export function TicketOverview() {
             </Button>
           </div>
         </CardHeader>
-        
+
         <CardContent>
           <p className="text-muted-foreground text-center py-8">
             Henüz ticket bulunmamaktadır.
@@ -91,7 +91,7 @@ export function TicketOverview() {
   }
 
   return (
-    <Card className="shadow-card">
+    <Card className="shadow-sm border-border/50 hover:shadow-md transition-smooth bg-card/50 backdrop-blur-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">Son Ticket'lar</CardTitle>
@@ -100,18 +100,18 @@ export function TicketOverview() {
           </Button>
         </div>
       </CardHeader>
-      
+
       <CardContent className="p-0">
         <div className="space-y-1">
           {recentTickets.map((ticket) => (
-            <div 
+            <div
               key={ticket.id}
               className="flex items-center justify-between p-4 hover:bg-muted/50 transition-smooth border-b border-border last:border-b-0"
             >
               <div className="flex items-center space-x-4 flex-1">
                 {/* Priority Indicator */}
                 <div className={`w-3 h-3 rounded-full ${PRIORITY_COLORS[ticket.priority]}`} />
-                
+
                 {/* Ticket Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2 mb-1">
@@ -122,7 +122,7 @@ export function TicketOverview() {
                       {ticket.id}
                     </Badge>
                   </div>
-                  
+
                   <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                     <span>{ticket.sourceDepartment}</span>
                     <div className="flex items-center space-x-1">

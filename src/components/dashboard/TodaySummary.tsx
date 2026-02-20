@@ -62,7 +62,7 @@ export function TodaySummary() {
   ];
 
   return (
-    <Card className="shadow-card hover:shadow-elevated transition-smooth">
+    <Card className="shadow-sm border-border/50 hover:shadow-md transition-smooth bg-card/50 backdrop-blur-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">Günün Özeti</CardTitle>

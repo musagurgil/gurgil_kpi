@@ -211,23 +211,35 @@ export default function Analytics() {
   const activeKPIs = totalKPIs - completedKPIs;
 
   return (
-    <div className="flex-1 bg-dashboard-bg min-h-screen p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="flex-1 bg-dashboard-bg min-h-screen">
+      {/* Premium Gradient Header */}
+      <div className="relative overflow-hidden bg-gradient-brand px-6 py-10 mb-8 sm:rounded-b-3xl sm:mx-4 lg:mx-6 sm:mt-0 shadow-lg">
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[length:16px_16px]" />
+        <div className="absolute -left-40 -top-40 w-80 h-80 bg-white/10 rounded-full blur-3xl opacity-50 animate-pulse-slow" />
+        <div className="absolute -right-40 -bottom-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl opacity-50 animate-pulse-slow" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+
+        <div className="relative z-10 max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Şirket Analitik</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              Gerçek zamanlı performans metrikleri ve departman analizleri
+            <h1 className="text-3xl sm:text-4xl font-bold text-white flex items-center gap-3 tracking-tight mb-2">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 shadow-inner">
+                <Activity className="w-6 h-6 text-white" />
+              </div>
+              <span className="truncate drop-shadow-md">Şirket Analitik</span>
+            </h1>
+            <p className="text-base text-white/80 max-w-xl">
+              Gerçek zamanlı performans metrikleri, departman analizleri ve genel durum değerlendirmesi.
             </p>
           </div>
-          <div className="flex items-center space-x-2">
-            <Badge variant="outline" className="px-3 py-1">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse mr-2"></div>
-              Canlı Veri
-            </Badge>
+          <div className="flex items-center space-x-2 mt-4 sm:mt-0 bg-white/10 border border-white/20 backdrop-blur-md px-3 py-1.5 rounded-full shadow-sm">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse mr-2 shadow-[0_0_8px_rgba(74,222,128,0.8)]"></div>
+            <span className="text-white text-sm font-medium">Canlı Veri</span>
           </div>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6 relative z-20 -mt-14">
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -409,34 +421,34 @@ export default function Analytics() {
         </div>
 
         {/* Department Details Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Departman Detayları</CardTitle>
+        <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
+          <CardHeader className="border-b border-border/30 pb-4">
+            <CardTitle className="font-semibold">Departman Detayları</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
+          <CardContent className="pt-6">
+            <div className="space-y-3">
               {departmentStats.map((dept) => (
-                <div key={dept.name} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+                <div key={dept.name} className="flex items-center justify-between p-4 bg-muted/30 border border-border/30 rounded-xl hover:bg-muted/60 hover:shadow-sm transition-all duration-300 hover:-translate-y-0.5">
                   <div>
-                    <h3 className="font-medium text-foreground">{dept.name}</h3>
+                    <h3 className="font-medium text-foreground text-base">{dept.name}</h3>
                     <p className="text-sm text-muted-foreground">{dept.users} çalışan</p>
                   </div>
                   <div className="flex items-center gap-4 sm:gap-8">
                     <div className="text-right">
                       <p className="text-sm font-medium text-foreground">{dept.totalKPIs}</p>
-                      <p className="text-xs text-muted-foreground">Toplam KPI</p>
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Toplam KPI</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-kpi-warning">{dept.activeKPIs}</p>
-                      <p className="text-xs text-muted-foreground">Aktif</p>
+                      <p className="text-lg font-bold text-kpi-warning leading-none mb-1">{dept.activeKPIs}</p>
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Aktif</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-kpi-success">{dept.completedKPIs}</p>
-                      <p className="text-xs text-muted-foreground">Tamamlandı</p>
+                      <p className="text-lg font-bold text-kpi-success leading-none mb-1">{dept.completedKPIs}</p>
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Tamamlandı</p>
                     </div>
-                    <div className="text-right hidden sm:block">
-                      <p className="text-sm font-bold text-foreground">%{Math.round(dept.successRate)}</p>
-                      <p className="text-xs text-muted-foreground">Başarı</p>
+                    <div className="text-right hidden sm:block bg-background/50 px-3 py-1.5 rounded-lg border border-border/50">
+                      <p className="text-base font-bold text-foreground">%{Math.round(dept.successRate)}</p>
+                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Başarı</p>
                     </div>
                   </div>
                 </div>

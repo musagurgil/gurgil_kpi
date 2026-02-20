@@ -74,7 +74,7 @@ export function DepartmentPerformance() {
 
   if (loading) {
     return (
-      <Card className="shadow-card">
+      <Card className="shadow-sm border-border/50 hover:shadow-md transition-smooth bg-card/50 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-lg font-semibold">Departman Performansı</CardTitle>
         </CardHeader>
@@ -103,7 +103,7 @@ export function DepartmentPerformance() {
 
   if (!departmentPerformance || departmentPerformance.length === 0) {
     return (
-      <Card className="shadow-card">
+      <Card className="shadow-sm border-border/50 hover:shadow-md transition-smooth bg-card/50 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Building2 className="w-5 h-5 text-primary" />
@@ -124,7 +124,7 @@ export function DepartmentPerformance() {
   }
 
   return (
-    <Card className="shadow-card">
+    <Card className="shadow-sm border-border/50 hover:shadow-md transition-smooth bg-card/50 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Building2 className="w-5 h-5 text-primary" />

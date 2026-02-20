@@ -266,33 +266,41 @@ export default function MeetingRooms() {
   }
 
   return (
-    <div className="flex-1 bg-dashboard-bg min-h-screen p-4 sm:p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="flex-1 bg-dashboard-bg min-h-screen">
+      {/* Premium Gradient Header */}
+      <div className="relative overflow-hidden bg-gradient-brand px-6 py-10 mb-8 sm:rounded-b-3xl sm:mx-4 lg:mx-6 sm:mt-0 shadow-lg">
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[length:16px_16px]" />
+        <div className="absolute -left-40 -top-40 w-80 h-80 bg-white/10 rounded-full blur-3xl opacity-50 animate-pulse-slow" />
+        <div className="absolute -right-40 -bottom-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl opacity-50 animate-pulse-slow" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+
+        <div className="relative z-10 max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
-              <Building2 className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
-              <span className="truncate">Toplantı Odaları</span>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white flex items-center gap-3 tracking-tight mb-2">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 shadow-inner">
+                <Building2 className="w-6 h-6 text-white" />
+              </div>
+              <span className="truncate drop-shadow-md">Toplantı Odaları</span>
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Odaları görüntüleyin ve rezervasyon yapın
+            <p className="text-base text-white/80 max-w-xl">
+              Odaları görüntüleyin, müsaitlik durumlarını takip edin ve hızlıca rezervasyon oluşturun.
             </p>
           </div>
-          <div className="flex gap-2 w-full sm:w-auto shrink-0">
+          <div className="flex gap-3 w-full sm:w-auto shrink-0 mt-4 sm:mt-0">
             <Button
               onClick={() => setShowReservationForm(true)}
-              className="flex-1 sm:flex-initial"
+              className="flex-1 sm:flex-initial bg-white text-primary hover:bg-white/90 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 font-semibold border-0"
             >
               <CalendarIcon className="w-4 h-4 mr-2 shrink-0" />
-              <span className="hidden sm:inline">Rezervasyon Oluştur</span>
+              <span className="hidden sm:inline">Yeni Rezervasyon</span>
               <span className="sm:hidden">Rezervasyon</span>
             </Button>
             {isAdmin && (
               <Button
                 variant="outline"
                 onClick={() => setShowCreateRoomDialog(true)}
-                className="shrink-0"
+                className="shrink-0 bg-white/10 text-white hover:bg-white/20 hover:text-white border-white/20 backdrop-blur-sm shadow-sm transition-all duration-300"
               >
                 <Plus className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">Oda Ekle</span>
@@ -300,16 +308,18 @@ export default function MeetingRooms() {
             )}
           </div>
         </div>
+      </div>
 
+      <div className="max-w-6xl mx-auto space-y-8 px-4 sm:px-6">
         {/* Search and Filter */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-4 bg-card/60 backdrop-blur-md p-4 rounded-2xl border border-border/50 shadow-sm relative z-20 -mt-14">
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
-              placeholder="Oda ara..."
+              placeholder="Oda adı, konu veya açıklama ile ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 w-full"
+              className="pl-10 w-full h-11 bg-background/50 border-border/50 hover:border-border transition-colors text-base rounded-xl"
             />
           </div>
         </div>
@@ -338,9 +348,11 @@ export default function MeetingRooms() {
               return (
                 <Card
                   key={room.id}
-                  className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] flex flex-col h-full"
+                  className="group cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full bg-card/50 backdrop-blur-sm border-border/50 shadow-sm relative overflow-hidden"
                   onClick={() => handleRoomClick(room)}
                 >
+                  {/* Subtle hover gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                   <CardContent className="p-4 sm:p-6 flex flex-col flex-1">
                     <div className="flex flex-col flex-1 min-h-0">
                       {/* Header */}
@@ -348,10 +360,10 @@ export default function MeetingRooms() {
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base sm:text-lg font-semibold mb-2 truncate">{room.name}</h3>
                           <Badge
-                            variant={available ? 'default' : 'secondary'}
+                            variant={available ? 'outline' : 'secondary'}
                             className={cn(
-                              "text-xs",
-                              available ? 'bg-green-500 hover:bg-green-600' : ''
+                              "text-[10px] px-2 py-0.5 uppercase tracking-wider font-semibold shadow-sm",
+                              available ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted text-muted-foreground'
                             )}
                           >
                             {available ? 'Müsait' : 'Dolu'}
@@ -431,7 +443,7 @@ export default function MeetingRooms() {
 
                       {/* Action Button - Always at bottom */}
                       <Button
-                        className="w-full mt-auto shrink-0"
+                        className="w-full mt-auto shrink-0 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors border border-primary/20 group-hover:bg-primary group-hover:text-white"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleReserveClick(room.id);
@@ -482,31 +494,32 @@ export default function MeetingRooms() {
                         return (
                           <Card
                             key={reservation.id}
-                            className="cursor-pointer hover:shadow-md transition-all"
+                            className="cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all bg-card/50 backdrop-blur-sm border-border/50 shadow-sm group relative overflow-hidden"
                             onClick={() => setSelectedReservation(reservation)}
                           >
-                            <CardContent className="p-4">
+                            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <CardContent className="p-4 relative z-10">
                               <div className="space-y-3">
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 min-w-0">
                                     <h3 className="font-semibold text-sm sm:text-base truncate">
                                       {room?.name || 'Bilinmeyen Oda'}
                                     </h3>
-                                    <div className="mt-1">
+                                    <div className="mt-2 flex items-center gap-2">
                                       {reservation.status === 'approved' && (
-                                        <Badge className="bg-green-500 hover:bg-green-600 text-xs">
+                                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px] uppercase tracking-wider font-semibold">
                                           <CheckCircle2 className="w-3 h-3 mr-1" />
                                           Onaylandı
                                         </Badge>
                                       )}
                                       {reservation.status === 'pending' && (
-                                        <Badge variant="secondary" className="text-xs">
+                                        <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[10px] uppercase tracking-wider font-semibold">
                                           <Clock className="w-3 h-3 mr-1" />
                                           Bekliyor
                                         </Badge>
                                       )}
                                       {reservation.status === 'rejected' && (
-                                        <Badge variant="destructive" className="text-xs">
+                                        <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/20 text-[10px] uppercase tracking-wider font-semibold">
                                           <XCircle className="w-3 h-3 mr-1" />
                                           Reddedildi
                                         </Badge>

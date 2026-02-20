@@ -88,6 +88,7 @@ export default {
 				}
 			},
 			backgroundImage: {
+				'gradient-brand': 'var(--gradient-brand)',
 				'gradient-primary': 'var(--gradient-primary)',
 				'gradient-success': 'var(--gradient-success)',
 				'gradient-warning': 'var(--gradient-warning)',

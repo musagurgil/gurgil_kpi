@@ -93,57 +93,70 @@ const Calendar = () => {
 
   return (
     <div className="flex-1 bg-dashboard-bg min-h-screen">
-      {/* Header */}
-      <div className="bg-card border-b border-border shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
-                <LucideIcons.Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
-                Çalışma Takvimi
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">Günlük aktivitelerinizi takip edin ve yönetin</p>
-            </div>
+      {/* Premium Gradient Header */}
+      <div className="relative overflow-hidden bg-gradient-brand px-6 py-10 mb-8 sm:rounded-b-3xl sm:mx-4 lg:mx-6 sm:mt-0 shadow-lg">
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[length:16px_16px]" />
+        <div className="absolute -left-40 -top-40 w-80 h-80 bg-white/10 rounded-full blur-3xl opacity-50 animate-pulse-slow" />
+        <div className="absolute -right-40 -bottom-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl opacity-50 animate-pulse-slow" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-              {/* Export Button */}
-              <Button
-                variant="outline"
-                onClick={handleExportActivities}
-                disabled={activities.length === 0}
-                className="gap-2 w-full sm:w-auto justify-center"
-              >
-                <LucideIcons.Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Excel'e Aktar</span>
-                <span className="sm:hidden">Aktar</span>
-                <span className="hidden sm:inline">({activities.length})</span>
-              </Button>
-
-              {/* View Toggle */}
-              <div className="flex items-center gap-2 bg-muted p-1 rounded-lg w-full sm:w-auto justify-center">
-                <Button
-                  variant={currentView === 'weekly' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setCurrentView('weekly')}
-                  className="flex items-center gap-2 flex-1 sm:flex-none"
-                >
-                  <LucideIcons.CalendarDays className="w-4 h-4" />
-                  <span className="hidden sm:inline">Haftalık</span>
-                  <span className="sm:hidden">Hafta</span>
-                </Button>
-                <Button
-                  variant={currentView === 'monthly' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setCurrentView('monthly')}
-                  className="flex items-center gap-2 flex-1 sm:flex-none"
-                >
-                  <LucideIcons.Calendar className="w-4 h-4" />
-                  <span className="hidden sm:inline">Aylık</span>
-                  <span className="sm:hidden">Ay</span>
-                </Button>
+        <div className="relative z-10 max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl sm:text-4xl font-bold text-white flex items-center gap-3 tracking-tight mb-2">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 shadow-inner">
+                <LucideIcons.Calendar className="w-6 h-6 text-white" />
               </div>
+              <span className="truncate drop-shadow-md">Çalışma Takvimi</span>
+            </h1>
+            <p className="text-base text-white/80 max-w-xl">
+              Günlük aktivitelerinizi takip edin, toplantılarınızı planlayın ve görevlerinizi yönetin.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+            {/* Export Button */}
+            <Button
+              variant="outline"
+              onClick={handleExportActivities}
+              disabled={activities.length === 0}
+              className="gap-2 w-full sm:w-auto justify-center bg-white/10 text-white hover:bg-white/20 hover:text-white border-white/20 backdrop-blur-sm shadow-sm transition-all duration-300"
+            >
+              <LucideIcons.Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Excel'e Aktar</span>
+              <span className="sm:hidden">Aktar</span>
+              <span className="hidden sm:inline">({activities.length})</span>
+            </Button>
+
+            {/* View Toggle */}
+            <div className="flex items-center gap-1 bg-black/20 p-1 rounded-xl w-full sm:w-auto justify-center border border-white/10 backdrop-blur-md">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentView('weekly')}
+                className={`flex items-center gap-2 flex-1 sm:flex-none rounded-lg transition-all ${currentView === 'weekly' ? 'bg-white text-primary shadow-sm hover:bg-white hover:text-primary' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}
+              >
+                <LucideIcons.CalendarDays className="w-4 h-4" />
+                <span className="hidden sm:inline font-medium">Haftalık</span>
+                <span className="sm:hidden font-medium">Hafta</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentView('monthly')}
+                className={`flex items-center gap-2 flex-1 sm:flex-none rounded-lg transition-all ${currentView === 'monthly' ? 'bg-white text-primary shadow-sm hover:bg-white hover:text-primary' : 'text-white/80 hover:bg-white/10 hover:text-white'}`}
+              >
+                <LucideIcons.Calendar className="w-4 h-4" />
+                <span className="hidden sm:inline font-medium">Aylık</span>
+                <span className="sm:hidden font-medium">Ay</span>
+              </Button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="bg-card/60 backdrop-blur-md border border-border/50 shadow-sm rounded-2xl p-4 relative z-20 -mt-14 mb-8">
 
           {/* Navigation and Filters Row */}
           <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
@@ -197,7 +210,7 @@ const Calendar = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Calendar Grid */}
           <div className="lg:col-span-3">
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden bg-card/60 backdrop-blur-md border-border/50 shadow-sm">
               {currentView === 'weekly' ? (
                 <WeeklyCalendarGrid
                   selectedDate={selectedDate}

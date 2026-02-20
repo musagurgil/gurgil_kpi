@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -21,6 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DEPARTMENTS, ROLES } from "@/types/user";
 import { toast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
+import { Edit2 } from "lucide-react";
 
 interface User {
   id: string;
@@ -51,7 +53,7 @@ export function EditUserDialog({ user, open, onOpenChange, onUserUpdated }: Edit
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const isAdmin = hasRole('admin');
 
   useEffect(() => {
@@ -79,18 +81,6 @@ export function EditUserDialog({ user, open, onOpenChange, onUserUpdated }: Edit
     setLoading(true);
 
     try {
-      console.log('[EditUserDialog] Updating profile:', {
-        id: user.id,
-        data: {
-          email: formData.email,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          department: formData.department,
-          roles: [formData.role]
-        }
-      });
-
-      // Use API client to update user
       const updatedProfile = await apiClient.updateProfile(user.id, {
         email: formData.email,
         firstName: formData.firstName,
@@ -99,43 +89,23 @@ export function EditUserDialog({ user, open, onOpenChange, onUserUpdated }: Edit
         roles: [formData.role]
       });
 
-      console.log('[EditUserDialog] Profile updated successfully:', updatedProfile);
-
       toast({
         title: "Başarılı",
         description: "Kullanıcı başarıyla güncellendi"
       });
-      
-      // Refresh auth if user edited themselves
+
       if (user.id === currentUser?.id) {
         await refreshAuth();
       }
-      
+
       onUserUpdated();
       onOpenChange(false);
     } catch (error: any) {
       console.error('[EditUserDialog] Error updating profile:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response,
-        status: error.status
-      });
-      
       let errorMessage = 'Kullanıcı güncellenemedi';
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (error.response?.error) {
-        errorMessage = error.response.error;
-      } else if (error.response?.details) {
-        errorMessage = error.response.details;
-      }
-      
+      if (error.message) errorMessage = error.message;
       setError(errorMessage);
-      toast({
-        title: "Hata",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      toast({ title: "Hata", description: errorMessage, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -148,12 +118,25 @@ export function EditUserDialog({ user, open, onOpenChange, onUserUpdated }: Edit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Kullanıcı Düzenle</DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-md overflow-hidden p-0">
+        {/* Gradient Header */}
+        <div className="relative bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 px-6 py-5">
+          <div className="absolute inset-0 bg-grid-white/[0.05] bg-[length:12px_12px]" />
+          <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+          <DialogHeader className="relative z-10">
+            <DialogTitle className="text-white flex items-center gap-2 text-lg">
+              <div className="w-9 h-9 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Edit2 className="w-5 h-5 text-white" />
+              </div>
+              Kullanıcı Düzenle
+            </DialogTitle>
+            <DialogDescription className="text-white/80 text-sm">
+              <strong>{user.firstName} {user.lastName}</strong> kullanıcı bilgilerini düzenleyin.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -247,17 +230,17 @@ export function EditUserDialog({ user, open, onOpenChange, onUserUpdated }: Edit
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
               İptal
             </Button>
-            <Button 
-              type="submit" 
-              className="bg-gradient-primary hover:opacity-90"
+            <Button
+              type="submit"
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:opacity-90 text-white"
               disabled={loading}
             >
               {loading ? 'Güncelleniyor...' : 'Güncelle'}

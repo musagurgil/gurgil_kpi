@@ -20,7 +20,7 @@ export function TicketDepartmentBarChart({ data }: TicketDepartmentBarChartProps
     }
 
     return (
-        <Card className="col-span-1">
+        <Card className="col-span-1 bg-card/50 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
             <CardHeader>
                 <CardTitle>Departman Bazlı Ticketlar</CardTitle>
             </CardHeader>

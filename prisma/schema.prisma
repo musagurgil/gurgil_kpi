@@ -24,15 +24,16 @@ model Department {
 }
 
 model Profile {
-  id         String    @id @default(cuid())
-  email      String    @unique
-  firstName  String
-  lastName   String
-  department String
-  avatar     String?
-  isActive   Boolean   @default(true)
-  lastLogin  DateTime?
-  createdAt  DateTime  @default(now())
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String?
+  firstName    String
+  lastName     String
+  department   String
+  avatar       String?
+  isActive     Boolean   @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime  @default(now())
   
   departmentRef Department @relation(fields: [department], references: [name], onDelete: Cascade)
   userRoles     UserRole[]

@@ -173,8 +173,7 @@ export const WeeklyCalendarGrid = ({
       minHeight: '60px',
       width: '100%',
       borderRadius: '6px',
-      border: `1px solid ${categoryColor}20`,
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2)',
       display: 'flex',
       flexDirection: 'column' as const,
       justifyContent: 'center',
@@ -205,13 +204,13 @@ export const WeeklyCalendarGrid = ({
       {/* Calendar Grid */}
       <div className="border border-border rounded-lg overflow-hidden">
         {/* Days Header */}
-        <div className="grid grid-cols-8 bg-muted/50">
-          <div className="p-3 text-sm font-medium text-muted-foreground border-r border-border">
-            Saat
+        <div className="grid grid-cols-8 bg-black/5 border-b border-border/50">
+          <div className="p-3 text-sm font-medium text-muted-foreground border-r border-border/50 flex items-center justify-center">
+            <LucideIcons.Clock className="w-4 h-4" />
           </div>
           {weekDays.map((day) => (
-            <div key={day.toISOString()} className="p-3 text-center border-r border-border last:border-r-0">
-              <div className="text-sm font-medium text-foreground">
+            <div key={day.toISOString()} className="p-3 text-center border-r border-border/50 last:border-r-0">
+              <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                 {format(day, 'EEE', { locale: tr })}
               </div>
               <div className={`text-lg font-bold ${isToday(day) ? 'text-primary' : 'text-muted-foreground'
@@ -223,11 +222,11 @@ export const WeeklyCalendarGrid = ({
         </div>
 
         {/* Time Slots */}
-        <div className="max-h-[600px] overflow-y-auto">
+        <div className="max-h-[600px] overflow-y-auto bg-card/30">
           {hours.map((hour) => (
-            <div key={hour} className="grid grid-cols-8 border-b border-border last:border-b-0">
+            <div key={hour} className="grid grid-cols-8 border-b border-border/50 last:border-b-0">
               {/* Time Label */}
-              <div className="p-3 text-sm text-muted-foreground border-r border-border bg-muted/30">
+              <div className="p-3 text-xs font-medium text-muted-foreground border-r border-border/50 bg-black/5 flex items-start justify-center pt-2">
                 {hour.toString().padStart(2, '0')}:00
               </div>
 
@@ -238,7 +237,7 @@ export const WeeklyCalendarGrid = ({
                 return (
                   <div
                     key={`${day.toISOString()}-${hour}`}
-                    className="min-h-[60px] p-1 border-r border-border last:border-r-0 relative group hover:bg-muted/20 transition-colors"
+                    className="min-h-[60px] p-1 border-r border-border/50 last:border-r-0 relative group hover:bg-black/5 transition-colors"
                     onClick={() => handleTimeSlotClick(day, hour)}
                     style={{ position: 'relative', pointerEvents: 'auto' }}
                   >

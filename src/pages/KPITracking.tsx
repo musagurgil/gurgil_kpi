@@ -194,7 +194,7 @@ export default function KPITracking() {
     <div className="min-h-screen bg-dashboard-bg p-4 sm:p-6 space-y-6">
       {/* Premium Header Section */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 shadow-xl text-white">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[length:16px_16px]" />
         <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">

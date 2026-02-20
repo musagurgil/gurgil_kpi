@@ -153,11 +153,29 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // For now, we'll use a simple password check
-    // In production, you should hash passwords
-    if (password !== '123456') {
-      return res.status(401).json({ error: 'Invalid credentials' });
+    // Check if user is active
+    if (!profile.isActive) {
+      return res.status(401).json({ error: 'Account is deactivated' });
     }
+
+    // Password verification: use bcrypt hash if available, fallback to legacy '123456'
+    if (profile.passwordHash) {
+      const isValid = await bcrypt.compare(password, profile.passwordHash);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+    } else {
+      // Legacy fallback for users without hashed passwords
+      if (password !== '123456') {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+      // Upgrade: hash the default password now so future logins use bcrypt
+      const hash = await bcrypt.hash('123456', 10);
+      await prisma.profile.update({ where: { id: profile.id }, data: { passwordHash: hash } });
+    }
+
+    // Update last login
+    await prisma.profile.update({ where: { id: profile.id }, data: { lastLogin: new Date() } });
 
     const user = {
       id: profile.id,
@@ -190,10 +208,14 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Create new user
+    // Hash the password with bcrypt
+    const passwordHash = await bcrypt.hash(password || '123456', 10);
+
+    // Create new user with hashed password
     const profile = await prisma.profile.create({
       data: {
         email,
+        passwordHash,
         firstName,
         lastName,
         department,
@@ -508,6 +530,45 @@ app.post('/api/admin/profiles/transfer', authenticateToken, async (req, res) => 
 
   } catch (error) {
     console.error('Transfer assets error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin Password Reset endpoint
+app.put('/api/admin/profiles/:id/password', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    // Check if requester is admin
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can reset passwords' });
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    // Check if target user exists
+    const targetUser = await prisma.profile.findUnique({ where: { id } });
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    await prisma.profile.update({
+      where: { id },
+      data: { passwordHash }
+    });
+
+    console.log(`[ADMIN PASSWORD RESET] Admin ${req.user.email} reset password for user ${targetUser.email}`);
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Admin password reset error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1028,8 +1089,12 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
     if (!isAdmin && !isBoardMember) {
       whereClause = {
         OR: [
-          { sourceDepartment: req.user.department },
-          { targetDepartment: req.user.department }
+          // Target department sees ALL incoming tickets
+          { targetDepartment: req.user.department },
+          // Source department: only the creator sees their own ticket
+          { sourceDepartment: req.user.department, createdBy: req.user.id },
+          // User can always see tickets assigned to them
+          { assignedTo: req.user.id }
         ]
       };
     }

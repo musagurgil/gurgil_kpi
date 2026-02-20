@@ -108,16 +108,16 @@ export const EnhancedCalendarGrid = ({
       {/* Calendar Grid */}
       <div className="border border-border rounded-lg overflow-hidden">
         {/* Days of Week Header */}
-        <div className="grid grid-cols-7 bg-muted/50">
+        <div className="grid grid-cols-7 bg-black/5 border-b border-border/50">
           {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((day) => (
-            <div key={day} className="p-3 text-center text-sm font-medium text-muted-foreground border-r border-border last:border-r-0">
+            <div key={day} className="p-3 text-center text-xs uppercase tracking-wider font-semibold text-muted-foreground border-r border-border/50 last:border-r-0">
               {day}
             </div>
           ))}
         </div>
 
         {/* Calendar Days */}
-        <div className="grid grid-cols-7">
+        <div className="grid grid-cols-7 bg-card/30">
           {days.map((day) => {
             const dayActivities = getActivitiesForDateLocal(day);
             const isCurrentMonth = isSameMonth(day, selectedDate);
@@ -128,11 +128,11 @@ export const EnhancedCalendarGrid = ({
               <div
                 key={day.toISOString()}
                 className={`
-                  min-h-[120px] p-2 border-r border-b border-border last:border-r-0 cursor-pointer
-                  hover:bg-muted/20 transition-colors relative
-                  ${!isCurrentMonth ? 'bg-muted/30 text-muted-foreground' : ''}
-                  ${isTodayDate ? 'bg-primary/10' : ''}
-                  ${isSelected ? 'ring-2 ring-primary' : ''}
+                  min-h-[120px] p-2 border-r border-b border-border/50 last:border-r-0 cursor-pointer
+                  hover:bg-black/5 transition-colors relative group
+                  ${!isCurrentMonth ? 'bg-black/5 text-muted-foreground/50' : ''}
+                  ${isTodayDate ? 'bg-primary/5' : ''}
+                  ${isSelected ? 'ring-2 ring-primary ring-inset z-10' : ''}
                 `}
                 onClick={() => handleDateClick(day)}
               >

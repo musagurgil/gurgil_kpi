@@ -65,7 +65,7 @@ export function UpcomingDeadlines() {
   };
 
   return (
-    <Card className="shadow-card hover:shadow-elevated transition-smooth">
+    <Card className="shadow-sm border-border/50 hover:shadow-md transition-smooth bg-card/50 backdrop-blur-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -88,7 +88,7 @@ export function UpcomingDeadlines() {
             {upcomingDeadlines.map((deadline: any, index: number) => {
               const remainingDays = deadline.remainingDays || 0;
               const isOverdue = remainingDays < 0;
-              
+
               return (
                 <div
                   key={index}

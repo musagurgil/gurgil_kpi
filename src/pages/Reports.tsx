@@ -128,17 +128,25 @@ export default function Reports() {
   }
 
   return (
-    <div className="flex-1 bg-dashboard-bg min-h-screen p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header & Actions */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="flex-1 min-h-screen bg-dashboard-bg">
+      {/* Premium Gradient Header */}
+      <div className="relative overflow-hidden bg-gradient-brand px-6 py-10 mb-8 sm:rounded-b-3xl sm:mx-4 lg:mx-6 sm:mt-0 shadow-lg border-b border-white/10">
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[length:16px_16px]" />
+        <div className="absolute -left-40 -top-40 w-80 h-80 bg-white/10 rounded-full blur-3xl opacity-50 animate-pulse-slow" />
+        <div className="absolute -right-40 -bottom-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl opacity-50 animate-pulse-slow" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+
+        <div className="relative z-10 max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Raporlar & İstatistikler</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">
+            <h1 className="text-3xl sm:text-4xl font-bold text-white flex items-center gap-3 tracking-tight mb-2">
+              <span className="truncate drop-shadow-md">Raporlar & İstatistikler</span>
+            </h1>
+            <p className="text-base text-white/80 max-w-xl">
               Departman aktiviteleri ve sistem verileri özeti ({user?.department})
             </p>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto mt-4 sm:mt-0 bg-white/10 border border-white/20 backdrop-blur-md px-3 py-2 rounded-xl shadow-sm">
             <Select value={dateRange} onValueChange={setDateRange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Tarih Aralığı" />
@@ -150,13 +158,15 @@ export default function Reports() {
                 <SelectItem value="all">Tüm Zamanlar</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={handleExport} className="gap-2">
+            <Button variant="secondary" onClick={handleExport} className="gap-2 bg-white/20 text-white hover:bg-white/30 border-none transition-colors shadow-sm">
               <Download className="w-4 h-4" />
               Dışa Aktar
             </Button>
           </div>
         </div>
+      </div>
 
+      <div className="max-w-7xl mx-auto space-y-6 px-4 sm:px-6 relative z-20 -mt-14">
         {/* Summary Cards */}
         <ReportSummaryCards
           totalHours={totalHours}

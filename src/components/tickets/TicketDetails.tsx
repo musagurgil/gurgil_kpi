@@ -74,12 +74,18 @@ export function TicketDetails({
 
   const canUserModifyTicket = () => {
     if (currentUser.roles.includes('board_member')) return false;
-    return currentUser.roles.includes('admin') ||
-      ticket.assignedTo === currentUser.id ||
-      ticket.createdBy === currentUser.id ||
-      (currentUser.roles.includes('department_manager') &&
-        (currentUser.department === ticket.sourceDepartment ||
-          currentUser.department === ticket.targetDepartment));
+    // Admin can always modify
+    if (currentUser.roles.includes('admin')) return true;
+    // Assigned user can modify
+    if (ticket.assignedTo === currentUser.id) return true;
+    // Creator can modify
+    if (ticket.createdBy === currentUser.id) return true;
+    // Any user in the target department can modify (matches server-side logic)
+    if (currentUser.department === ticket.targetDepartment) return true;
+    // Department manager of source department can modify
+    if (currentUser.roles.includes('department_manager') &&
+      currentUser.department === ticket.sourceDepartment) return true;
+    return false;
   };
 
   const canAssignTicket = () => {

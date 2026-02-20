@@ -71,77 +71,81 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
   };
 
   return (
-    <div className="w-64 bg-card border-r border-border h-screen flex flex-col shadow-card">
-      {/* Logo */}
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+    <div className="w-[280px] bg-card/80 backdrop-blur-md border-r border-border/50 h-screen flex flex-col shadow-2xl relative z-10 transition-all duration-300">
+      {/* Logo Area */}
+      <div className="p-6 border-b border-border/50 bg-gradient-to-b from-background/50 to-transparent">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 ring-1 ring-white/10">
             <BarChart3 className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">KPI Manager</h1>
-            <p className="text-xs text-muted-foreground">by Gurgil Games</p>
+            <h1 className="text-lg font-bold text-foreground bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">KPI Manager</h1>
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">by Gurgil Games</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
         {getVisibleMenuItems().map((item) => {
           const Icon = item.icon;
+          const isActive = activeTab === item.id;
           return (
             <Button
               key={item.id}
-              variant={activeTab === item.id ? "default" : "ghost"}
+              variant="ghost"
               className={cn(
-                "w-full justify-start text-left font-medium transition-smooth",
-                activeTab === item.id && "bg-gradient-primary text-white shadow-elevated"
+                "w-full justify-start text-left font-medium transition-all duration-200 h-11 px-4 rounded-xl relative overflow-hidden group",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               )}
               onClick={() => {
                 navigate(item.id);
                 onClose?.();
               }}
             >
-              <Icon className="w-4 h-4 mr-3" />
-              {item.label}
-              {item.showBadge && <NotificationBadge count={unreadCount} />}
+              {isActive && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
+              )}
+              <Icon className={cn("w-5 h-5 mr-3 transition-colors", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+              <span className="truncate">{item.label}</span>
+              {item.showBadge && unreadCount > 0 && (
+                <div className="ml-auto">
+                  <NotificationBadge count={unreadCount} />
+                </div>
+              )}
             </Button>
           );
         })}
       </nav>
 
       {/* User Profile */}
-      <div className="p-4 border-t border-border space-y-3">
-        <div className="flex items-center space-x-3">
-          <Avatar className="w-10 h-10">
+      <div className="p-4 border-t border-border/50 bg-card/50 backdrop-blur-sm m-4 rounded-2xl border shadow-sm">
+        <div className="flex items-center space-x-3 mb-3">
+          <Avatar className="w-10 h-10 ring-2 ring-background shadow-sm">
             <AvatarFallback className="bg-gradient-primary text-white font-medium">
               {getUserInitials()}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
+            <p className="text-sm font-semibold text-foreground truncate">
               {user && (user.firstName || user.lastName) ? `${user.firstName} ${user.lastName}`.trim() : 'Kullanıcı'}
             </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {user?.email || 'email@company.com'}
+            <p className="text-xs font-medium text-primary truncate mt-0.5">
+              {hasRole('admin') ? 'Sistem Yöneticisi' :
+                hasRole('department_manager') ? 'Departman Yöneticisi' :
+                  'Çalışan'}
             </p>
-            {user && (
-              <p className="text-xs font-medium text-primary">
-                {hasRole('admin') ? 'Sistem Yöneticisi' :
-                  hasRole('department_manager') ? 'Departman Yöneticisi' :
-                    'Çalışan'}
-              </p>
-            )}
           </div>
         </div>
 
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start text-muted-foreground hover:text-foreground"
+          className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg h-9"
           onClick={() => {
             logout();
-            // Auth hook'unda zaten reload var, burada extra bir şey yapmaya gerek yok
           }}
         >
           <LogOut className="w-4 h-4 mr-2" />

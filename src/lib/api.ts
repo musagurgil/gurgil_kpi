@@ -115,6 +115,13 @@ class ApiClient {
     });
   }
 
+  async adminResetPassword(userId: string, newPassword: string) {
+    return this.request<{ success: boolean; message: string }>(`/admin/profiles/${userId}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({ newPassword }),
+    });
+  }
+
   // KPI methods
   async getKPIs() {
     return this.request<RawKPI[]>('/kpis'); // Returns RawKPI structure

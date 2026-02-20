@@ -82,7 +82,7 @@ export function RecentActivities() {
   };
 
   return (
-    <Card className="shadow-card hover:shadow-elevated transition-smooth">
+    <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">

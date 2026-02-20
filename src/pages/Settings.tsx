@@ -12,18 +12,18 @@ import { toast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Settings() {
-  const { profile, user } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  
+
   // Profile settings
-  const [firstName, setFirstName] = useState(profile?.first_name || '');
-  const [lastName, setLastName] = useState(profile?.last_name || '');
-  
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
+
   // Password settings
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   // Notification settings
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [kpiNotifications, setKpiNotifications] = useState(true);
@@ -56,8 +56,8 @@ export default function Settings() {
   }, [fontSize]);
 
   const handleUpdateProfile = async () => {
-    if (!profile) return;
-    
+    if (!user) return;
+
     setLoading(true);
     try {
       // Mock profile update
@@ -108,7 +108,7 @@ export default function Settings() {
         title: 'Başarılı',
         description: 'Şifreniz güncellendi',
       });
-      
+
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -130,7 +130,7 @@ export default function Settings() {
       kpiNotifications,
       ticketNotifications
     }));
-    
+
     toast({
       title: 'Başarılı',
       description: 'Bildirim ayarlarınız kaydedildi',
@@ -138,27 +138,40 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-dashboard-bg p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Ayarlar</h1>
-          <p className="text-muted-foreground mt-2">
-            Hesap ayarlarınızı ve tercihlerinizi yönetin
-          </p>
-        </div>
+    <div className="flex-1 min-h-screen bg-dashboard-bg">
+      {/* Premium Gradient Header */}
+      <div className="relative overflow-hidden bg-gradient-brand px-6 py-10 mb-8 sm:rounded-b-3xl sm:mx-4 lg:mx-6 sm:mt-0 shadow-lg border-b border-white/10">
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[length:16px_16px]" />
+        <div className="absolute -left-40 -top-40 w-80 h-80 bg-white/10 rounded-full blur-3xl opacity-50 animate-pulse-slow" />
+        <div className="absolute -right-40 -bottom-40 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl opacity-50 animate-pulse-slow" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
 
+        <div className="relative z-10 max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl sm:text-4xl font-bold text-white flex items-center gap-3 tracking-tight mb-2">
+              <span className="truncate drop-shadow-md">Ayarlar</span>
+            </h1>
+            <p className="text-base text-white/80 max-w-xl">
+              Hesap ayarlarınızı ve uygulama tercihlerinizi yönetin.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto space-y-6 px-4 sm:px-6 relative z-20 -mt-14">
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-muted/60 p-1 mb-6 rounded-xl border border-border/50 shadow-inner">
             <TabsTrigger value="profile">Profil</TabsTrigger>
             <TabsTrigger value="security">Güvenlik</TabsTrigger>
             <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
             <TabsTrigger value="appearance">Görünüm</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profil Bilgileri</CardTitle>
+          <TabsContent value="profile" className="mt-0">
+            <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-md transition-all duration-300">
+              <CardHeader className="border-b border-border/30 pb-4">
+                <CardTitle className="font-semibold text-foreground text-lg">Profil Bilgileri</CardTitle>
                 <CardDescription>
                   Kişisel bilgilerinizi güncelleyin
                 </CardDescription>
@@ -166,10 +179,10 @@ export default function Settings() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">E-posta</Label>
-                  <Input 
-                    id="email" 
-                    value={profile?.email || ''} 
-                    disabled 
+                  <Input
+                    id="email"
+                    value={user?.email || ''}
+                    disabled
                     className="bg-muted"
                   />
                   <p className="text-sm text-muted-foreground">
@@ -201,10 +214,10 @@ export default function Settings() {
 
                 <div className="space-y-2">
                   <Label htmlFor="department">Departman</Label>
-                  <Input 
-                    id="department" 
-                    value={profile?.department || ''} 
-                    disabled 
+                  <Input
+                    id="department"
+                    value={user?.department || ''}
+                    disabled
                     className="bg-muted"
                   />
                   <p className="text-sm text-muted-foreground">
@@ -215,8 +228,8 @@ export default function Settings() {
                 <Separator />
 
                 <div className="flex justify-end">
-                  <Button 
-                    onClick={handleUpdateProfile} 
+                  <Button
+                    onClick={handleUpdateProfile}
                     disabled={loading}
                   >
                     {loading ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
@@ -226,10 +239,10 @@ export default function Settings() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="security">
-            <Card>
-              <CardHeader>
-                <CardTitle>Şifre Değiştir</CardTitle>
+          <TabsContent value="security" className="mt-0">
+            <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-md transition-all duration-300">
+              <CardHeader className="border-b border-border/30 pb-4">
+                <CardTitle className="font-semibold text-foreground text-lg">Şifre Değiştir</CardTitle>
                 <CardDescription>
                   Hesap güvenliğiniz için güçlü bir şifre kullanın
                 </CardDescription>
@@ -260,8 +273,8 @@ export default function Settings() {
                 <Separator />
 
                 <div className="flex justify-end">
-                  <Button 
-                    onClick={handleChangePassword} 
+                  <Button
+                    onClick={handleChangePassword}
                     disabled={loading || !newPassword || !confirmPassword}
                   >
                     {loading ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
@@ -271,10 +284,10 @@ export default function Settings() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle>Bildirim Tercihleri</CardTitle>
+          <TabsContent value="notifications" className="mt-0">
+            <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-md transition-all duration-300">
+              <CardHeader className="border-b border-border/30 pb-4">
+                <CardTitle className="font-semibold text-foreground text-lg">Bildirim Tercihleri</CardTitle>
                 <CardDescription>
                   Hangi bildirimleri almak istediğinizi seçin
                 </CardDescription>
@@ -337,10 +350,10 @@ export default function Settings() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="appearance">
-            <Card>
-              <CardHeader>
-                <CardTitle>Görünüm Ayarları</CardTitle>
+          <TabsContent value="appearance" className="mt-0">
+            <Card className="bg-card/60 backdrop-blur-md border border-border/50 shadow-md transition-all duration-300">
+              <CardHeader className="border-b border-border/30 pb-4">
+                <CardTitle className="font-semibold text-foreground text-lg">Görünüm Ayarları</CardTitle>
                 <CardDescription>
                   Uygulamanın görünümünü özelleştirin
                 </CardDescription>

@@ -7,12 +7,12 @@ export function StatsOverview() {
   const { stats: dashboardStats, loading, currentUser } = useDashboard();
 
   // Calculate user-specific percentages
-  const userKPIProgressPercentage = dashboardStats?.userKPIs > 0 
-    ? (dashboardStats?.userCompletedKPIs / dashboardStats?.userKPIs) * 100 
+  const userKPIProgressPercentage = dashboardStats?.userKPIs > 0
+    ? (dashboardStats?.userCompletedKPIs / dashboardStats?.userKPIs) * 100
     : 0;
 
-  const isAdmin = currentUser?.role === 'admin';
-  
+  const isAdmin = currentUser?.roles?.includes('admin');
+
   const stats = [
     {
       title: isAdmin ? "Toplam KPI'lar" : "Benim KPI'larım",
@@ -26,7 +26,7 @@ export function StatsOverview() {
     {
       title: "Atanan Ticket'lar",
       value: dashboardStats?.userAssignedTickets?.toString() || "0",
-      change: dashboardStats?.userTickets > 0 
+      change: dashboardStats?.userTickets > 0
         ? `${((dashboardStats?.userAssignedTickets / dashboardStats?.userTickets) * 100).toFixed(0)}%`
         : "0%",
       changeType: "increase" as const,
@@ -83,31 +83,49 @@ export function StatsOverview() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
+
+        // Map colors to actual gradients and shadows
+        const getBgGradient = (c: string) => {
+          if (c === 'primary') return 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/30';
+          if (c === 'success') return 'bg-gradient-to-br from-emerald-400 to-green-600 shadow-emerald-500/30';
+          if (c === 'warning') return 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-500/30';
+          return 'bg-gradient-to-br from-gray-500 to-slate-600 shadow-gray-500/30';
+        };
+
+        const getCardBorder = (c: string) => {
+          if (c === 'primary') return 'group-hover:border-blue-500/30';
+          if (c === 'success') return 'group-hover:border-emerald-500/30';
+          if (c === 'warning') return 'group-hover:border-amber-500/30';
+          return 'group-hover:border-border/50';
+        };
+
         return (
-          <Card key={index} className="shadow-card hover:shadow-elevated transition-smooth">
-            <CardContent className="p-6">
+          <Card key={index} className={`group relative overflow-hidden bg-card/50 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${getCardBorder(stat.color)}`}>
+            {/* Subtle gradient background on hover */}
+            <div className={`absolute inset-0 bg-gradient-to-br from-${stat.color}/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+
+            <CardContent className="p-6 relative z-10">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                     {stat.title}
                   </p>
-                  <p className="text-2xl font-bold text-foreground">
+                  <p className="text-3xl font-bold text-foreground">
                     {stat.value}
                   </p>
                 </div>
-                <div className={`p-3 rounded-lg bg-gradient-${stat.color}`}>
-                  <Icon className="w-6 h-6 text-white" />
+                <div className={`p-3 rounded-xl shadow-lg ${getBgGradient(stat.color)} text-white`}>
+                  <Icon className="w-5 h-5" />
                 </div>
               </div>
-              
-              <div className="mt-4 flex items-center">
-                <span className={`text-sm font-medium ${
-                  stat.changeType === 'increase' ? 'text-kpi-success' : 'text-kpi-danger'
-                }`}>
-                  {stat.change}
+
+              <div className="mt-4 flex items-center bg-background/50 w-fit px-2.5 py-1 rounded-full border border-border/50">
+                <span className={`text-xs font-semibold flex items-center ${stat.changeType === 'increase' ? 'text-emerald-500' : 'text-rose-500'
+                  }`}>
+                  {stat.changeType === 'increase' ? '+' : ''}{stat.change}
                 </span>
-                <span className="text-xs text-muted-foreground ml-2">
-                  geçen aya göre
+                <span className="text-[10px] text-muted-foreground ml-1.5 uppercase tracking-wider font-medium">
+                  geçen aydan
                 </span>
               </div>
             </CardContent>
