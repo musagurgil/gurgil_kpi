@@ -89,6 +89,8 @@ model KpiTarget {
   progress      KpiProgress[]
   comments      KpiComment[]
   
+  @@index([status])
+  @@index([department])
   @@map("kpi_targets")
 }
 
@@ -158,6 +160,9 @@ model Ticket {
   assignee             Profile?  @relation("TicketAssigned", fields: [assignedTo], references: [id], onDelete: SetNull)
   comments             TicketComment[]
   
+  @@index([status])
+  @@index([targetDepartment])
+  @@index([sourceDepartment])
   @@map("tickets")
 }
 
@@ -220,6 +225,7 @@ model Notification {
   
   user Profile @relation(fields: [userId], references: [id])
   
+  @@index([userId, isRead])
   @@map("notifications")
 }
 
@@ -255,5 +261,7 @@ model MeetingReservation {
   requester   Profile     @relation("MeetingReservationRequester", fields: [requestedBy], references: [id])
   approver    Profile?    @relation("MeetingReservationApprover", fields: [approvedBy], references: [id])
   
+  @@index([roomId, startTime])
+  @@index([requestedBy])
   @@map("meeting_reservations")
 }

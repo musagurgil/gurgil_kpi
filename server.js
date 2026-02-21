@@ -1733,19 +1733,34 @@ app.delete('/api/notifications', authenticateToken, async (req, res) => {
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
     const totalKPIs = await prisma.kpiTarget.count();
-    const completedKPIs = await prisma.kpiTarget.count({
-      where: { status: 'completed' }
+    // Optimization: Use groupBy to reduce DB round trips
+    const kpiStatusGroups = await prisma.kpiTarget.groupBy({
+      by: ['status'],
+      _count: { status: true }
     });
-    const activeKPIs = await prisma.kpiTarget.count({
-      where: { status: 'active' }
-    });
+    const kpiCounts = kpiStatusGroups.reduce((acc, curr) => {
+      acc[curr.status] = curr._count.status;
+      return acc;
+    }, {});
+    const completedKPIs = kpiCounts['completed'] || 0;
+    const activeKPIs = kpiCounts['active'] || 0;
 
     // Ticket Stats
     const totalTickets = await prisma.ticket.count();
-    const openTickets = await prisma.ticket.count({ where: { status: 'open' } });
-    const inProgressTickets = await prisma.ticket.count({ where: { status: 'in_progress' } });
-    const resolvedTickets = await prisma.ticket.count({ where: { status: 'resolved' } });
-    const closedTickets = await prisma.ticket.count({ where: { status: 'closed' } });
+    // Optimization: Use groupBy to reduce DB round trips
+    const ticketStatusGroups = await prisma.ticket.groupBy({
+      by: ['status'],
+      _count: { status: true }
+    });
+    const ticketCounts = ticketStatusGroups.reduce((acc, curr) => {
+      acc[curr.status] = curr._count.status;
+      return acc;
+    }, {});
+
+    const openTickets = ticketCounts['open'] || 0;
+    const inProgressTickets = ticketCounts['in_progress'] || 0;
+    const resolvedTickets = ticketCounts['resolved'] || 0;
+    const closedTickets = ticketCounts['closed'] || 0;
 
     // Tickets by Status for Pie Chart
     const ticketsByStatus = [
