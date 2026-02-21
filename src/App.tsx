@@ -3,24 +3,29 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import NotFound from "./pages/NotFound";
-import { AuthPage } from "./components/auth/AuthPage";
+import React, { Suspense, lazy } from "react";
+import { PageLoader } from "./components/common/PageLoader";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import { Layout } from "./components/layout/Layout";
-import Dashboard from "./pages/Dashboard";
-import Calendar from "./pages/Calendar";
-import Notifications from "./pages/Notifications";
-import KPITracking from "./pages/KPITracking";
-import Tickets from "./pages/Tickets";
-import Analytics from "./pages/Analytics";
-import Reports from "./pages/Reports";
-import AdminPanel from "./pages/AdminPanel";
-import Users from "./pages/Users";
-import Settings from "./pages/Settings";
-import MeetingRooms from "./pages/MeetingRooms";
 import { SocketProvider } from "./contexts/SocketContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
-import React from "react";
+
+// Lazy load components
+const AuthPage = lazy(() => import("./components/auth/AuthPage").then(module => ({ default: module.AuthPage })));
+const Layout = lazy(() => import("./components/layout/Layout").then(module => ({ default: module.Layout })));
+
+// Lazy load pages
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Calendar = lazy(() => import("./pages/Calendar"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const KPITracking = lazy(() => import("./pages/KPITracking"));
+const Tickets = lazy(() => import("./pages/Tickets"));
+const MeetingRooms = lazy(() => import("./pages/MeetingRooms"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const Reports = lazy(() => import("./pages/Reports"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const Users = lazy(() => import("./pages/Users"));
+const Settings = lazy(() => import("./pages/Settings"));
 
 const queryClient = new QueryClient();
 
@@ -33,50 +38,52 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/auth" element={<AuthPage />} />
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/auth" element={<AuthPage />} />
 
-                {/* Protected Routes with Layout (Sidebar) */}
-                <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/calendar" element={<Calendar />} />
-                  <Route path="/notifications" element={<Notifications />} />
-                  <Route path="/kpi" element={<KPITracking />} />
-                  <Route path="/tickets" element={<Tickets />} />
-                  <Route path="/meeting-rooms" element={<MeetingRooms />} />
+                  {/* Protected Routes with Layout (Sidebar) */}
+                  <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/calendar" element={<Calendar />} />
+                    <Route path="/notifications" element={<Notifications />} />
+                    <Route path="/kpi" element={<KPITracking />} />
+                    <Route path="/tickets" element={<Tickets />} />
+                    <Route path="/meeting-rooms" element={<MeetingRooms />} />
 
-                  {/* Manager+ Routes */}
-                  <Route path="/analytics" element={
-                    <ProtectedRoute requiredRole="department_manager">
-                      <Analytics />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/reports" element={
-                    <ProtectedRoute requiredRole="department_manager">
-                      <Reports />
-                    </ProtectedRoute>
-                  } />
+                    {/* Manager+ Routes */}
+                    <Route path="/analytics" element={
+                      <ProtectedRoute requiredRole="department_manager">
+                        <Analytics />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/reports" element={
+                      <ProtectedRoute requiredRole="department_manager">
+                        <Reports />
+                      </ProtectedRoute>
+                    } />
 
-                  {/* Admin Only Routes */}
-                  <Route path="/admin" element={
-                    <ProtectedRoute requiredRole="admin">
-                      <AdminPanel />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/users" element={
-                    <ProtectedRoute requiredRole="admin">
-                      <Users />
-                    </ProtectedRoute>
-                  } />
+                    {/* Admin Only Routes */}
+                    <Route path="/admin" element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminPanel />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/users" element={
+                      <ProtectedRoute requiredRole="admin">
+                        <Users />
+                      </ProtectedRoute>
+                    } />
 
-                  {/* Settings */}
-                  <Route path="/settings" element={<Settings />} />
-                </Route>
+                    {/* Settings */}
+                    <Route path="/settings" element={<Settings />} />
+                  </Route>
 
-                {/* 404 */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+                  {/* 404 */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
             </BrowserRouter>
           </TooltipProvider>
         </NotificationProvider>
