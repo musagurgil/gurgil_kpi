@@ -1732,20 +1732,48 @@ app.delete('/api/notifications', authenticateToken, async (req, res) => {
 // Dashboard stats
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
-    const totalKPIs = await prisma.kpiTarget.count();
-    const completedKPIs = await prisma.kpiTarget.count({
-      where: { status: 'completed' }
-    });
-    const activeKPIs = await prisma.kpiTarget.count({
-      where: { status: 'active' }
-    });
+    // Optimization: Use Promise.all and groupBy to reduce database round-trips
+    const [kpiStats, ticketStats, ticketDeptGroup] = await Promise.all([
+      // KPI Stats by Status
+      prisma.kpiTarget.groupBy({
+        by: ['status'],
+        _count: { status: true }
+      }),
+      // Ticket Stats by Status
+      prisma.ticket.groupBy({
+        by: ['status'],
+        _count: { status: true }
+      }),
+      // Ticket Stats by Department
+      prisma.ticket.groupBy({
+        by: ['targetDepartment'],
+        _count: { id: true }
+      })
+    ]);
 
-    // Ticket Stats
-    const totalTickets = await prisma.ticket.count();
-    const openTickets = await prisma.ticket.count({ where: { status: 'open' } });
-    const inProgressTickets = await prisma.ticket.count({ where: { status: 'in_progress' } });
-    const resolvedTickets = await prisma.ticket.count({ where: { status: 'resolved' } });
-    const closedTickets = await prisma.ticket.count({ where: { status: 'closed' } });
+    // Parse KPI Stats
+    // @ts-ignore - Dynamic property access
+    const kpiMap = kpiStats.reduce((acc, curr) => {
+      acc[curr.status] = curr._count.status;
+      return acc;
+    }, {});
+
+    const totalKPIs = Object.values(kpiMap).reduce((a, b) => a + b, 0);
+    const completedKPIs = kpiMap['completed'] || 0;
+    const activeKPIs = kpiMap['active'] || 0;
+
+    // Parse Ticket Stats
+    // @ts-ignore - Dynamic property access
+    const ticketMap = ticketStats.reduce((acc, curr) => {
+      acc[curr.status] = curr._count.status;
+      return acc;
+    }, {});
+
+    const totalTickets = Object.values(ticketMap).reduce((a, b) => a + b, 0);
+    const openTickets = ticketMap['open'] || 0;
+    const inProgressTickets = ticketMap['in_progress'] || 0;
+    const resolvedTickets = ticketMap['resolved'] || 0;
+    const closedTickets = ticketMap['closed'] || 0;
 
     // Tickets by Status for Pie Chart
     const ticketsByStatus = [
@@ -1754,14 +1782,6 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
       { name: 'Çözüldü', value: resolvedTickets, color: '#10b981' }, // emerald-500
       { name: 'Kapandı', value: closedTickets, color: '#6b7280' } // gray-500
     ];
-
-    // Tickets by Department (Target)
-    const ticketDeptGroup = await prisma.ticket.groupBy({
-      by: ['targetDepartment'],
-      _count: {
-        id: true
-      }
-    });
 
     const ticketsByDepartment = ticketDeptGroup.map(item => ({
       name: item.targetDepartment,
