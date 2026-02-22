@@ -16,6 +16,12 @@ describe('Backend Integration Tests', () => {
         // Clean up if exists from failed previous run
         await prisma.profile.deleteMany({ where: { email: testEmail } });
 
+        // Ensure Department exists
+        const dept = await prisma.department.findUnique({ where: { name: 'IT' } });
+        if (!dept) {
+            await prisma.department.create({ data: { name: 'IT' } });
+        }
+
         const user = await prisma.profile.create({
             data: {
                 firstName: 'Test',
