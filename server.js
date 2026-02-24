@@ -77,6 +77,50 @@ async function createNotification(userId, category, priority, title, message, li
   }
 }
 
+// Helper function to create multiple notifications efficiently (Batch optimized)
+async function createNotifications(userIds, category, priority, title, message, link = null) {
+  if (!userIds || userIds.length === 0) return;
+
+  try {
+    const now = new Date();
+
+    // 1. Bulk create notifications
+    await prisma.notification.createMany({
+      data: userIds.map(userId => ({
+        userId,
+        category,
+        priority,
+        title,
+        message,
+        link,
+        isRead: false,
+        createdAt: now
+      }))
+    });
+
+    // 2. Fetch the created notifications to emit them
+    // Use a small time window to catch the just-created notifications
+    const notifications = await prisma.notification.findMany({
+      where: {
+        userId: { in: userIds },
+        category,
+        title,
+        message,
+        createdAt: {
+          gte: new Date(now.getTime() - 1000)
+        }
+      }
+    });
+
+    // 3. Emit real-time notifications
+    for (const notification of notifications) {
+      io.to(`user:${notification.userId}`).emit('new_notification', notification);
+    }
+  } catch (error) {
+    console.error('Error creating batch notifications:', error);
+  }
+}
+
 // Helper function to check KPI deadline and create notifications
 async function checkKPIDeadlineAndNotify(kpi) {
   const now = new Date();
@@ -90,16 +134,14 @@ async function checkKPIDeadlineAndNotify(kpi) {
       where: { kpiId: kpi.id }
     });
 
-    for (const assignment of assignments) {
-      await createNotification(
-        assignment.userId,
-        'kpi',
-        'high',
-        `⏰ KPI Deadline Yaklaşıyor: ${kpi.title}`,
-        `"${kpi.title}" KPI'sının bitiş tarihine ${daysRemaining} gün kaldı. Hedefin %${((kpi.currentValue / kpi.targetValue) * 100).toFixed(1)}'i tamamlandı.`,
-        `/kpi`
-      );
-    }
+    await createNotifications(
+      assignments.map(a => a.userId),
+      'kpi',
+      'high',
+      `⏰ KPI Deadline Yaklaşıyor: ${kpi.title}`,
+      `"${kpi.title}" KPI'sının bitiş tarihine ${daysRemaining} gün kaldı. Hedefin %${((kpi.currentValue / kpi.targetValue) * 100).toFixed(1)}'i tamamlandı.`,
+      `/kpi`
+    );
   }
 
   // Notify if deadline passed
@@ -108,16 +150,14 @@ async function checkKPIDeadlineAndNotify(kpi) {
       where: { kpiId: kpi.id }
     });
 
-    for (const assignment of assignments) {
-      await createNotification(
-        assignment.userId,
-        'kpi',
-        'critical',
-        `🚨 KPI Süresi Doldu: ${kpi.title}`,
-        `"${kpi.title}" KPI'sının bitiş tarihi ${Math.abs(daysRemaining)} gün önce geçti. Lütfen durumu güncelleyin.`,
-        `/kpi`
-      );
-    }
+    await createNotifications(
+      assignments.map(a => a.userId),
+      'kpi',
+      'critical',
+      `🚨 KPI Süresi Doldu: ${kpi.title}`,
+      `"${kpi.title}" KPI'sının bitiş tarihi ${Math.abs(daysRemaining)} gün önce geçti. Lütfen durumu güncelleyin.`,
+      `/kpi`
+    );
   }
 }
 
@@ -767,16 +807,14 @@ app.post('/api/kpis', authenticateToken, async (req, res) => {
     await checkKPIDeadlineAndNotify(kpi);
 
     // Notify assigned users about new KPI
-    for (const userId of assignedTo) {
-      await createNotification(
-        userId,
-        'kpi',
-        'medium',
-        `📊 Yeni KPI Ataması: ${kpi.title}`,
-        `Size "${kpi.title}" KPI'sı atandı. Hedef: ${kpi.targetValue} ${kpi.unit}, Bitiş: ${new Date(kpi.endDate).toLocaleDateString('tr-TR')}`,
-        `/kpi`
-      );
-    }
+    await createNotifications(
+      assignedTo,
+      'kpi',
+      'medium',
+      `📊 Yeni KPI Ataması: ${kpi.title}`,
+      `Size "${kpi.title}" KPI'sı atandı. Hedef: ${kpi.targetValue} ${kpi.unit}, Bitiş: ${new Date(kpi.endDate).toLocaleDateString('tr-TR')}`,
+      `/kpi`
+    );
 
     console.log(`[KPI CREATE] Successfully created KPI:`, { id: kpi.id, title: kpi.title });
     res.json(kpiWithUserNames);
@@ -982,30 +1020,28 @@ app.post('/api/kpis/:id/progress', authenticateToken, async (req, res) => {
       // Check if KPI is completed
       if (progressPercentage >= 100) {
         // Notify all assigned users about completion
-        for (const assignment of updatedKpi.assignments) {
-          await createNotification(
-            assignment.userId,
-            'kpi',
-            'high',
-            `🎉 KPI Tamamlandı: ${updatedKpi.title}`,
-            `"${updatedKpi.title}" KPI'sı %100 tamamlandı! ${user.firstName} ${user.lastName} son ilerlemeyi kaydetti.`,
-            `/kpi`
-          );
-        }
+        await createNotifications(
+          updatedKpi.assignments.map(a => a.userId),
+          'kpi',
+          'high',
+          `🎉 KPI Tamamlandı: ${updatedKpi.title}`,
+          `"${updatedKpi.title}" KPI'sı %100 tamamlandı! ${user.firstName} ${user.lastName} son ilerlemeyi kaydetti.`,
+          `/kpi`
+        );
       } else if (progressPercentage >= 75) {
         // Notify about significant progress
-        for (const assignment of updatedKpi.assignments) {
-          if (assignment.userId !== user.id) { // Don't notify the person who recorded
-            await createNotification(
-              assignment.userId,
-              'kpi',
-              'medium',
-              `📈 KPI İlerlemesi: ${updatedKpi.title}`,
-              `"${updatedKpi.title}" KPI'sında %${progressPercentage.toFixed(1)} ilerleme kaydedildi. ${user.firstName} ${user.lastName} +${value} ${updatedKpi.unit} ekledi.`,
-              `/kpi`
-            );
-          }
-        }
+        const usersToNotify = updatedKpi.assignments
+          .map(a => a.userId)
+          .filter(id => id !== user.id); // Don't notify the person who recorded
+
+        await createNotifications(
+          usersToNotify,
+          'kpi',
+          'medium',
+          `📈 KPI İlerlemesi: ${updatedKpi.title}`,
+          `"${updatedKpi.title}" KPI'sında %${progressPercentage.toFixed(1)} ilerleme kaydedildi. ${user.firstName} ${user.lastName} +${value} ${updatedKpi.unit} ekledi.`,
+          `/kpi`
+        );
       }
 
       // Check deadline
@@ -1184,22 +1220,23 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
     // Emit real-time event
     io.to(`dept:${targetDepartment}`).to(`dept:${req.user.department}`).emit('ticket_created', ticketWithNumber);
 
-    for (const user of targetDepartmentUsers) {
-      // Notify department managers and admins
-      const isManager = user.userRoles.some(r => r.role === 'department_manager');
-      const isAdmin = user.userRoles.some(r => r.role === 'admin');
+    // Filter users to notify (department managers and admins)
+    const usersToNotify = targetDepartmentUsers
+      .filter(user => {
+        const isManager = user.userRoles.some(r => r.role === 'department_manager');
+        const isAdmin = user.userRoles.some(r => r.role === 'admin');
+        return isManager || isAdmin;
+      })
+      .map(user => user.id);
 
-      if (isManager || isAdmin) {
-        await createNotification(
-          user.id,
-          'ticket',
-          priority === 'urgent' ? 'high' : 'medium',
-          `📨 Yeni Ticket: ${ticketNumber}`,
-          `${req.user.firstName} ${req.user.lastName} (${req.user.department}) tarafından yeni bir ticket oluşturuldu. Öncelik: ${priorityLabels[priority]}`,
-          `/tickets`
-        );
-      }
-    }
+    await createNotifications(
+      usersToNotify,
+      'ticket',
+      priority === 'urgent' ? 'high' : 'medium',
+      `📨 Yeni Ticket: ${ticketNumber}`,
+      `${req.user.firstName} ${req.user.lastName} (${req.user.department}) tarafından yeni bir ticket oluşturuldu. Öncelik: ${priorityLabels[priority]}`,
+      `/tickets`
+    );
 
     res.json(ticketWithNumber);
   } catch (error) {
@@ -2360,16 +2397,14 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
         where: { id: user.id }
       });
 
-      for (const admin of admins) {
-        await createNotification(
-          admin.userId,
-          'system',
-          'medium',
-          '📅 Yeni Toplantı Odası Talebi (Sorumlu Atanmamış)',
-          `${requesterProfile ? requesterProfile.firstName + ' ' + requesterProfile.lastName : 'Biri'} "${reservation.room.name}" odası için talep oluşturdu.`,
-          '/meeting-rooms'
-        );
-      }
+      await createNotifications(
+        admins.map(admin => admin.userId),
+        'system',
+        'medium',
+        '📅 Yeni Toplantı Odası Talebi (Sorumlu Atanmamış)',
+        `${requesterProfile ? requesterProfile.firstName + ' ' + requesterProfile.lastName : 'Biri'} "${reservation.room.name}" odası için talep oluşturdu.`,
+        '/meeting-rooms'
+      );
     }
 
     // Emit real-time event
