@@ -4,30 +4,40 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Clock, User, MoreHorizontal } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useTickets } from "@/hooks/useTickets";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import { TICKET_PRIORITIES, TICKET_STATUSES, PRIORITY_COLORS, STATUS_COLORS } from "@/types/ticket";
+import { useState, useEffect } from "react";
+import { User as UserType } from "@/types/user";
+import { apiClient } from "@/lib/api";
 
 export function TicketOverview() {
-  const { stats, loading } = useDashboard();
+  const { loading: dashboardLoading } = useDashboard();
+  const { tickets, loading: ticketsLoading } = useTickets();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [users, setUsers] = useState<UserType[]>([]);
 
-  // Mock recent tickets data
-  const recentTickets = [
-    {
-      id: 'TCK-001',
-      title: 'Sistem Güncelleme Talebi',
-      priority: 'medium',
-      status: 'open',
-      createdBy: 'Manager User',
-      createdAt: '2025-10-08T10:00:00Z'
-    },
-    {
-      id: 'TCK-002',
-      title: 'Eğitim Materyali Hazırlama',
-      priority: 'low',
-      status: 'in_progress',
-      createdBy: 'Admin User',
-      createdAt: '2025-10-07T14:30:00Z'
-    }
-  ];
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await apiClient.getUsers();
+        setUsers(data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  const loading = dashboardLoading || ticketsLoading;
+
+  // Filter tickets targeted to the user's department, sort by newest, take top 5
+  const recentTickets = [...tickets]
+    .filter(t => !user || t.targetDepartment === user.department || user.roles.includes('admin'))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5);
 
   if (loading) {
     return (
@@ -106,7 +116,8 @@ export function TicketOverview() {
           {recentTickets.map((ticket) => (
             <div
               key={ticket.id}
-              className="flex items-center justify-between p-4 hover:bg-muted/50 transition-smooth border-b border-border last:border-b-0"
+              onClick={() => navigate(`/tickets#${ticket.id}`)}
+              className="flex items-center justify-between p-4 hover:bg-muted/50 transition-smooth border-b border-border last:border-b-0 cursor-pointer"
             >
               <div className="flex items-center space-x-4 flex-1">
                 {/* Priority Indicator */}
@@ -127,7 +138,11 @@ export function TicketOverview() {
                     <span>{ticket.sourceDepartment}</span>
                     <div className="flex items-center space-x-1">
                       <User className="w-3 h-3" />
-                      <span>{ticket.assignedTo || 'Atanmamış'}</span>
+                      <span>
+                        {ticket.assignedTo
+                          ? (users.find(u => u.id === ticket.assignedTo)?.firstName + ' ' + users.find(u => u.id === ticket.assignedTo)?.lastName || 'Atanmış Kullanıcı')
+                          : 'Atanmamış'}
+                      </span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Clock className="w-3 h-3" />

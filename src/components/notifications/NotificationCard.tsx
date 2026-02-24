@@ -57,10 +57,11 @@ export const NotificationCard = ({ notification, onMarkAsRead, onDelete }: Notif
 
   return (
     <Card
-      className={`group relative overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 border-border/50 ${!notification.isRead
-          ? 'bg-card/80 backdrop-blur-sm'
-          : 'bg-card/40 backdrop-blur-sm opacity-80'
-        }`}
+      onClick={notification.link ? handleNavigate : undefined}
+      className={`group relative overflow-hidden transition-all duration-200 border-border/50 ${!notification.isRead
+        ? 'bg-card/80 backdrop-blur-sm shadow-sm'
+        : 'bg-card/40 backdrop-blur-sm opacity-80'
+        } ${notification.link ? 'cursor-pointer hover:shadow-md hover:-translate-y-0.5' : ''}`}
     >
       {/* Left accent bar */}
       <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${gradient}`} />
@@ -92,8 +93,8 @@ export const NotificationCard = ({ notification, onMarkAsRead, onDelete }: Notif
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
-                  onClick={() => onMarkAsRead(notification.id)}
+                  className="h-7 w-7 relative z-10"
+                  onClick={(e) => { e.stopPropagation(); onMarkAsRead(notification.id); }}
                   title="Okundu olarak işaretle"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
@@ -102,8 +103,8 @@ export const NotificationCard = ({ notification, onMarkAsRead, onDelete }: Notif
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-destructive/70 hover:text-destructive"
-                onClick={() => onDelete(notification.id)}
+                className="h-7 w-7 text-destructive/70 hover:text-destructive relative z-10"
+                onClick={(e) => { e.stopPropagation(); onDelete(notification.id); }}
                 title="Sil"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -132,8 +133,8 @@ export const NotificationCard = ({ notification, onMarkAsRead, onDelete }: Notif
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleNavigate}
-                  className="h-5 px-1.5 text-[10px] gap-1"
+                  onClick={(e) => { e.stopPropagation(); handleNavigate(); }}
+                  className="h-5 px-1.5 text-[10px] gap-1 relative z-10"
                 >
                   <ExternalLink className="h-3 w-3" />
                   Git

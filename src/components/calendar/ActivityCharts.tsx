@@ -1,63 +1,72 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { PieChart as PieIcon, BarChart3, TrendingUp } from 'lucide-react';
+import { useCategories } from '@/hooks/useCategories';
 
 interface ActivityChartsProps {
-  activities: any[];
+  stats: {
+    categoryStats: Record<string, number>;
+    dailyBreakdown: { date: string; dateLabel: string; hours: number; activities: number }[];
+    totalHours: number;
+    entryCount: number;
+    averageDailyHours: number;
+    dayCount: number;
+  };
+  dateRangeLabel?: string;
 }
 
-export function ActivityCharts({ activities }: ActivityChartsProps) {
-  // Category distribution
-  const categoryStats = activities.reduce((acc: any[], activity) => {
-    const existing = acc.find(c => c.categoryId === activity.categoryId);
-    if (existing) {
-      existing.count++;
-      existing.duration += activity.duration || 0;
-    } else {
-      acc.push({
-        categoryId: activity.categoryId,
-        name: activity.category?.name || 'Bilinmiyor',
-        color: activity.category?.color || '#6b7280',
-        count: 1,
-        duration: activity.duration || 0
-      });
-    }
-    return acc;
-  }, []);
+export function ActivityCharts({ stats, dateRangeLabel }: ActivityChartsProps) {
+  const { categories } = useCategories();
 
-  // Daily hours distribution (last 7 days)
-  const last7Days = [];
-  const today = new Date();
-  
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(today.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
-    
-    const dayActivities = activities.filter(a => a.date === dateStr);
-    const totalMinutes = dayActivities.reduce((sum, a) => sum + (a.duration || 0), 0);
-    
-    last7Days.push({
-      date: date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }),
-      hours: (totalMinutes / 60).toFixed(1),
-      activities: dayActivities.length
-    });
-  }
+  const getCategoryName = (categoryId: string) => {
+    const category = categories?.find(cat => cat.id === categoryId);
+    return category?.name || 'Bilinmiyor';
+  };
+
+  const getCategoryColor = (categoryId: string) => {
+    const category = categories?.find(cat => cat.id === categoryId);
+    return category?.color || '#6b7280';
+  };
+
+  // Build category chart data from stats
+  const categoryData = Object.entries(stats.categoryStats).map(([categoryId, hours]) => ({
+    categoryId,
+    name: getCategoryName(categoryId),
+    color: getCategoryColor(categoryId),
+    count: Number(hours),
+    duration: Math.round(Number(hours) * 60)
+  }));
+
+  const dailyData = stats.dailyBreakdown || [];
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card border border-border rounded-lg shadow-lg p-3">
-          <p className="text-sm font-semibold">{payload[0].name}</p>
+          <p className="text-sm font-semibold">{payload[0].name || payload[0].payload.name}</p>
           <p className="text-xs text-muted-foreground">
-            Aktivite: <span className="font-medium text-foreground">{payload[0].value}</span>
+            Süre: <span className="font-medium text-primary">
+              {Number(payload[0].value).toFixed(1)}h
+            </span>
           </p>
-          {payload[0].payload.duration && (
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const DailyTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-card border border-border rounded-lg shadow-lg p-3">
+          <p className="text-sm font-semibold">{label}</p>
+          <p className="text-xs text-muted-foreground">
+            Süre: <span className="font-medium text-primary">{payload[0].value}h</span>
+          </p>
+          {payload[0].payload.activities > 0 && (
             <p className="text-xs text-muted-foreground">
-              Süre: <span className="font-medium text-primary">
-                {Math.floor(payload[0].payload.duration / 60)}s {payload[0].payload.duration % 60}dk
-              </span>
+              Aktivite: <span className="font-medium">{payload[0].payload.activities}</span>
             </p>
           )}
         </div>
@@ -66,7 +75,7 @@ export function ActivityCharts({ activities }: ActivityChartsProps) {
     return null;
   };
 
-  if (activities.length === 0) {
+  if (stats.entryCount === 0) {
     return (
       <Card>
         <CardHeader>
@@ -98,16 +107,16 @@ export function ActivityCharts({ activities }: ActivityChartsProps) {
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
-                data={categoryStats}
+                data={categoryData}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
-                label={(entry) => `${entry.name} (${entry.count})`}
+                label={(entry) => `${entry.name} (${Number(entry.count).toFixed(1)}h)`}
                 outerRadius={80}
                 fill="#8884d8"
                 dataKey="count"
               >
-                {categoryStats.map((entry, index) => (
+                {categoryData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -115,11 +124,11 @@ export function ActivityCharts({ activities }: ActivityChartsProps) {
             </PieChart>
           </ResponsiveContainer>
           <div className="grid grid-cols-2 gap-2 mt-4">
-            {categoryStats.map((item) => (
+            {categoryData.map((item) => (
               <div key={item.categoryId} className="flex items-center gap-2 text-xs">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
                 <span className="text-muted-foreground">
-                  {item.name}: <span className="font-semibold text-foreground">{item.count}</span>
+                  {item.name}: <span className="font-semibold text-foreground">{Number(item.count).toFixed(1)}h</span>
                 </span>
               </div>
             ))}
@@ -127,42 +136,44 @@ export function ActivityCharts({ activities }: ActivityChartsProps) {
         </CardContent>
       </Card>
 
-      {/* Daily Hours (Last 7 Days) */}
+      {/* Daily Hours */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <TrendingUp className="w-4 h-4" />
-            Günlük Çalışma Saatleri (Son 7 Gün)
+            Günlük Çalışma Saatleri
+            {dateRangeLabel && (
+              <span className="text-xs font-normal text-muted-foreground ml-1">({dateRangeLabel})</span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={last7Days}>
+            <BarChart data={dailyData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+              <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Legend wrapperStyle={{ fontSize: '12px' }} />
-              <Bar dataKey="hours" fill="hsl(var(--primary))" name="Saat" />
+              <Tooltip content={<DailyTooltip />} />
+              <Bar dataKey="hours" fill="hsl(var(--primary))" name="Saat" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
           <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-border">
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Toplam</p>
               <p className="text-sm font-semibold text-primary">
-                {last7Days.reduce((sum, day) => sum + Number(day.hours), 0).toFixed(1)}h
+                {stats.totalHours.toFixed(1)}h
               </p>
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Ortalama</p>
               <p className="text-sm font-semibold">
-                {(last7Days.reduce((sum, day) => sum + Number(day.hours), 0) / 7).toFixed(1)}h/gün
+                {stats.averageDailyHours.toFixed(1)}h/gün
               </p>
             </div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Aktivite</p>
               <p className="text-sm font-semibold">
-                {last7Days.reduce((sum, day) => sum + Number(day.activities), 0)}
+                {stats.entryCount}
               </p>
             </div>
           </div>
@@ -171,4 +182,3 @@ export function ActivityCharts({ activities }: ActivityChartsProps) {
     </div>
   );
 }
-

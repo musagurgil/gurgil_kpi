@@ -1,97 +1,110 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { LoginForm } from './LoginForm';
-import { SignUpForm } from './SignUpForm';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BarChart3, Target, Users, TrendingUp } from 'lucide-react';
 
 export function AuthPage() {
   const navigate = useNavigate();
   const { isAuthenticated, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
 
   useEffect(() => {
-    console.log('AuthPage useEffect:', { isAuthenticated, loading });
     if (isAuthenticated && !loading) {
-      console.log('Navigating to /');
       navigate('/');
     }
   }, [isAuthenticated, loading, navigate]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-violet-700 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  // Get remembered email for personalized greeting
-  const rememberedEmail = localStorage.getItem('remembered_email');
-  const getPersonalizedGreeting = () => {
-    if (!rememberedEmail) {
-      return {
-        title: 'Hoş Geldiniz!',
-        subtitle: 'Kurumsal İş Takip Sistemi',
-        description: 'Departmanlar arası iletişim ve KPI yönetimi'
-      };
-    }
-    
-    // Extract name from email (before @)
-    const emailName = rememberedEmail.split('@')[0];
-    const capitalizedName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
-    
-    return {
-      title: `Tekrar Hoş Geldiniz, ${capitalizedName}!`,
-      subtitle: 'KPI Manager',
-      description: 'Hesabınıza giriş yaparak devam edin'
-    };
-  };
-
-  const greeting = getPersonalizedGreeting();
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
+    <div className="min-h-screen flex">
+      {/* Left Panel — Branding & Features */}
+      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-violet-700">
+        {/* Background decorations */}
+        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[length:20px_20px]" />
+        <div className="absolute -left-32 -top-32 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s' }} />
+        <div className="absolute -right-32 -bottom-32 w-96 h-96 bg-purple-400/15 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
+        <div className="absolute left-1/2 top-1/3 w-64 h-64 bg-indigo-300/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '10s' }} />
+
+        <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
+          {/* Logo & Company */}
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white/15 backdrop-blur-sm rounded-xl flex items-center justify-center ring-1 ring-white/20">
+              <BarChart3 className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white tracking-tight">KPI Manager</h2>
+              <p className="text-xs text-white/60 font-medium uppercase tracking-widest">Gurgil Games</p>
             </div>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-2">
-            {greeting.title}
-          </h1>
-          <p className="text-lg font-semibold text-primary mb-1">
-            {greeting.subtitle}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {greeting.description}
+
+          {/* Hero text */}
+          <div className="space-y-8 -mt-8">
+            <div className="space-y-4">
+              <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight">
+                Kurumsal Performans
+                <br />
+                <span className="text-white/80">Yönetim Sistemi</span>
+              </h1>
+              <p className="text-lg text-white/60 max-w-md leading-relaxed">
+                KPI hedeflerini takip edin, departmanlar arası iletişimi güçlendirin
+                ve şirket performansını analiz edin.
+              </p>
+            </div>
+
+            {/* Feature highlights */}
+            <div className="grid grid-cols-2 gap-4 max-w-lg">
+              {[
+                { icon: Target, label: 'KPI Takibi', desc: 'Hedef belirleme & analiz' },
+                { icon: Users, label: 'Departman Yönetimi', desc: 'Takım koordinasyonu' },
+                { icon: TrendingUp, label: 'Performans Analizi', desc: 'Detaylı raporlama' },
+                { icon: BarChart3, label: 'Ticket Sistemi', desc: 'Destek & iletişim' },
+              ].map((feature) => (
+                <div key={feature.label} className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
+                    <feature.icon className="w-4 h-4 text-white/80" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">{feature.label}</p>
+                    <p className="text-xs text-white/50">{feature.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <p className="text-xs text-white/30">
+            © {new Date().getFullYear()} Gurgil Games. Tüm hakları saklıdır.
           </p>
         </div>
+      </div>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="login">Giriş Yap</TabsTrigger>
-            <TabsTrigger value="signup">Kayıt Ol</TabsTrigger>
-          </TabsList>
+      {/* Right Panel — Login Form */}
+      <div className="flex-1 flex items-center justify-center bg-background p-6 sm:p-8 relative">
+        {/* Subtle gradient overlay for mobile */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 lg:hidden" />
 
-          <TabsContent value="login">
-            <LoginForm 
-              onSuccess={() => navigate('/')}
-              onSwitchToSignup={() => setActiveTab('signup')}
-            />
-          </TabsContent>
+        <div className="relative z-10 w-full max-w-md">
+          {/* Mobile-only brand header */}
+          <div className="lg:hidden text-center mb-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/25">
+                <BarChart3 className="w-7 h-7 text-white" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-foreground">KPI Manager</h1>
+            <p className="text-sm text-muted-foreground mt-1">Gurgil Games</p>
+          </div>
 
-          <TabsContent value="signup">
-            <SignUpForm 
-              onSuccess={() => setActiveTab('login')}
-              onSwitchToLogin={() => setActiveTab('login')}
-            />
-          </TabsContent>
-        </Tabs>
+          <LoginForm onSuccess={() => navigate('/')} />
+        </div>
       </div>
     </div>
   );

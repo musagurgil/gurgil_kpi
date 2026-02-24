@@ -30,6 +30,7 @@ import { Ticket as TicketType, TicketFilter, CreateTicketData } from "@/types/ti
 import { User } from "@/types/user";
 import { exportTicketsToCSV } from "@/lib/export";
 import { toast as sonnerToast } from 'sonner';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export function TicketManagement() {
   const { user } = useAuth();
@@ -65,6 +66,35 @@ export function TicketManagement() {
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'board'>('grid');
   const [users, setUsers] = useState<User[]>([]);
   const [showCharts, setShowCharts] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Read hash from URL and auto-open ticket modal if matching
+  useEffect(() => {
+    if (tickets.length > 0 && location.hash) {
+      const hashId = location.hash.replace('#', '');
+      const ticketFromHash = tickets.find(t => t.id === hashId);
+
+      if (ticketFromHash && (!selectedTicket || selectedTicket.id !== hashId)) {
+        setSelectedTicket(ticketFromHash);
+      }
+    }
+  }, [tickets, location.hash]);
+
+  // Sync selectedTicket with tickets array to get realtime updates (e.g. new comments)
+  useEffect(() => {
+    if (selectedTicket) {
+      const updatedTicket = tickets.find(t => t.id === selectedTicket.id);
+      if (updatedTicket) {
+        // Only update if there's an actual change to avoid unnecessary re-renders
+        // A simple check on updated/comments length can work, or just reference equality
+        // Since useTickets creates new objects on updates, reference equality works well
+        if (updatedTicket !== selectedTicket) {
+          setSelectedTicket(updatedTicket);
+        }
+      }
+    }
+  }, [tickets, selectedTicket]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -151,14 +181,7 @@ export function TicketManagement() {
 
   const handleAddComment = async (ticketId: string, content: string, isInternal?: boolean) => {
     const success = await addComment(ticketId, content, isInternal);
-    if (success && selectedTicket) {
-      setTimeout(() => {
-        const updatedTicket = tickets.find(t => t.id === ticketId);
-        if (updatedTicket) {
-          setSelectedTicket(updatedTicket);
-        }
-      }, 50);
-    }
+    // Note: selectedTicket is synchronized automatically via useEffect
     return success;
   };
 
@@ -234,8 +257,8 @@ export function TicketManagement() {
                   onClick={() => setViewMode(mode)}
                   title={title}
                   className={`p-1.5 rounded-md transition-all duration-200 ${viewMode === mode
-                      ? 'bg-white/25 text-white shadow-sm'
-                      : 'text-white/60 hover:text-white hover:bg-white/10'
+                    ? 'bg-white/25 text-white shadow-sm'
+                    : 'text-white/60 hover:text-white hover:bg-white/10'
                     }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -248,8 +271,8 @@ export function TicketManagement() {
               onClick={() => setShowCharts(!showCharts)}
               title={showCharts ? 'Grafikleri Gizle' : 'Grafikleri Göster'}
               className={`p-2 rounded-lg transition-all duration-200 border ${showCharts
-                  ? 'bg-white/20 text-white border-white/30'
-                  : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white/70'
+                ? 'bg-white/20 text-white border-white/30'
+                : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white/70'
                 }`}
             >
               <TrendingUp className="w-4 h-4" />
@@ -396,6 +419,7 @@ export function TicketManagement() {
                   currentUser={mockUser}
                   onViewTicket={handleViewTicket}
                   onAssignTicket={handleAssignTicket}
+                  onStatusChange={(ticketId, newStatus) => handleUpdateTicket(ticketId, { status: newStatus as any })}
                 />
               )}
             </>
@@ -407,7 +431,12 @@ export function TicketManagement() {
         ticket={selectedTicket}
         users={users}
         currentUser={mockUser}
-        onClose={() => setSelectedTicket(null)}
+        onClose={() => {
+          setSelectedTicket(null);
+          if (location.hash) {
+            window.history.replaceState(null, '', location.pathname + location.search);
+          }
+        }}
         onUpdateTicket={handleUpdateTicket}
         onAssignTicket={handleAssignTicket}
         onAddComment={handleAddComment}

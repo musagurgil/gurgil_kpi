@@ -122,77 +122,95 @@ export const useCalendar = () => {
   const getMonthlyStats = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
+    return getViewRangeStats(startDate, endDate);
+  };
 
-    const monthlyActivities = activities.filter(activity => {
+  const getViewRangeStats = (startDate: Date, endDate: Date) => {
+    const startStr = startDate.toISOString().split('T')[0];
+    const endStr = endDate.toISOString().split('T')[0];
+
+    const rangeActivities = activities.filter(activity => {
       try {
-        if (!activity.date) {
-          return false;
-        }
-        const activityDate = new Date(activity.date);
-        if (isNaN(activityDate.getTime())) {
-          return false;
-        }
-        return activityDate.getFullYear() === year && activityDate.getMonth() === month;
-      } catch (error) {
-        console.warn('Invalid activity date in getMonthlyStats:', activity.date, error);
+        if (!activity.date) return false;
+        return activity.date >= startStr && activity.date <= endStr;
+      } catch {
         return false;
       }
     });
 
-    const totalActivities = monthlyActivities.length;
-    const totalHours = monthlyActivities.reduce((sum, activity) => {
+    const totalActivities = rangeActivities.length;
+
+    const calcHours = (activity: Activity) => {
       try {
-        const startTime = activity.startTime?.includes('T')
+        const st = activity.startTime?.includes('T')
           ? new Date(activity.startTime)
           : new Date(`2000-01-01T${activity.startTime || '00:00'}`);
-
-        const endTime = activity.endTime?.includes('T')
+        const et = activity.endTime?.includes('T')
           ? new Date(activity.endTime)
           : new Date(`2000-01-01T${activity.endTime || '00:00'}`);
-
-        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-          return sum;
-        }
-        return sum + (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-      } catch (error) {
-        console.warn('Error calculating duration for activity:', activity, error);
-        return sum;
+        if (isNaN(st.getTime()) || isNaN(et.getTime())) return 0;
+        return (et.getTime() - st.getTime()) / (1000 * 60 * 60);
+      } catch {
+        return 0;
       }
-    }, 0);
+    };
 
-    const categoryStats = monthlyActivities.reduce((acc, activity) => {
+    const totalHours = rangeActivities.reduce((sum, a) => sum + calcHours(a), 0);
+
+    const categoryStats = rangeActivities.reduce((acc, activity) => {
       const categoryId = activity.categoryId?.toString() || 'unknown';
-      try {
-        const startTime = activity.startTime?.includes('T')
-          ? new Date(activity.startTime)
-          : new Date(`2000-01-01T${activity.startTime || '00:00'}`);
-
-        const endTime = activity.endTime?.includes('T')
-          ? new Date(activity.endTime)
-          : new Date(`2000-01-01T${activity.endTime || '00:00'}`);
-
-        if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
-          const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-          acc[categoryId] = (acc[categoryId] || 0) + hours;
-        }
-      } catch (error) {
-        console.warn('Error calculating category hours for activity:', activity, error);
-      }
+      acc[categoryId] = (acc[categoryId] || 0) + calcHours(activity);
       return acc;
     }, {} as Record<string, number>);
 
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const averageDailyHours = totalHours / daysInMonth;
-    const entryCount = totalActivities;
+    // Calculate number of days in range
+    const diffTime = endDate.getTime() - startDate.getTime();
+    const dayCount = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1);
+    const averageDailyHours = totalHours / dayCount;
+
+    // Daily breakdown for charts
+    const dailyBreakdown: { date: string; dateLabel: string; hours: number; activities: number }[] = [];
+    const cursor = new Date(startDate);
+    while (cursor <= endDate) {
+      const dStr = cursor.toISOString().split('T')[0];
+      const dayActs = rangeActivities.filter(a => a.date === dStr);
+      const dayHours = dayActs.reduce((s, a) => s + calcHours(a), 0);
+      dailyBreakdown.push({
+        date: dStr,
+        dateLabel: cursor.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }),
+        hours: Number(dayHours.toFixed(1)),
+        activities: dayActs.length
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    // Find most active day name
+    const dayOfWeekHours: Record<number, number> = {};
+    rangeActivities.forEach(a => {
+      if (!a.date) return;
+      const dow = new Date(a.date).getDay();
+      dayOfWeekHours[dow] = (dayOfWeekHours[dow] || 0) + calcHours(a);
+    });
+    const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+    let mostActiveDay = '-';
+    if (Object.keys(dayOfWeekHours).length > 0) {
+      const maxDow = Object.entries(dayOfWeekHours).reduce((a, b) => Number(a[1]) > Number(b[1]) ? a : b);
+      mostActiveDay = dayNames[Number(maxDow[0])];
+    }
 
     return {
       totalActivities,
       totalHours,
       monthlyTotalHours: totalHours,
       averageDailyHours,
-      entryCount,
+      entryCount: totalActivities,
       categoryStats,
-      averageHoursPerDay: averageDailyHours
+      averageHoursPerDay: averageDailyHours,
+      dailyBreakdown,
+      mostActiveDay,
+      dayCount
     };
   };
 
@@ -208,6 +226,7 @@ export const useCalendar = () => {
     updateActivity,
     deleteActivity,
     getActivitiesForDate,
-    getMonthlyStats
+    getMonthlyStats,
+    getViewRangeStats
   };
 };

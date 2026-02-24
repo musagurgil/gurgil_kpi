@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, AlertTriangle, Clock } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
 import { cn } from "@/lib/utils";
@@ -78,66 +79,68 @@ export function UpcomingDeadlines() {
         </div>
       </CardHeader>
       <CardContent>
-        {upcomingDeadlines.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Yaklaşan deadline yok. Harika! 🎉</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {upcomingDeadlines.map((deadline: any, index: number) => {
-              const remainingDays = deadline.remainingDays || 0;
-              const isOverdue = remainingDays < 0;
+        <ScrollArea className="h-[320px] pr-4 -mr-4">
+          {upcomingDeadlines.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground flex flex-col items-center justify-center h-full min-h-[200px]">
+              <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Yaklaşan deadline yok. Harika! 🎉</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {upcomingDeadlines.map((deadline: any, index: number) => {
+                const remainingDays = deadline.remainingDays || 0;
+                const isOverdue = remainingDays < 0;
 
-              return (
-                <div
-                  key={index}
-                  className={cn(
-                    "p-3 rounded-lg border transition-colors",
-                    isOverdue ? "border-destructive/50 bg-destructive/5" : "border-border bg-muted/30"
-                  )}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold text-foreground truncate">
-                        {deadline.title}
-                      </h4>
-                      {deadline.department && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {deadline.department}
-                        </p>
-                      )}
+                return (
+                  <div
+                    key={index}
+                    className={cn(
+                      "p-3 rounded-lg border transition-colors",
+                      isOverdue ? "border-destructive/50 bg-destructive/5" : "border-border bg-muted/30"
+                    )}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-foreground truncate">
+                          {deadline.title}
+                        </h4>
+                        {deadline.department && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {deadline.department}
+                          </p>
+                        )}
+                      </div>
+                      <Badge
+                        variant={getPriorityColor(deadline.priority, remainingDays) as any}
+                        className="ml-2 shrink-0"
+                      >
+                        {formatDate(deadline.endDate)}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant={getPriorityColor(deadline.priority, remainingDays) as any}
-                      className="ml-2 shrink-0"
-                    >
-                      {formatDate(deadline.endDate)}
-                    </Badge>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Progress
-                      value={deadline.progressPercentage}
-                      className={cn("h-2", `[&>div]:bg-${getStatusColor(deadline.status)}`)}
-                    />
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">
-                        %{deadline.progressPercentage.toFixed(1)} tamamlandı
-                      </span>
-                      {isOverdue && (
-                        <span className="text-destructive flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          Süresi doldu
+                    <div className="space-y-2">
+                      <Progress
+                        value={deadline.progressPercentage}
+                        className={cn("h-2", `[&>div]:bg-${getStatusColor(deadline.status)}`)}
+                      />
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">
+                          %{deadline.progressPercentage.toFixed(1)} tamamlandı
                         </span>
-                      )}
+                        {isOverdue && (
+                          <span className="text-destructive flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" />
+                            Süresi doldu
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </ScrollArea>
       </CardContent>
     </Card>
   );

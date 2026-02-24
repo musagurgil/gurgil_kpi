@@ -32,6 +32,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cn } from '@/lib/utils';
 import { format, isPast } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { MeetingRoom, MeetingReservation } from '@/types/meeting';
 
@@ -63,6 +64,21 @@ export default function MeetingRooms() {
   const [editingReservation, setEditingReservation] = useState<MeetingReservation | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<MeetingReservation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Read hash from URL and auto-open reservation modal if matching
+  useEffect(() => {
+    if (reservations.length > 0 && location.hash) {
+      const hashId = location.hash.replace('#', '');
+      const reservationFromHash = reservations.find(r => r.id === hashId);
+
+      if (reservationFromHash && (!selectedReservation || selectedReservation.id !== hashId)) {
+        setSelectedReservation(reservationFromHash);
+      }
+    }
+  }, [reservations, location.hash]);
 
 
   // Create room form state
@@ -620,7 +636,14 @@ export default function MeetingRooms() {
           selectedReservation && (
             <ReservationDetailDialog
               open={!!selectedReservation}
-              onOpenChange={(open) => !open && setSelectedReservation(null)}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setSelectedReservation(null);
+                  if (location.hash) {
+                    window.history.replaceState(null, '', location.pathname + location.search);
+                  }
+                }
+              }}
               reservation={selectedReservation}
               room={rooms.find(r => r.id === selectedReservation.roomId)}
               onEdit={handleEditReservation}

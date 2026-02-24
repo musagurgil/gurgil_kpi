@@ -140,7 +140,7 @@ async function checkKPIDeadlineAndNotify(kpi) {
       'high',
       `⏰ KPI Deadline Yaklaşıyor: ${kpi.title}`,
       `"${kpi.title}" KPI'sının bitiş tarihine ${daysRemaining} gün kaldı. Hedefin %${((kpi.currentValue / kpi.targetValue) * 100).toFixed(1)}'i tamamlandı.`,
-      `/kpi`
+      `/kpi#${kpi.id}`
     );
   }
 
@@ -156,7 +156,7 @@ async function checkKPIDeadlineAndNotify(kpi) {
       'critical',
       `🚨 KPI Süresi Doldu: ${kpi.title}`,
       `"${kpi.title}" KPI'sının bitiş tarihi ${Math.abs(daysRemaining)} gün önce geçti. Lütfen durumu güncelleyin.`,
-      `/kpi`
+      `/kpi#${kpi.id}`
     );
   }
 }
@@ -674,16 +674,14 @@ app.get('/api/kpis', authenticateToken, async (req, res) => {
       // Admin and Board Members can see all KPIs
       whereClause = {};
     } else if (isDepartmentManager) {
-      // Department manager can see KPIs from their department
+      // Department manager can see KPIs from their department and KPIs explicitly assigned to them
       whereClause = {
         OR: [
           { department: user.department },
           {
             assignments: {
               some: {
-                user: {
-                  department: user.department
-                }
+                userId: user.id
               }
             }
           }
@@ -813,7 +811,7 @@ app.post('/api/kpis', authenticateToken, async (req, res) => {
       'medium',
       `📊 Yeni KPI Ataması: ${kpi.title}`,
       `Size "${kpi.title}" KPI'sı atandı. Hedef: ${kpi.targetValue} ${kpi.unit}, Bitiş: ${new Date(kpi.endDate).toLocaleDateString('tr-TR')}`,
-      `/kpi`
+      `/kpi#${kpi.id}`
     );
 
     console.log(`[KPI CREATE] Successfully created KPI:`, { id: kpi.id, title: kpi.title });
@@ -1026,7 +1024,7 @@ app.post('/api/kpis/:id/progress', authenticateToken, async (req, res) => {
           'high',
           `🎉 KPI Tamamlandı: ${updatedKpi.title}`,
           `"${updatedKpi.title}" KPI'sı %100 tamamlandı! ${user.firstName} ${user.lastName} son ilerlemeyi kaydetti.`,
-          `/kpi`
+          `/kpi#${updatedKpi.id}`
         );
       } else if (progressPercentage >= 75) {
         // Notify about significant progress
@@ -1040,7 +1038,7 @@ app.post('/api/kpis/:id/progress', authenticateToken, async (req, res) => {
           'medium',
           `📈 KPI İlerlemesi: ${updatedKpi.title}`,
           `"${updatedKpi.title}" KPI'sında %${progressPercentage.toFixed(1)} ilerleme kaydedildi. ${user.firstName} ${user.lastName} +${value} ${updatedKpi.unit} ekledi.`,
-          `/kpi`
+          `/kpi#${updatedKpi.id}`
         );
       }
 
@@ -1235,7 +1233,7 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
       priority === 'urgent' ? 'high' : 'medium',
       `📨 Yeni Ticket: ${ticketNumber}`,
       `${req.user.firstName} ${req.user.lastName} (${req.user.department}) tarafından yeni bir ticket oluşturuldu. Öncelik: ${priorityLabels[priority]}`,
-      `/tickets`
+      `/tickets#${ticketWithNumber.id}`
     );
 
     res.json(ticketWithNumber);
@@ -1302,7 +1300,7 @@ app.put('/api/tickets/:id', authenticateToken, async (req, res) => {
         'medium',
         `🎫 Ticket Durumu Güncellendi: ${ticket.title}`,
         `"${ticket.title}" ticket'ının durumu "${statusLabels[status] || status}" olarak güncellendi.`,
-        `/tickets`
+        `/tickets#${updatedTicket.id}`
       );
     }
 
@@ -2383,7 +2381,7 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
         'medium',
         '📅 Yeni Toplantı Odası Talebi',
         `${requesterProfile ? requesterProfile.firstName + ' ' + requesterProfile.lastName : 'Biri'} "${roomWithResponsible.name}" odası için ${new Date(start).toLocaleString('tr-TR')} - ${new Date(end).toLocaleString('tr-TR')} tarihlerinde rezervasyon talep etti.`,
-        '/meeting-rooms'
+        `/meeting-rooms#${reservation.id}`
       );
     } else {
       // Fallback: Notify Admins if no responsible person assigned?
@@ -2403,7 +2401,7 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
         'medium',
         '📅 Yeni Toplantı Odası Talebi (Sorumlu Atanmamış)',
         `${requesterProfile ? requesterProfile.firstName + ' ' + requesterProfile.lastName : 'Biri'} "${reservation.room.name}" odası için talep oluşturdu.`,
-        '/meeting-rooms'
+        `/meeting-rooms#${reservation.id}`
       );
     }
 
@@ -2588,7 +2586,7 @@ app.put('/api/meeting-reservations/:id/approve', authenticateToken, async (req, 
       'low',
       '✅ Toplantı Rezervasyonu Onaylandı',
       `"${reservation.room.name}" odası için ${new Date(reservation.startTime).toLocaleString('tr-TR')} - ${new Date(reservation.endTime).toLocaleString('tr-TR')} tarihlerindeki rezervasyonunuz onaylandı.`,
-      '/meeting-rooms'
+      `/meeting-rooms#${reservation.id}`
     );
 
     // Emit real-time event
@@ -2680,7 +2678,7 @@ app.put('/api/meeting-reservations/:id/reject', authenticateToken, async (req, r
       'medium',
       '❌ Toplantı Rezervasyonu Reddedildi',
       `"${reservation.room.name}" odası için ${new Date(reservation.startTime).toLocaleString('tr-TR')} - ${new Date(reservation.endTime).toLocaleString('tr-TR')} tarihlerindeki rezervasyon talebiniz reddedildi.`,
-      '/meeting-rooms'
+      `/meeting-rooms#${reservation.id}`
     );
 
     // Emit real-time event
@@ -2829,7 +2827,7 @@ app.put('/api/meeting-reservations/:id', authenticateToken, async (req, res) => 
         'medium',
         '⚠️ Rezervasyon Güncellendi',
         `"${reservation.room.name}" odası için onayladığınız rezervasyon güncellendi.`,
-        '/meeting-rooms'
+        `/meeting-rooms#${reservation.id}`
       );
     }
 

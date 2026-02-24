@@ -13,6 +13,7 @@ import { toast } from '@/hooks/use-toast';
 import { KPIStats, CreateKPIData, KPIUser } from '@/types/kpi';
 import { exportKPIsToCSV } from '@/lib/export';
 import { toast as sonnerToast } from 'sonner';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function KPITracking() {
   const {
@@ -36,6 +37,24 @@ export default function KPITracking() {
   const [availableDepartments, setAvailableDepartments] = useState<string[]>([]);
   const [availableUsers, setAvailableUsers] = useState<KPIUser[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Read hash from URL and auto-open KPI modal if matching
+  useEffect(() => {
+    if (kpiStats.length > 0 && location.hash) {
+      const hashId = location.hash.replace('#', '');
+      const kpiFromHash = kpiStats.find(k => k.kpiId === hashId);
+
+      if (kpiFromHash) {
+        if (!selectedKPI || selectedKPI.kpiId !== hashId) {
+          setSelectedKPI(kpiFromHash);
+        }
+        setIsDetailModalOpen(true);
+      }
+    }
+  }, [kpiStats, location.hash]);
 
   useEffect(() => {
     if (error) {
@@ -382,7 +401,12 @@ export default function KPITracking() {
             onRecordProgress={handleRecordProgress}
             onAddComment={handleAddComment}
             isOpen={isDetailModalOpen}
-            onOpenChange={setIsDetailModalOpen}
+            onOpenChange={(open) => {
+              setIsDetailModalOpen(open);
+              if (!open && location.hash) {
+                window.history.replaceState(null, '', location.pathname + location.search);
+              }
+            }}
             canEdit={canEditKPI(selectedKPI)}
             canDelete={canDeleteKPI(selectedKPI)}
             canRecordProgress={canRecordProgress(selectedKPI)}

@@ -71,10 +71,10 @@ export const useDashboard = () => {
 
         const userKPIs = userKPIsList.length;
         const userCompletedKPIs = userKPIsList.filter(kpi =>
-          kpi.status === 'success' || kpi.progressPercentage >= 100
+          kpi.lifecycleStatus === 'completed' || kpi.progressPercentage >= 100
         ).length;
         const userActiveKPIs = userKPIsList.filter(kpi =>
-          kpi.status !== 'success' && kpi.progressPercentage < 100
+          kpi.lifecycleStatus === 'active' && kpi.progressPercentage < 100
         ).length;
 
         // Filter critical KPIs from user's KPIs

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { WeeklyCalendarGrid } from '@/components/calendar/WeeklyCalendarGrid';
 import { EnhancedCalendarGrid } from '@/components/calendar/EnhancedCalendarGrid';
 import { CalendarStats } from '@/components/calendar/CalendarStats';
@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { exportActivitiesToCSV } from '@/lib/export';
 import { toast } from 'sonner';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 type ViewType = 'weekly' | 'monthly';
 
@@ -28,12 +29,37 @@ const Calendar = () => {
     createActivity,
     updateActivity,
     deleteActivity,
-    getMonthlyStats
+    getViewRangeStats
   } = useCalendar();
 
   const [currentView, setCurrentView] = useState<ViewType>(() => {
     return (localStorage.getItem('calendar-view') as ViewType) || 'weekly';
   });
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Read hash from URL and navigate date to that event
+  useEffect(() => {
+    if (activities.length > 0 && location.hash) {
+      const hashId = location.hash.replace('#', '');
+      const activityFromHash = activities.find(a => a.id === hashId);
+
+      if (activityFromHash && activityFromHash.date) {
+        // Only change date if not already looking at the month/week of the activity
+        // For simplicity, just set it to the activity's date so it's guaranteed to be visible
+        const activityDate = new Date(activityFromHash.date);
+
+        // Let's check if the activity is already within the visibleRange
+        // We'll just set it to ensure it's visible, the setter logic handles the rest
+        if (selectedDate.toDateString() !== activityDate.toDateString()) {
+          // We commented out the check against visibleRange because visibleRange is below this block.
+          // Setting the date directly is safe.
+          setSelectedDate(activityDate);
+        }
+      }
+    }
+  }, [activities, location.hash, selectedDate, setSelectedDate]);
 
   // Save view preference
   useEffect(() => {
@@ -79,6 +105,33 @@ const Calendar = () => {
       return format(selectedDate, 'MMMM yyyy', { locale: tr });
     }
   };
+
+  // Compute visible date range based on current view
+  const visibleRange = useMemo(() => {
+    if (currentView === 'weekly') {
+      const startOfWeek = new Date(selectedDate);
+      const day = startOfWeek.getDay();
+      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+      startOfWeek.setDate(diff);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      return { start: startOfWeek, end: endOfWeek };
+    } else {
+      const year = selectedDate.getFullYear();
+      const month = selectedDate.getMonth();
+      const start = new Date(year, month, 1);
+      const end = new Date(year, month + 1, 0);
+      return { start, end };
+    }
+  }, [selectedDate, currentView]);
+
+  const viewStats = useMemo(() => {
+    return getViewRangeStats(visibleRange.start, visibleRange.end);
+  }, [visibleRange, getViewRangeStats]);
 
   if (loading) {
     return (
@@ -218,6 +271,12 @@ const Calendar = () => {
                   onCreateActivity={createActivity}
                   onUpdateActivity={updateActivity}
                   onDeleteActivity={deleteActivity}
+                  autoOpenActivityId={location.hash ? location.hash.replace('#', '') : null}
+                  onClearAutoOpen={() => {
+                    if (location.hash) {
+                      window.history.replaceState(null, '', location.pathname + location.search);
+                    }
+                  }}
                 />
               ) : (
                 <EnhancedCalendarGrid
@@ -226,6 +285,12 @@ const Calendar = () => {
                   onCreateActivity={createActivity}
                   onUpdateActivity={updateActivity}
                   onDeleteActivity={deleteActivity}
+                  autoOpenActivityId={location.hash ? location.hash.replace('#', '') : null}
+                  onClearAutoOpen={() => {
+                    if (location.hash) {
+                      window.history.replaceState(null, '', location.pathname + location.search);
+                    }
+                  }}
                 />
               )}
             </Card>
@@ -233,13 +298,13 @@ const Calendar = () => {
 
           {/* Stats Sidebar */}
           <div className="lg:col-span-1">
-            <CalendarStats stats={getMonthlyStats(selectedDate)} />
+            <CalendarStats stats={viewStats} dateRangeLabel={formatDateRange()} />
           </div>
         </div>
 
         {/* Activity Charts */}
         {activities.length > 0 && (
-          <ActivityCharts activities={activities} />
+          <ActivityCharts stats={viewStats} dateRangeLabel={formatDateRange()} />
         )}
       </div>
     </div>

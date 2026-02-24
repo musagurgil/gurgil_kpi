@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Activity, Target, Ticket, Clock } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
 import { cn } from "@/lib/utils";
@@ -95,46 +96,48 @@ export function RecentActivities() {
         </div>
       </CardHeader>
       <CardContent>
-        {recentActivities.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Henüz aktivite yok</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {recentActivities.map((activity: any) => {
-              const Icon = getActivityIcon(activity.type);
-              const iconColor = getActivityColor(activity.type);
+        <ScrollArea className="h-[320px] pr-4 -mr-4">
+          {recentActivities.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground flex flex-col items-center justify-center h-full min-h-[200px]">
+              <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Henüz aktivite yok</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentActivities.map((activity: any) => {
+                const Icon = getActivityIcon(activity.type);
+                const iconColor = getActivityColor(activity.type);
 
-              return (
-                <div
-                  key={activity.id}
-                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className={cn("p-2 rounded-lg shrink-0", iconColor)}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">
-                      {activity.title}
-                    </p>
-                    {activity.description && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {activity.description}
+                return (
+                  <div
+                    key={activity.id}
+                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className={cn("p-2 rounded-lg shrink-0", iconColor)}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">
+                        {activity.title}
                       </p>
-                    )}
-                    <div className="flex items-center gap-2 mt-2">
-                      <Clock className="w-3 h-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {formatTimeAgo(activity.timestamp)}
-                      </span>
+                      {activity.description && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {activity.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <Clock className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          {formatTimeAgo(activity.timestamp)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          )}
+        </ScrollArea>
       </CardContent>
     </Card>
   );

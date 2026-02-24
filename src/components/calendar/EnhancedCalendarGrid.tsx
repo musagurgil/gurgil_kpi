@@ -16,6 +16,8 @@ interface EnhancedCalendarGridProps {
   onDeleteActivity: (id: string) => Promise<void>;
   onUpdateActivity: (id: string, data: Partial<Activity>) => Promise<void | Activity>;
   onCreateActivity: (data: Omit<Activity, 'id' | 'userId'>) => Promise<void | Activity>;
+  autoOpenActivityId?: string | null;
+  onClearAutoOpen?: () => void;
 }
 
 export const EnhancedCalendarGrid = ({
@@ -23,7 +25,9 @@ export const EnhancedCalendarGrid = ({
   getActivitiesForDate,
   onDeleteActivity,
   onUpdateActivity,
-  onCreateActivity // unused directly but kept for interface compliance or future use
+  onCreateActivity, // unused directly but kept for interface compliance or future use
+  autoOpenActivityId,
+  onClearAutoOpen
 }: EnhancedCalendarGridProps) => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [activityDialog, setActivityDialog] = useState<{
@@ -34,6 +38,29 @@ export const EnhancedCalendarGrid = ({
     isOpen: false,
     date: new Date(),
   });
+
+  // Check for auto-open requested from parent (URL Hash)
+  React.useEffect(() => {
+    if (autoOpenActivityId) {
+      // Look for the activity in the current month's activities
+      const startDate = startOfMonth(selectedDate);
+      startDate.setDate(startDate.getDate() - startDate.getDay() + 1); // Start from Monday
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 41); // 6 weeks * 7 days - 1
+      const days = eachDayOfInterval({ start: startDate, end: endDate });
+
+      let foundActivity: Activity | undefined;
+      for (const day of days) {
+        const dailyActivities = getActivitiesForDate(day);
+        foundActivity = dailyActivities.find(a => a.id === autoOpenActivityId);
+        if (foundActivity) break;
+      }
+
+      if (foundActivity && (!selectedActivity || selectedActivity.id !== foundActivity.id)) {
+        setSelectedActivity(foundActivity);
+      }
+    }
+  }, [autoOpenActivityId, selectedDate, getActivitiesForDate]);
 
   // Get month boundaries
   // const monthStart = startOfMonth(selectedDate); // unused
@@ -220,7 +247,10 @@ export const EnhancedCalendarGrid = ({
       <EventDetailDialog
         activity={selectedActivity}
         isOpen={!!selectedActivity}
-        onClose={() => setSelectedActivity(null)}
+        onClose={() => {
+          setSelectedActivity(null);
+          if (onClearAutoOpen) onClearAutoOpen();
+        }}
         onEdit={handleEditActivity}
         onDelete={handleDeleteActivity}
       />

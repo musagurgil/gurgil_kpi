@@ -15,6 +15,8 @@ interface WeeklyCalendarGridProps {
   onDeleteActivity: (id: string) => Promise<void>;
   onUpdateActivity: (id: string, data: Partial<Activity>) => Promise<void | Activity>;
   onCreateActivity: (data: Omit<Activity, 'id' | 'userId'>) => Promise<void | Activity>;
+  autoOpenActivityId?: string | null;
+  onClearAutoOpen?: () => void;
 }
 
 export const WeeklyCalendarGrid = ({
@@ -22,7 +24,9 @@ export const WeeklyCalendarGrid = ({
   getActivitiesForDate,
   onDeleteActivity,
   onUpdateActivity,
-  onCreateActivity
+  onCreateActivity,
+  autoOpenActivityId,
+  onClearAutoOpen
 }: WeeklyCalendarGridProps) => {
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [activityDialog, setActivityDialog] = useState<{
@@ -35,6 +39,26 @@ export const WeeklyCalendarGrid = ({
     date: new Date(),
     hour: 9,
   });
+
+  // Check for auto-open requested from parent (URL Hash)
+  React.useEffect(() => {
+    if (autoOpenActivityId) {
+      // Look for the activity in the current week's activities
+      const startOfWeekDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
+      const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startOfWeekDate, i));
+
+      let foundActivity: Activity | undefined;
+      for (const day of weekDays) {
+        const dailyActivities = getActivitiesForDate(day);
+        foundActivity = dailyActivities.find(a => a.id === autoOpenActivityId);
+        if (foundActivity) break;
+      }
+
+      if (foundActivity && (!selectedActivity || selectedActivity.id !== foundActivity.id)) {
+        setSelectedActivity(foundActivity);
+      }
+    }
+  }, [autoOpenActivityId, selectedDate, getActivitiesForDate]);
 
   // Get start of week (Monday)
   const startOfWeekDate = startOfWeek(selectedDate, { weekStartsOn: 1 });
@@ -301,7 +325,10 @@ export const WeeklyCalendarGrid = ({
       <EventDetailDialog
         activity={selectedActivity}
         isOpen={!!selectedActivity}
-        onClose={() => setSelectedActivity(null)}
+        onClose={() => {
+          setSelectedActivity(null);
+          if (onClearAutoOpen) onClearAutoOpen();
+        }}
         onEdit={handleEditActivity}
         onDelete={handleDeleteActivity}
       />

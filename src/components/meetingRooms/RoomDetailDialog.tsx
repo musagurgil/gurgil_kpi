@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Users, Calendar as CalendarIcon, Clock, CheckCircle2, XCircle, Building2, ChevronRight } from "lucide-react";
-import { format, setHours, setMinutes, isSameDay, isWithinInterval, startOfWeek, addDays, isToday } from "date-fns";
+import { format, setHours, setMinutes, setSeconds, setMilliseconds, isSameDay, isWithinInterval, startOfWeek, addDays, isToday } from "date-fns";
 import { tr } from "date-fns/locale";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -55,8 +55,8 @@ export function RoomDetailDialog({
 
   // Check if hour is available
   const isHourAvailable = (hour: number) => {
-    const hourStart = setMinutes(setHours(selectedDate, hour), 0);
-    const hourEnd = setMinutes(setHours(selectedDate, hour + 1), 0);
+    const hourStart = setMilliseconds(setSeconds(setMinutes(setHours(selectedDate, hour), 0), 0), 0);
+    const hourEnd = setMilliseconds(setSeconds(setMinutes(setHours(selectedDate, hour + 1), 0), 0), 0);
 
     const hasOverlap = dayReservations.some(r => {
       const start = new Date(r.startTime);
@@ -69,8 +69,8 @@ export function RoomDetailDialog({
 
   // Get reservations for a specific hour
   const getReservationsForHour = (hour: number) => {
-    const hourStart = setMinutes(setHours(selectedDate, hour), 0);
-    const hourEnd = setMinutes(setHours(selectedDate, hour + 1), 0);
+    const hourStart = setMilliseconds(setSeconds(setMinutes(setHours(selectedDate, hour), 0), 0), 0);
+    const hourEnd = setMilliseconds(setSeconds(setMinutes(setHours(selectedDate, hour + 1), 0), 0), 0);
 
     return dayReservations.filter(r => {
       const start = new Date(r.startTime);

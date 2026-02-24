@@ -1,14 +1,14 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { useCategories } from '@/hooks/useCategories';
 import * as LucideIcons from 'lucide-react';
 
 interface CalendarStatsProps {
   stats: any;
+  dateRangeLabel?: string;
 }
 
-export const CalendarStats = ({ stats }: CalendarStatsProps) => {
+export const CalendarStats = ({ stats, dateRangeLabel }: CalendarStatsProps) => {
   const { categories } = useCategories();
 
   const getCategoryName = (categoryId: string) => {
@@ -23,12 +23,12 @@ export const CalendarStats = ({ stats }: CalendarStatsProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Monthly Overview */}
+      {/* Range Overview */}
       <Card className="bg-card/50 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
         <CardHeader className="pb-3 border-b border-border/30">
           <CardTitle className="text-base flex items-center gap-2 font-semibold">
             <LucideIcons.Calendar className="w-4 h-4 text-primary" />
-            Aylık Özet
+            <span className="truncate">{dateRangeLabel || 'Dönem Özeti'}</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
@@ -115,7 +115,7 @@ export const CalendarStats = ({ stats }: CalendarStatsProps) => {
           ) : (
             <div className="text-center py-4">
               <p className="text-sm text-muted-foreground">
-                Bu ay henüz aktivite kaydı bulunmuyor
+                Bu dönemde henüz aktivite kaydı bulunmuyor
               </p>
             </div>
           )}
@@ -131,7 +131,7 @@ export const CalendarStats = ({ stats }: CalendarStatsProps) => {
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">En Aktif Gün</span>
             <span className="font-medium">
-              {stats?.entryCount > 0 ? 'Pazartesi' : '-'}
+              {stats?.mostActiveDay || '-'}
             </span>
           </div>
           <div className="flex justify-between text-sm">
@@ -149,11 +149,17 @@ export const CalendarStats = ({ stats }: CalendarStatsProps) => {
               {stats?.categoryStats && Object.keys(stats.categoryStats).length > 0
                 ? getCategoryName(
                   Object.entries(stats.categoryStats).reduce((a, b) =>
-                    stats.categoryStats[a[0]] > stats.categoryStats[b[0]] ? a : b
+                    Number(a[1]) > Number(b[1]) ? a : b
                   )[0]
                 )
                 : '-'
               }
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Gün Sayısı</span>
+            <span className="font-medium">
+              {stats?.dayCount || '-'}
             </span>
           </div>
         </CardContent>
