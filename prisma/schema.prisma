@@ -90,6 +90,10 @@ model KpiTarget {
   comments      KpiComment[]
   
   @@map("kpi_targets")
+  // Index for dashboard stats (count by status)
+  @@index([status])
+  // Index for filtering by department
+  @@index([department])
 }
 
 model KpiAssignment {
@@ -159,6 +163,11 @@ model Ticket {
   comments             TicketComment[]
   
   @@map("tickets")
+  // Indexes for dashboard stats and list filtering
+  @@index([status])
+  @@index([targetDepartment])
+  @@index([assignedTo])
+  @@index([sourceDepartment])
 }
 
 model TicketComment {
@@ -204,6 +213,8 @@ model CalendarActivity {
   category CalendarCategory? @relation(fields: [categoryId], references: [id])
   
   @@map("calendar_activities")
+  // Index for sorting user activities
+  @@index([userId, startTime])
 }
 
 model Notification {
@@ -221,6 +232,8 @@ model Notification {
   user Profile @relation(fields: [userId], references: [id])
   
   @@map("notifications")
+  // Index for fetching recent user notifications
+  @@index([userId, createdAt])
 }
 
 model MeetingRoom {
@@ -256,4 +269,8 @@ model MeetingReservation {
   approver    Profile?    @relation("MeetingReservationApprover", fields: [approvedBy], references: [id])
   
   @@map("meeting_reservations")
+  // Index for checking reservation collisions
+  @@index([roomId, startTime])
+  // Index for user reservation history
+  @@index([requestedBy])
 }
