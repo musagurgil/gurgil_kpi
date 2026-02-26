@@ -1,0 +1,3 @@
+## 2026-02-26 - [Prisma + SQLite createMany bottleneck]
+**Learning:** Prisma's `createMany` does not return the created records (especially with SQLite/MySQL), forcing a subsequent `findMany` query to retrieve IDs for further processing (like emitting real-time events). This `findMany` often relies on fuzzy matching (e.g., time window) which is flaky and adds a round-trip.
+**Action:** For batch inserts where IDs are needed immediately (e.g., for notifications), generate IDs client-side (using `crypto.randomUUID()` or `cuid`) and pass them in the `data` array. This allows using the in-memory objects directly, eliminating the need for a fetch-back query.

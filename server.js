@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,36 +85,27 @@ async function createNotifications(userIds, category, priority, title, message, 
   try {
     const now = new Date();
 
-    // 1. Bulk create notifications
+    // 1. Generate notifications with IDs client-side to avoid fetching them back
+    const notificationsData = userIds.map(userId => ({
+      id: randomUUID(),
+      userId,
+      category,
+      priority,
+      title,
+      message,
+      link,
+      isRead: false,
+      createdAt: now
+    }));
+
+    // 2. Bulk create notifications
     await prisma.notification.createMany({
-      data: userIds.map(userId => ({
-        userId,
-        category,
-        priority,
-        title,
-        message,
-        link,
-        isRead: false,
-        createdAt: now
-      }))
+      data: notificationsData
     });
 
-    // 2. Fetch the created notifications to emit them
-    // Use a small time window to catch the just-created notifications
-    const notifications = await prisma.notification.findMany({
-      where: {
-        userId: { in: userIds },
-        category,
-        title,
-        message,
-        createdAt: {
-          gte: new Date(now.getTime() - 1000)
-        }
-      }
-    });
-
-    // 3. Emit real-time notifications
-    for (const notification of notifications) {
+    // 3. Emit real-time notifications (using the in-memory data)
+    // No need for a subsequent DB query
+    for (const notification of notificationsData) {
       io.to(`user:${notification.userId}`).emit('new_notification', notification);
     }
   } catch (error) {
