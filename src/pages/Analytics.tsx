@@ -87,15 +87,36 @@ export default function Analytics() {
   const departmentStats = useMemo(() => {
     if (!departments.length) return [];
 
+    // Pre-calculate users per department in a single pass O(P)
+    const usersPerDept = profiles.reduce((acc, profile) => {
+      const dept = profile.department;
+      if (dept) {
+        acc[dept] = (acc[dept] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Pre-calculate KPI stats per department in a single pass O(K)
+    const kpiStatsPerDept = kpiStats.reduce((acc, kpi) => {
+      const dept = kpi.department;
+      if (dept) {
+        if (!acc[dept]) {
+          acc[dept] = { total: 0, completed: 0 };
+        }
+        acc[dept].total += 1;
+        if (kpi.status === 'success' || kpi.progressPercentage >= 100) {
+          acc[dept].completed += 1;
+        }
+      }
+      return acc;
+    }, {} as Record<string, { total: number; completed: number }>);
+
     return departments.map(dept => {
-      const deptKPIs = kpiStats.filter(k => k.department === dept.name);
-
-      // Calculate completion rate
-      const totalKPIs = deptKPIs.length;
-      const completedKPIs = deptKPIs.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
+      const stats = kpiStatsPerDept[dept.name] || { total: 0, completed: 0 };
+      const totalKPIs = stats.total;
+      const completedKPIs = stats.completed;
       const activeKPIs = totalKPIs - completedKPIs;
-
-      const deptUsers = profiles.filter(p => p.department === dept.name).length;
+      const deptUsers = usersPerDept[dept.name] || 0;
 
       return {
         name: dept.name,
@@ -136,9 +157,15 @@ export default function Analytics() {
       }
     });
 
+    // Pre-compute user profiles for O(1) lookup
+    const profilesMap = profiles.reduce((acc, p) => {
+      acc[p.id] = p;
+      return acc;
+    }, {} as Record<string, User>);
+
     return Array.from(userScores.entries())
       .map(([userId, scores]) => {
-        const profile = profiles.find(p => p.id === userId);
+        const profile = profilesMap[userId];
         if (!profile) return null;
 
         return {
