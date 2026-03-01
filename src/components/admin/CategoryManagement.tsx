@@ -20,16 +20,16 @@ import { useCategories } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/use-toast';
 
 const DEFAULT_COLORS = [
-  'hsl(217, 91%, 60%)', // Blue
-  'hsl(142, 71%, 45%)', // Green
-  'hsl(38, 92%, 50%)',  // Orange
-  'hsl(262, 83%, 58%)', // Purple
-  'hsl(0, 84%, 60%)',   // Red
-  'hsl(215, 16%, 47%)', // Gray
-  'hsl(291, 64%, 42%)', // Magenta
-  'hsl(173, 58%, 39%)', // Teal
-  'hsl(45, 93%, 47%)',  // Yellow
-  'hsl(10, 79%, 53%)',  // Orange Red
+  { value: 'hsl(217, 91%, 60%)', name: 'Blue' },
+  { value: 'hsl(142, 71%, 45%)', name: 'Green' },
+  { value: 'hsl(38, 92%, 50%)', name: 'Orange' },
+  { value: 'hsl(262, 83%, 58%)', name: 'Purple' },
+  { value: 'hsl(0, 84%, 60%)', name: 'Red' },
+  { value: 'hsl(215, 16%, 47%)', name: 'Gray' },
+  { value: 'hsl(291, 64%, 42%)', name: 'Pink' },
+  { value: 'hsl(173, 58%, 39%)', name: 'Teal' },
+  { value: 'hsl(45, 93%, 47%)', name: 'Yellow' },
+  { value: 'hsl(10, 79%, 53%)', name: 'Dark Orange' },
 ];
 
 import { ActivityCategory } from '@/types/calendar';
@@ -41,7 +41,7 @@ export const CategoryManagement = () => {
   const [editingCategory, setEditingCategory] = useState<ActivityCategory | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    color: DEFAULT_COLORS[0]
+    color: DEFAULT_COLORS[0].value
   });
   const { toast } = useToast();
 
@@ -128,7 +128,7 @@ export const CategoryManagement = () => {
   const resetForm = () => {
     setFormData({
       name: '',
-      color: DEFAULT_COLORS[0]
+      color: DEFAULT_COLORS[0].value
     });
     setEditingCategory(null);
   };
@@ -214,14 +214,15 @@ export const CategoryManagement = () => {
               <div className="grid grid-cols-5 gap-2 mt-2">
                 {DEFAULT_COLORS.map(color => (
                   <button
-                    key={color}
+                    key={color.value}
                     type="button"
-                    className={`w-8 h-8 rounded-full border-2 transition-all ${formData.color === color
+                    aria-label={`Select ${color.name} color`}
+                    className={`w-8 h-8 rounded-full border-2 transition-all ${formData.color === color.value
                       ? 'border-foreground scale-110'
                       : 'border-border hover:border-foreground/50'
                       }`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => setFormData({ ...formData, color })}
+                    style={{ backgroundColor: color.value }}
+                    onClick={() => setFormData({ ...formData, color: color.value })}
                   />
                 ))}
               </div>
