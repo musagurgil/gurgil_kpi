@@ -21,14 +21,30 @@ export const EmployeePerformanceTable = () => {
   const employeeStats = useMemo(() => {
     if (!filteredProfiles || filteredProfiles.length === 0) return [];
 
+    // Pre-calculate user activities for O(1) lookup
+    const activitiesByUser = activities.reduce((acc, activity) => {
+      const userId = activity.userId;
+      if (!acc[userId]) acc[userId] = [];
+      acc[userId].push(activity);
+      return acc;
+    }, {} as Record<string, typeof activities>);
+
+    // Pre-calculate user KPIs for O(1) lookup
+    const kpisByUser = kpiStats.reduce((acc, kpi) => {
+      kpi.assignedUsers?.forEach(userId => {
+        if (!acc[userId]) acc[userId] = [];
+        acc[userId].push(kpi);
+      });
+      return acc;
+    }, {} as Record<string, typeof kpiStats>);
+
     return filteredProfiles.map(profile => {
-      const userKPIs = kpiStats.filter(k => k.assignedUsers?.includes(profile.id));
+      const userKPIs = kpisByUser[profile.id] || [];
       const kpiCount = userKPIs.length;
       const completedKPIs = userKPIs.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
 
       // Activity Stats (filtered by date range)
-      const userActivities = activities.filter(a => {
-        if (a.userId !== profile.id) return false;
+      const userActivities = (activitiesByUser[profile.id] || []).filter(a => {
         if (filters.startDate && a.date < filters.startDate) return false;
         if (filters.endDate && a.date > filters.endDate) return false;
         return true;
