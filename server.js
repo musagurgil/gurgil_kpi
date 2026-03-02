@@ -335,6 +335,12 @@ app.get('/api/users', authenticateToken, async (req, res) => {
 // User management routes
 app.get('/api/admin/profiles', authenticateToken, async (req, res) => {
   try {
+    // Check if user has admin role
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can view profiles' });
+    }
+
     const profiles = await prisma.profile.findMany({
       include: { userRoles: true },
       orderBy: { createdAt: 'desc' }
@@ -349,6 +355,12 @@ app.get('/api/admin/profiles', authenticateToken, async (req, res) => {
 
 app.post('/api/admin/profiles', authenticateToken, async (req, res) => {
   try {
+    // Check if user has admin role
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can create profiles' });
+    }
+
     const { email, firstName, lastName, department, roles } = req.body;
 
     // First, check if department exists, if not create it
@@ -476,6 +488,12 @@ app.put('/api/admin/profiles/:id', authenticateToken, async (req, res) => {
 // Deactivate profile endpoint (Soft Delete)
 app.post('/api/admin/profiles/:id/deactivate', authenticateToken, async (req, res) => {
   try {
+    // Check if user has admin role
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can deactivate profiles' });
+    }
+
     const { id } = req.params;
 
     // Check if user exists
@@ -513,6 +531,12 @@ app.post('/api/admin/profiles/:id/deactivate', authenticateToken, async (req, re
 // Transfer assets endpoint
 app.post('/api/admin/profiles/transfer', authenticateToken, async (req, res) => {
   try {
+    // Check if user has admin role
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can transfer assets' });
+    }
+
     const { fromUserId, toUserId, transferTickets, transferKpis } = req.body;
 
     console.log(`[TRANSFER] From: ${fromUserId} To: ${toUserId}`);
@@ -620,6 +644,12 @@ app.put('/api/admin/profiles/:id/password', authenticateToken, async (req, res) 
 // Safer Delete Profile Endpoint
 app.delete('/api/admin/profiles/:id', authenticateToken, async (req, res) => {
   try {
+    // Check if user has admin role
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can delete profiles' });
+    }
+
     const { id } = req.params;
 
     // Check for linked data manually since we removed Cascade
