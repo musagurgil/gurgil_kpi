@@ -28,6 +28,23 @@ export const DepartmentAnalytics = () => {
   const departmentStats = useMemo(() => {
     if (!filteredProfiles || filteredProfiles.length === 0) return [];
 
+    // Pre-calculate user activities for O(1) lookup
+    const activitiesByUser = activities.reduce((acc, activity) => {
+      const userId = activity.userId;
+      if (!acc[userId]) acc[userId] = [];
+      acc[userId].push(activity);
+      return acc;
+    }, {} as Record<string, typeof activities>);
+
+    // Pre-calculate user KPIs for O(1) lookup
+    const kpisByUser = kpiStats.reduce((acc, kpi) => {
+      kpi.assignedUsers?.forEach(userId => {
+        if (!acc[userId]) acc[userId] = [];
+        acc[userId].push(kpi);
+      });
+      return acc;
+    }, {} as Record<string, typeof kpiStats>);
+
     const statsMap = new Map();
 
     filteredProfiles.forEach(profile => {
@@ -45,7 +62,7 @@ export const DepartmentAnalytics = () => {
       deptStats.employeeCount += 1;
       deptStats.totalEmployees += 1;
 
-      const userActivities = activities.filter(a => a.userId === profile.id);
+      const userActivities = activitiesByUser[profile.id] || [];
       const userHours = userActivities.reduce((acc, a) => acc + (a.duration || 0) / 60, 0);
       deptStats.totalHours += userHours;
 
@@ -54,11 +71,12 @@ export const DepartmentAnalytics = () => {
         deptStats.categoryDistribution[catId] = (deptStats.categoryDistribution[catId] || 0) + (a.duration || 0) / 60;
       });
 
-      const userKPIs = kpiStats.filter(k => k.assignedUsers?.includes(profile.id));
+      const userKPIs = kpisByUser[profile.id] || [];
       deptStats.kpiCount += userKPIs.length;
       deptStats.completedKPIs += userKPIs.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return Array.from(statsMap.values()).map((d: any) => ({
       ...d,
       averageHours: d.totalEmployees > 0 ? d.totalHours / d.totalEmployees : 0,
