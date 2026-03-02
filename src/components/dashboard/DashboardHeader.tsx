@@ -124,12 +124,12 @@ export function DashboardHeader() {
             </div>
 
             {/* Mobile Search Button */}
-            <Button variant="outline" size="icon" className="md:hidden bg-white/10 border-white/10 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm">
+            <Button aria-label="Arama yap" variant="outline" size="icon" className="md:hidden bg-white/10 border-white/10 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm">
               <Search className="w-5 h-5" />
             </Button>
 
             {/* Notifications */}
-            <Button variant="outline" size="icon" className="relative shrink-0 bg-white/10 border-white/10 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm group">
+            <Button aria-label="Bildirimler" variant="outline" size="icon" className="relative shrink-0 bg-white/10 border-white/10 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm group">
               <Bell className="w-5 h-5 group-hover:scale-110 transition-transform" />
               {urgentNotifications > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center bg-red-500 rounded-full text-white text-[10px] font-bold shadow-sm shadow-red-500/50">
@@ -139,12 +139,12 @@ export function DashboardHeader() {
             </Button>
 
             {/* Settings */}
-            <Button variant="outline" size="icon" className="shrink-0 bg-white/10 border-white/10 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm group">
+            <Button aria-label="Ayarlar" variant="outline" size="icon" className="shrink-0 bg-white/10 border-white/10 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm group">
               <Settings className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
             </Button>
 
             {/* Profile */}
-            <Button variant="outline" size="icon" className="shrink-0 bg-white/10 border-white/10 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm">
+            <Button aria-label="Kullanıcı profili" variant="outline" size="icon" className="shrink-0 bg-white/10 border-white/10 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm">
               <User className="w-5 h-5" />
             </Button>
           </div>
