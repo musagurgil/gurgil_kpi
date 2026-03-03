@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { format, isPast } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { toast as sonnerToast } from 'sonner';
 
 import { MeetingRoom, MeetingReservation } from '@/types/meeting';
 
@@ -55,7 +56,12 @@ export default function MeetingRooms() {
 
   const { hasPermission, user } = useAuth();
   const isAdmin = hasPermission('admin');
-  const canApprove = hasPermission('department_manager') || hasPermission('secretary');
+  // Only admin and room responsible can approve/reject reservations
+  const canApproveReservation = (reservation: any) => {
+    if (isAdmin) return true;
+    const room = rooms.find(r => r.id === reservation?.roomId);
+    return room?.responsibleId === user?.id;
+  };
 
   const [showReservationForm, setShowReservationForm] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -74,8 +80,14 @@ export default function MeetingRooms() {
       const hashId = location.hash.replace('#', '');
       const reservationFromHash = reservations.find(r => r.id === hashId);
 
-      if (reservationFromHash && (!selectedReservation || selectedReservation.id !== hashId)) {
-        setSelectedReservation(reservationFromHash);
+      if (reservationFromHash) {
+        if (!selectedReservation || selectedReservation.id !== hashId) {
+          setSelectedReservation(reservationFromHash);
+        }
+      } else {
+        // Reservation not found (possibly deleted), show toast and clear hash
+        sonnerToast.error('Bu rezervasyon bulunamadı. Silinmiş veya erişim izniniz olmayabilir.');
+        window.history.replaceState(null, '', location.pathname + location.search);
       }
     }
   }, [reservations, location.hash]);
@@ -609,9 +621,9 @@ export default function MeetingRooms() {
               onReserve={handleReserveClick}
               onEdit={handleEditReservation}
               onDelete={handleDeleteReservation}
-              onApprove={canApprove ? handleApprove : undefined}
-              onReject={canApprove ? handleReject : undefined}
-              canApprove={canApprove}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              canApprove={isAdmin || selectedRoom.responsibleId === user?.id}
               isAdmin={isAdmin}
               currentUserId={user?.id}
             />
@@ -648,9 +660,9 @@ export default function MeetingRooms() {
               room={rooms.find(r => r.id === selectedReservation.roomId)}
               onEdit={handleEditReservation}
               onDelete={handleDeleteReservation}
-              onApprove={canApprove ? handleApprove : undefined}
-              onReject={canApprove ? handleReject : undefined}
-              canApprove={canApprove}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              canApprove={canApproveReservation(selectedReservation)}
               isAdmin={isAdmin}
               currentUserId={user?.id}
             />

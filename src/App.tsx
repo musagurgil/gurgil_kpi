@@ -48,7 +48,7 @@ const App = () => {
 
                   {/* Manager+ Routes */}
                   <Route path="/analytics" element={
-                    <ProtectedRoute requiredRole="department_manager">
+                    <ProtectedRoute customCheck={(user, hasPermission) => hasPermission('admin') || user?.department === 'Yönetim'}>
                       <Analytics />
                     </ProtectedRoute>
                   } />

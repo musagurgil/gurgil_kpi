@@ -52,6 +52,10 @@ export default function KPITracking() {
           setSelectedKPI(kpiFromHash);
         }
         setIsDetailModalOpen(true);
+      } else {
+        // KPI not found (possibly deleted), show toast and clear hash
+        sonnerToast.error('Bu KPI bulunamadı. Silinmiş veya erişim izniniz olmayabilir.');
+        window.history.replaceState(null, '', location.pathname + location.search);
       }
     }
   }, [kpiStats, location.hash]);
@@ -403,8 +407,11 @@ export default function KPITracking() {
             isOpen={isDetailModalOpen}
             onOpenChange={(open) => {
               setIsDetailModalOpen(open);
-              if (!open && location.hash) {
-                window.history.replaceState(null, '', location.pathname + location.search);
+              if (!open) {
+                setSelectedKPI(null);
+                if (location.hash) {
+                  window.history.replaceState(null, '', location.pathname + location.search);
+                }
               }
             }}
             canEdit={canEditKPI(selectedKPI)}

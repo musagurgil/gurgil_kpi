@@ -1,0 +1,1590 @@
+{
+  "departments": [
+    {
+      "id": "cmh04h8on0000sjkfw04b9mwp",
+      "name": "İnsan Kaynakları",
+      "createdAt": "2025-10-21T05:27:12.695Z"
+    },
+    {
+      "id": "cmh04h9x70002sjkf9on6hsay",
+      "name": "Muhasebe",
+      "createdAt": "2025-10-21T05:27:14.299Z"
+    },
+    {
+      "id": "cmh04ha490003sjkffimvxn1r",
+      "name": "Satış",
+      "createdAt": "2025-10-21T05:27:14.554Z"
+    },
+    {
+      "id": "cmh04hahz0005sjkfr4yaq5wl",
+      "name": "Üretim",
+      "createdAt": "2025-10-21T05:27:15.048Z"
+    },
+    {
+      "id": "cmh30nhov0000goiyup9ma06v",
+      "name": "IT",
+      "createdAt": "2025-10-23T06:03:24.367Z"
+    },
+    {
+      "id": "cmi22tw3i0000rwhr08oarnwn",
+      "name": "Yönetim",
+      "createdAt": "2025-11-16T18:56:18.366Z"
+    },
+    {
+      "id": "cmlf7s7hi0000xeojr9io4mxt",
+      "name": "Management",
+      "createdAt": "2026-02-09T13:35:05.190Z"
+    },
+    {
+      "id": "cmlf7s87x0001xeoj4f42uaqk",
+      "name": "Sales",
+      "createdAt": "2026-02-09T13:35:06.141Z"
+    },
+    {
+      "id": "cmlf7s8bg0002xeojl03fqa21",
+      "name": "Marketing",
+      "createdAt": "2026-02-09T13:35:06.269Z"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "cmh04hb4j0009sjkfdax7va1q",
+      "email": "admin@gurgil.com",
+      "passwordHash": "$2a$10$pWnecNu2yZT34RgEFEqPJO92f0IFM9Ve1nH4Q4VUKNC4EZPAUoK5K",
+      "firstName": "Admin",
+      "lastName": "User",
+      "department": "Yönetim",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": "2026-03-03T12:19:23.016Z",
+      "createdAt": "2025-10-21T05:27:15.859Z"
+    },
+    {
+      "id": "cmh04hcav000fsjkflx9yx9a7",
+      "email": "employee@gurgil.com",
+      "passwordHash": null,
+      "firstName": "Employee",
+      "lastName": "User",
+      "department": "IT",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2025-10-21T05:27:17.383Z"
+    },
+    {
+      "id": "cmh30nhsw0002goiyz5e58tjk",
+      "email": "test@gurgil.com",
+      "passwordHash": "$2a$10$AGZGvyO8mE/sOU7BJe8tnOV4/s3mtzmUfl/tkRSh.udZj0BhuO.qi",
+      "firstName": "Test",
+      "lastName": "User",
+      "department": "IT",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": "2026-02-20T10:53:42.232Z",
+      "createdAt": "2025-10-23T06:03:24.512Z"
+    },
+    {
+      "id": "cmh30ydsp0005goiyz8fhclcz",
+      "email": "musa@gurgil.com",
+      "passwordHash": "$2a$10$c53TjEyvXi6drqZ2Kqt/cOFta1tmi2ilV5Z43lGvImvoeJmtMMt6m",
+      "firstName": "Musa",
+      "lastName": "Gürgil",
+      "department": "IT",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": "2026-03-03T11:45:39.544Z",
+      "createdAt": "2025-10-23T06:11:52.537Z"
+    },
+    {
+      "id": "cmlb836e00002zpvszx38nh70",
+      "email": "testadmin@admin.com",
+      "passwordHash": null,
+      "firstName": "Test",
+      "lastName": "Admin",
+      "department": "Yönetim",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-06T18:32:32.280Z"
+    },
+    {
+      "id": "cmlb864sw0005zpvshbluanxb",
+      "email": "realadmin@admin.com",
+      "passwordHash": null,
+      "firstName": "Real",
+      "lastName": "Admin",
+      "department": "Yönetim",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-06T18:34:50.192Z"
+    },
+    {
+      "id": "cmlcu7o1r00015pd5wgoxrpxa",
+      "email": "test_employee@gurgil.com",
+      "passwordHash": null,
+      "firstName": "Test",
+      "lastName": "Employee",
+      "department": "Satış",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-07T21:39:39.520Z"
+    },
+    {
+      "id": "cmlcufni400055pd5r22m640z",
+      "email": "test_manager@gurgil.com",
+      "passwordHash": null,
+      "firstName": "Test",
+      "lastName": "password123Manager",
+      "department": "Yönetim",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-07T21:45:52.061Z"
+    },
+    {
+      "id": "cmlcvps5q000c5pd5cu795i5u",
+      "email": "qa_manager@gurgil.com",
+      "passwordHash": null,
+      "firstName": "QA",
+      "lastName": "Manager",
+      "department": "IT",
+      "avatar": null,
+      "isActive": false,
+      "lastLogin": null,
+      "createdAt": "2026-02-07T22:21:44.270Z"
+    },
+    {
+      "id": "cmlcvrf5f000f5pd5baai8zb1",
+      "email": "qa_employee@gurgil.com",
+      "passwordHash": null,
+      "firstName": "QA",
+      "lastName": "Employee",
+      "department": "IT",
+      "avatar": null,
+      "isActive": false,
+      "lastLogin": null,
+      "createdAt": "2026-02-07T22:23:00.723Z"
+    },
+    {
+      "id": "cmldobila00015j6xn0ytcu6x",
+      "email": "manager@gurgil.com",
+      "passwordHash": null,
+      "firstName": "Manager",
+      "lastName": "User",
+      "department": "IT",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-08T11:42:27.549Z"
+    },
+    {
+      "id": "cmldorjnl00065j6xgit38v7c",
+      "email": "board@gurgil.com",
+      "passwordHash": null,
+      "firstName": "admin123Board",
+      "lastName": "Member",
+      "department": "Yönetim",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-08T11:54:55.425Z"
+    },
+    {
+      "id": "cmldpgva400095j6x0zd3xe07",
+      "email": "board_final@gurgil.com",
+      "passwordHash": null,
+      "firstName": "Board",
+      "lastName": "Member",
+      "department": "Yönetim",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-08T12:14:36.892Z"
+    },
+    {
+      "id": "cmldplvmp000c5j6xw2a32ekb",
+      "email": "board_v2@gurgil.com",
+      "passwordHash": null,
+      "firstName": "Board",
+      "lastName": "MemberV2",
+      "department": "Yönetim",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-08T12:18:30.625Z"
+    },
+    {
+      "id": "cmldr92z5000113x6ucrtf8zw",
+      "email": "temp_del_test@test.com",
+      "passwordHash": null,
+      "firstName": "Temp",
+      "lastName": "User",
+      "department": "IT",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-08T13:04:32.849Z"
+    },
+    {
+      "id": "cmlf7b5wl00016yv6808loq12",
+      "email": "secretary_test_cjs@test.com",
+      "passwordHash": null,
+      "firstName": "Fatma",
+      "lastName": "Sekreter",
+      "department": "Yönetim",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-09T13:21:49.990Z"
+    },
+    {
+      "id": "cmlf7b6hg00056yv6hc1g04lq",
+      "email": "employee_test_cjs@test.com",
+      "passwordHash": null,
+      "firstName": "Ali",
+      "lastName": "Çalışan",
+      "department": "Satış",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-09T13:21:50.740Z"
+    },
+    {
+      "id": "cmlf7s8f20004xeoj3b82t7z9",
+      "email": "admin_test@test.com",
+      "passwordHash": "$2a$10$PxQBl7HM/WzqQxIPJIs1s./X2yAcJwr6qwXuYVIsd8qCfsXpUAzpW",
+      "firstName": "Admin",
+      "lastName": "User",
+      "department": "Management",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": "2026-02-20T09:26:44.968Z",
+      "createdAt": "2026-02-09T13:35:06.398Z"
+    },
+    {
+      "id": "cmlf7s8mc0008xeojw9zatjre",
+      "email": "responsible_test@test.com",
+      "passwordHash": null,
+      "firstName": "Responsible",
+      "lastName": "Person",
+      "department": "Sales",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": null,
+      "createdAt": "2026-02-09T13:35:06.661Z"
+    },
+    {
+      "id": "cmlf7s8pv000axeojdv628bmo",
+      "email": "requester_test@test.com",
+      "passwordHash": "$2a$10$uXi2.u0iB0k0zmaCxRdaYuaYiTg68G1WyHeSlQvMfgkP5fa2.UzIe",
+      "firstName": "Ordinary",
+      "lastName": "Requester",
+      "department": "Marketing",
+      "avatar": null,
+      "isActive": true,
+      "lastLogin": "2026-02-20T09:26:31.353Z",
+      "createdAt": "2026-02-09T13:35:06.787Z"
+    }
+  ],
+  "user_roles": [
+    {
+      "id": "cmh30nhsw0003goiy4dzjclwo",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "role": "employee",
+      "createdAt": "2025-10-23T06:03:24.512Z"
+    },
+    {
+      "id": "cmh30ydsp0006goiybmadxt06",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "role": "department_manager",
+      "createdAt": "2025-10-23T06:11:52.537Z"
+    },
+    {
+      "id": "cmi22vmzt0002rwhrv8a6ao9r",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "role": "admin",
+      "createdAt": "2025-11-16T18:57:39.881Z"
+    },
+    {
+      "id": "cmlb7tfk40000zpvskpwdk8mw",
+      "userId": "cmh04hcav000fsjkflx9yx9a7",
+      "role": "employee",
+      "createdAt": "2026-02-06T18:24:57.604Z"
+    },
+    {
+      "id": "cmlb836e00003zpvsejwh0pby",
+      "userId": "cmlb836e00002zpvszx38nh70",
+      "role": "employee",
+      "createdAt": "2026-02-06T18:32:32.280Z"
+    },
+    {
+      "id": "cmlb864sw0006zpvsp2rm3bis",
+      "userId": "cmlb864sw0005zpvshbluanxb",
+      "role": "employee",
+      "createdAt": "2026-02-06T18:34:50.192Z"
+    },
+    {
+      "id": "cmlcu7o1r00025pd5rqsxamyq",
+      "userId": "cmlcu7o1r00015pd5wgoxrpxa",
+      "role": "employee",
+      "createdAt": "2026-02-07T21:39:39.520Z"
+    },
+    {
+      "id": "cmlcufni400065pd5vfnye0xm",
+      "userId": "cmlcufni400055pd5r22m640z",
+      "role": "employee",
+      "createdAt": "2026-02-07T21:45:52.061Z"
+    },
+    {
+      "id": "cmlcvps5q000d5pd5ksc4uzt3",
+      "userId": "cmlcvps5q000c5pd5cu795i5u",
+      "role": "department_manager",
+      "createdAt": "2026-02-07T22:21:44.270Z"
+    },
+    {
+      "id": "cmlcvrf5f000g5pd5s1wm6w96",
+      "userId": "cmlcvrf5f000f5pd5baai8zb1",
+      "role": "employee",
+      "createdAt": "2026-02-07T22:23:00.723Z"
+    },
+    {
+      "id": "cmldobila00025j6x7zsqowrs",
+      "userId": "cmldobila00015j6xn0ytcu6x",
+      "role": "department_manager",
+      "createdAt": "2026-02-08T11:42:27.549Z"
+    },
+    {
+      "id": "cmldp39ij0001dpl9q71z0aaz",
+      "userId": "cmldorjnl00065j6xgit38v7c",
+      "role": "board_member",
+      "createdAt": "2026-02-08T12:04:02.155Z"
+    },
+    {
+      "id": "cmldpgva4000a5j6x30wy5c5v",
+      "userId": "cmldpgva400095j6x0zd3xe07",
+      "role": "employee",
+      "createdAt": "2026-02-08T12:14:36.892Z"
+    },
+    {
+      "id": "cmldpwave0001wtl6n8uvlll6",
+      "userId": "cmldplvmp000c5j6xw2a32ekb",
+      "role": "board_member",
+      "createdAt": "2026-02-08T12:26:36.939Z"
+    },
+    {
+      "id": "cmldr92z5000213x6kyro0t8c",
+      "userId": "cmldr92z5000113x6ucrtf8zw",
+      "role": "employee",
+      "createdAt": "2026-02-08T13:04:32.849Z"
+    },
+    {
+      "id": "cmlf7b6lg00076yv671k671ah",
+      "userId": "cmlf7b6hg00056yv6hc1g04lq",
+      "role": "employee",
+      "createdAt": "2026-02-09T13:21:50.885Z"
+    },
+    {
+      "id": "cmlf7b7ld000c6yv60ngxk5ya",
+      "userId": "cmlf7b6hg00056yv6hc1g04lq",
+      "role": "secretary",
+      "createdAt": "2026-02-09T13:21:52.178Z"
+    },
+    {
+      "id": "cmlf7s8iu0006xeojigtgk6b6",
+      "userId": "cmlf7s8f20004xeoj3b82t7z9",
+      "role": "admin",
+      "createdAt": "2026-02-09T13:35:06.534Z"
+    }
+  ],
+  "kpi_targets": [
+    {
+      "id": "cmh68xkfn0001fwud8z4v887a",
+      "title": "Test KPI - Departman Yöneticisi",
+      "description": "Bu KPI departman yöneticisi tarafından oluşturuldu",
+      "department": "IT",
+      "targetValue": 100,
+      "currentValue": 0,
+      "unit": "adet",
+      "startDate": "2025-10-25",
+      "endDate": "2025-12-31",
+      "period": "monthly",
+      "priority": "critical",
+      "status": "active",
+      "createdBy": "cmh30ydsp0005goiyz8fhclcz",
+      "createdAt": "2025-10-25T12:18:29.939Z",
+      "updatedAt": "2025-10-25T12:18:29.939Z"
+    },
+    {
+      "id": "cmh6azjpj0005ms6ss8kkxwvh",
+      "title": "Son kullanıcı desteği",
+      "description": "Yıllık son kullanıcı desteği",
+      "department": "IT",
+      "targetValue": 1000,
+      "currentValue": 0,
+      "unit": "adet",
+      "startDate": "2025-01-01",
+      "endDate": "2026-01-01",
+      "period": "yearly",
+      "priority": "low",
+      "status": "active",
+      "createdBy": "cmh30ydsp0005goiyz8fhclcz",
+      "createdAt": "2025-10-25T13:16:01.544Z",
+      "updatedAt": "2025-10-25T13:16:01.544Z"
+    },
+    {
+      "id": "cmlcvwjpq000i5pd5ivzphxwo",
+      "title": "QA Test KPI",
+      "description": "Test KPI for QA flow.",
+      "department": "IT",
+      "targetValue": 10,
+      "currentValue": 0,
+      "unit": "Bugs",
+      "startDate": "2026-02-08",
+      "endDate": "2026-12-31",
+      "period": "monthly",
+      "priority": "medium",
+      "status": "active",
+      "createdBy": "cmlcvps5q000c5pd5cu795i5u",
+      "createdAt": "2026-02-07T22:26:59.918Z",
+      "updatedAt": "2026-02-07T22:26:59.918Z"
+    },
+    {
+      "id": "cmm0hhs0e0001ov8xjb9qj2gt",
+      "title": "Aylık Satış Tutarı",
+      "description": "Aylık yapılacak minumum satış tutarı",
+      "department": "Satış",
+      "targetValue": 10000,
+      "currentValue": 0,
+      "unit": "TL",
+      "startDate": "2026-02-24",
+      "endDate": "2026-04-30",
+      "period": "quarterly",
+      "priority": "medium",
+      "status": "active",
+      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
+      "createdAt": "2026-02-24T10:50:04.430Z",
+      "updatedAt": "2026-02-24T10:50:04.430Z"
+    }
+  ],
+  "kpi_assignments": [
+    {
+      "id": "cmh68xkfn0003fwudnyu6ziw8",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "assignedAt": "2025-10-25T12:18:29.939Z"
+    },
+    {
+      "id": "cmh68xkfn0004fwudvjax5kn7",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "assignedAt": "2025-10-25T12:18:29.939Z"
+    },
+    {
+      "id": "cmh6azjpk0007ms6s39b878no",
+      "kpiId": "cmh6azjpj0005ms6ss8kkxwvh",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "assignedAt": "2025-10-25T13:16:01.544Z"
+    },
+    {
+      "id": "cmh6azjpk0008ms6sng2a2y96",
+      "kpiId": "cmh6azjpj0005ms6ss8kkxwvh",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "assignedAt": "2025-10-25T13:16:01.544Z"
+    },
+    {
+      "id": "cmlcvwjpr000k5pd53q0cdt3t",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmlcvrf5f000f5pd5baai8zb1",
+      "assignedAt": "2026-02-07T22:26:59.918Z"
+    },
+    {
+      "id": "cmm0hhs0e0003ov8xlalztn1y",
+      "kpiId": "cmm0hhs0e0001ov8xjb9qj2gt",
+      "userId": "cmlcu7o1r00015pd5wgoxrpxa",
+      "assignedAt": "2026-02-24T10:50:04.430Z"
+    },
+    {
+      "id": "cmm0hhs0e0004ov8xj0l6b7nv",
+      "kpiId": "cmm0hhs0e0001ov8xjb9qj2gt",
+      "userId": "cmlf7b6hg00056yv6hc1g04lq",
+      "assignedAt": "2026-02-24T10:50:04.430Z"
+    }
+  ],
+  "kpi_progress": [
+    {
+      "id": "cmh69v26s0006fwud4usvtyuo",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "value": 25,
+      "note": "İlk ilerleme kaydı - 25 adet tamamlandı",
+      "recordedAt": "2025-10-25T12:44:32.596Z",
+      "recordedBy": "cmh30ydsp0005goiyz8fhclcz"
+    },
+    {
+      "id": "cmh69xu9a000afwud2me5kk2m",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "value": 15,
+      "note": "Çalışan olarak 15 adet daha tamamladım",
+      "recordedAt": "2025-10-25T12:46:42.286Z",
+      "recordedBy": "cmh30nhsw0002goiyz5e58tjk"
+    },
+    {
+      "id": "cmh6a4r0l000ifwudrrrr403d",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "value": 10,
+      "note": "Test olarak 10 tane daha ekledim Ben insanım.",
+      "recordedAt": "2025-10-25T12:52:04.677Z",
+      "recordedBy": "cmh30nhsw0002goiyz5e58tjk"
+    },
+    {
+      "id": "cmh6aq65o0001ms6s2plj56a3",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "value": 5,
+      "note": "Test ilerleme kaydı - 5 adet daha tamamlandı",
+      "recordedAt": "2025-10-25T13:08:44.077Z",
+      "recordedBy": "cmh30ydsp0005goiyz8fhclcz"
+    },
+    {
+      "id": "cmh92rrdm0001i26xoj59wawy",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "value": 10,
+      "note": "Yolo modunda test ilerleme kaydı - 10 adet",
+      "recordedAt": "2025-10-27T11:49:19.835Z",
+      "recordedBy": "cmh30ydsp0005goiyz8fhclcz"
+    },
+    {
+      "id": "cmh933klk0003i26xxlqmxuwz",
+      "kpiId": "cmh6azjpj0005ms6ss8kkxwvh",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "value": 10,
+      "note": "27.10.2025 10 kullanıcıya destek verildi.",
+      "recordedAt": "2025-10-27T11:58:30.920Z",
+      "recordedBy": "cmh30ydsp0005goiyz8fhclcz"
+    },
+    {
+      "id": "cmh93ijqk0005i26x2vetovcx",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "value": 20,
+      "note": "Dialog gerçek zamanlı güncelleme testi - 20 adet",
+      "recordedAt": "2025-10-27T12:10:09.644Z",
+      "recordedBy": "cmh30ydsp0005goiyz8fhclcz"
+    },
+    {
+      "id": "cmlcw2o5p000q5pd5d1i2c3vx",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmlcvrf5f000f5pd5baai8zb1",
+      "value": 1,
+      "note": "Started",
+      "recordedAt": "2026-02-07T22:31:45.613Z",
+      "recordedBy": "cmlcvrf5f000f5pd5baai8zb1"
+    },
+    {
+      "id": "cmlt9qhoe0005hu0cokpxsn7z",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "value": 5,
+      "note": "Test ilerleme notu",
+      "recordedAt": "2026-02-19T09:38:30.783Z",
+      "recordedBy": "cmh04hb4j0009sjkfdax7va1q"
+    },
+    {
+      "id": "cmltcaep7000nhu0cy4yemftd",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "value": 1,
+      "note": "KPI bug temizliği",
+      "recordedAt": "2026-02-19T10:49:59.275Z",
+      "recordedBy": "cmh04hb4j0009sjkfdax7va1q"
+    },
+    {
+      "id": "cmlyryt1j00013r2p31qxk5l0",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "value": 3,
+      "note": "3 adet test ilerlemesi",
+      "recordedAt": "2026-02-23T06:07:42.727Z",
+      "recordedBy": "cmh30nhsw0002goiyz5e58tjk"
+    }
+  ],
+  "kpi_comments": [
+    {
+      "id": "cmh69vgg10008fwudgp8zfei9",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "userName": "Musa Gürgil",
+      "content": "Bu KPI'da iyi ilerleme kaydediyoruz. Hedefimize ulaşmak için daha fazla çalışmamız gerekiyor.",
+      "createdAt": "2025-10-25T12:44:51.073Z"
+    },
+    {
+      "id": "cmh69y8oz000cfwud45eiqegb",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "userName": "Test User",
+      "content": "Çalışan olarak bu KPI'da iyi ilerleme kaydediyorum. Hedefimize ulaşmak için daha fazla çalışmamız gerekiyor.",
+      "createdAt": "2025-10-25T12:47:00.995Z"
+    },
+    {
+      "id": "cmh6a5kdx000kfwudzyytvrc3",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "userName": "Test User",
+      "content": "İnsan olarak yorum ekliyorum.",
+      "createdAt": "2025-10-25T12:52:42.742Z"
+    },
+    {
+      "id": "cmh6atcus0003ms6soeak7omw",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "userName": "Musa Gürgil",
+      "content": "Test yorumu - KPI sisteminin çalışmasını test ediyorum. İlerleme kaydı başarıyla çalışıyor!",
+      "createdAt": "2025-10-25T13:11:12.724Z"
+    },
+    {
+      "id": "cmh94517u0007i26xkber23fo",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "userName": "Musa Gürgil",
+      "content": "Bu yorumu anlık güncellenmeyi test etmek için açıyorum.",
+      "createdAt": "2025-10-27T12:27:38.730Z"
+    },
+    {
+      "id": "cmltbx25b0007hu0c4czhnhbe",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "userName": "Admin User",
+      "content": "Test etmek için tekrardan yazıyorum.",
+      "createdAt": "2026-02-19T10:39:36.479Z"
+    },
+    {
+      "id": "cmltc2d850009hu0ctz7oifeu",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "userName": "Admin User",
+      "content": "İyi gidiyoruz, böyle devam.",
+      "createdAt": "2026-02-19T10:43:44.117Z"
+    },
+    {
+      "id": "cmltc2pf9000bhu0cyftq5nlj",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "userName": "Admin User",
+      "content": "En alt yorum (bug test)",
+      "createdAt": "2026-02-19T10:43:59.925Z"
+    },
+    {
+      "id": "cmltdqy71000phu0cdjb7mzyf",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "userName": "Admin User",
+      "content": "Test comment 2",
+      "createdAt": "2026-02-19T11:30:50.653Z"
+    },
+    {
+      "id": "cmlyrzasf00093r2prk5w0juw",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "userName": "Test User",
+      "content": "Bu kullanıcı yorumu böyle",
+      "createdAt": "2026-02-23T06:08:05.727Z"
+    },
+    {
+      "id": "cmm0ht6j00008ov8x661w3dc7",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "userName": "Musa Gürgil",
+      "content": "Bug Fix'e devam herşeyi kusursuz hale getirene kadar devam edeceğiz.",
+      "createdAt": "2026-02-24T10:58:56.461Z"
+    }
+  ],
+  "tickets": [
+    {
+      "id": "cmi1znn1y0001mmq8bozwle6m",
+      "title": "Test Ticket - Detaylı Test",
+      "description": "Bu bir detaylı test ticket'ıdır. Tüm özellikleri test etmek için oluşturulmuştur.",
+      "priority": "medium",
+      "status": "in_progress",
+      "sourceDepartment": "İnsan Kaynakları",
+      "targetDepartment": "IT",
+      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
+      "creatorName": "Admin User",
+      "creatorEmail": null,
+      "assignedTo": "cmh30ydsp0005goiyz8fhclcz",
+      "createdAt": "2025-11-16T17:27:27.862Z",
+      "updatedAt": "2026-02-24T12:29:17.373Z",
+      "resolvedAt": null,
+      "closedAt": null
+    },
+    {
+      "id": "cmlatbnj00001ovpd9dceiedo",
+      "title": "Test Ticket",
+      "description": "Bu bir test ticketidir.",
+      "priority": "medium",
+      "status": "open",
+      "sourceDepartment": "Yönetim",
+      "targetDepartment": "IT",
+      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
+      "creatorName": "Admin User",
+      "creatorEmail": null,
+      "assignedTo": null,
+      "createdAt": "2026-02-06T11:39:13.500Z",
+      "updatedAt": "2026-02-06T11:39:13.500Z",
+      "resolvedAt": null,
+      "closedAt": null
+    },
+    {
+      "id": "cmlaucnc8000dovpd49w5wvii",
+      "title": "Test Bildirimi",
+      "description": "Bu bir test bildirimidir.",
+      "priority": "medium",
+      "status": "resolved",
+      "sourceDepartment": "Yönetim",
+      "targetDepartment": "IT",
+      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
+      "creatorName": "Admin User",
+      "creatorEmail": null,
+      "assignedTo": null,
+      "createdAt": "2026-02-06T12:07:59.528Z",
+      "updatedAt": "2026-02-24T12:46:30.631Z",
+      "resolvedAt": null,
+      "closedAt": null
+    },
+    {
+      "id": "cmlauikqb0001ag0en782b8ey",
+      "title": "Test Ticket Notification",
+      "description": "Triggering notification for admin.",
+      "priority": "medium",
+      "status": "in_progress",
+      "sourceDepartment": "Yönetim",
+      "targetDepartment": "IT",
+      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
+      "creatorName": "Admin User",
+      "creatorEmail": null,
+      "assignedTo": "cmh04hcav000fsjkflx9yx9a7",
+      "createdAt": "2026-02-06T12:12:36.084Z",
+      "updatedAt": "2026-02-08T11:44:51.008Z",
+      "resolvedAt": null,
+      "closedAt": null
+    },
+    {
+      "id": "cmlav9mfl00036n2woihrtd9g",
+      "title": "IT Notification Test",
+      "description": "Testing notification for IT department.",
+      "priority": "medium",
+      "status": "resolved",
+      "sourceDepartment": "Yönetim",
+      "targetDepartment": "IT",
+      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
+      "creatorName": "Admin User",
+      "creatorEmail": null,
+      "assignedTo": null,
+      "createdAt": "2026-02-06T12:33:38.001Z",
+      "updatedAt": "2026-02-06T13:22:16.897Z",
+      "resolvedAt": null,
+      "closedAt": null
+    },
+    {
+      "id": "cmldr9360000413x6ef3fjch4",
+      "title": "Temp Ticket",
+      "description": "Desc",
+      "priority": "low",
+      "status": "resolved",
+      "sourceDepartment": "IT",
+      "targetDepartment": "IT",
+      "createdBy": "cmldr92z5000113x6ucrtf8zw",
+      "creatorName": null,
+      "creatorEmail": null,
+      "assignedTo": null,
+      "createdAt": "2026-02-08T13:04:33.097Z",
+      "updatedAt": "2026-02-20T10:40:27.734Z",
+      "resolvedAt": null,
+      "closedAt": null
+    }
+  ],
+  "ticket_comments": [
+    {
+      "id": "cmluufurx000732ttsbylljf2",
+      "ticketId": "cmi1znn1y0001mmq8bozwle6m",
+      "authorId": "cmh30nhsw0002goiyz5e58tjk",
+      "authorName": "Test User",
+      "content": "Test",
+      "isInternal": false,
+      "createdAt": "2026-02-20T12:05:52.653Z"
+    }
+  ],
+  "calendar_categories": [
+    {
+      "id": "cmh04hdym000qsjkfgfutvrhv",
+      "name": "Toplantı",
+      "color": "hsl(217, 91%, 60%)",
+      "createdAt": "2025-10-21T05:27:19.534Z"
+    },
+    {
+      "id": "cmh04he93000rsjkf6q6sr4oq",
+      "name": "Proje",
+      "color": "hsl(142, 71%, 45%)",
+      "createdAt": "2025-10-21T05:27:19.911Z"
+    },
+    {
+      "id": "cmh04hfem000ssjkf5qnf7mu8",
+      "name": "Eğitim",
+      "color": "hsl(38, 92%, 50%)",
+      "createdAt": "2025-10-21T05:27:21.407Z"
+    },
+    {
+      "id": "cmh04hfpr000tsjkf20l1snih",
+      "name": "İdari",
+      "color": "hsl(262, 83%, 58%)",
+      "createdAt": "2025-10-21T05:27:21.807Z"
+    },
+    {
+      "id": "cmh04hg07000usjkfr418fcxg",
+      "name": "Mola",
+      "color": "hsl(0, 84%, 60%)",
+      "createdAt": "2025-10-21T05:27:22.183Z"
+    },
+    {
+      "id": "cmh04hgki000vsjkf0l7tu4hh",
+      "name": "Diğer",
+      "color": "hsl(215, 16%, 47%)",
+      "createdAt": "2025-10-21T05:27:22.914Z"
+    }
+  ],
+  "calendar_activities": [
+    {
+      "id": "cmh3dlwkl0001e7iphyzt53qx",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "title": "Test Aktivitesi - Güncellenmiş Versiyon",
+      "description": "Bu aktivite güncellenmiş versiyondur ve 24 saatlik format test edilmektedir.",
+      "date": "2025-10-19",
+      "startTime": "2025-10-19T07:00:00.000Z",
+      "endTime": "2025-10-19T10:00:00.000Z",
+      "duration": 180,
+      "categoryId": "cmh04he93000rsjkf6q6sr4oq",
+      "createdAt": "2025-10-23T12:06:05.349Z",
+      "updatedAt": "2025-10-23T12:06:05.349Z"
+    },
+    {
+      "id": "cmh3hlqdc00091246yzjr7vpf",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "title": "Test Etkinliği - Kategori Renk Testi",
+      "description": "Bu etkinlik kategori renk testi için oluşturulmuştur.",
+      "date": "2025-10-20",
+      "startTime": "2025-10-20T08:00:00.000Z",
+      "endTime": "2025-10-20T09:00:00.000Z",
+      "duration": 60,
+      "categoryId": "cmh04hgki000vsjkf0l7tu4hh",
+      "createdAt": "2025-10-23T13:57:55.776Z",
+      "updatedAt": "2025-10-23T13:57:55.776Z"
+    },
+    {
+      "id": "cmh4y8dv50002qjgevjzgptke",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "title": "KPI Sistemi geliştirmesi",
+      "description": "KPI sisteminin geliştirilmesine devam ediliyor.",
+      "date": "2025-10-23",
+      "startTime": "2025-10-23T14:00:00.000Z",
+      "endTime": "2025-10-23T14:45:00.000Z",
+      "duration": 45,
+      "categoryId": "cmh04he93000rsjkf6q6sr4oq",
+      "createdAt": "2025-10-24T14:31:12.690Z",
+      "updatedAt": "2025-10-24T14:31:12.690Z"
+    },
+    {
+      "id": "cmh6a1kv1000efwud070r5ezz",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "title": "KPI Test",
+      "description": "Çalışan KPI Testi",
+      "date": "2025-10-24",
+      "startTime": "2025-10-24T11:00:00.000Z",
+      "endTime": "2025-10-24T13:00:00.000Z",
+      "duration": 120,
+      "categoryId": "cmh04he93000rsjkf6q6sr4oq",
+      "createdAt": "2025-10-25T12:49:36.733Z",
+      "updatedAt": "2025-10-25T12:49:36.733Z"
+    },
+    {
+      "id": "cmhaene4q0001beuhsmqyeia9",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "title": "Calendar Test Aktivitesi",
+      "description": "Calendar sayfası test aktivitesi - Admin rolü ile oluşturuldu",
+      "date": "2025-10-26",
+      "startTime": "2025-10-26T06:00:00.000Z",
+      "endTime": "2025-10-26T07:00:00.000Z",
+      "duration": 60,
+      "categoryId": "cmh04hgki000vsjkf0l7tu4hh",
+      "createdAt": "2025-10-28T10:09:37.610Z",
+      "updatedAt": "2025-10-28T10:09:37.610Z"
+    },
+    {
+      "id": "cmhaeu54p0005beuhzukgw2o5",
+      "userId": "cmh04hcav000fsjkflx9yx9a7",
+      "title": "Proje Geliştirmesi",
+      "description": "Projeyi geliştirmeye devam ediyorum.",
+      "date": "2025-10-27",
+      "startTime": "2025-10-27T09:00:00.000Z",
+      "endTime": "2025-10-27T13:45:00.000Z",
+      "duration": 285,
+      "categoryId": "cmh04he93000rsjkf6q6sr4oq",
+      "createdAt": "2025-10-28T10:14:52.537Z",
+      "updatedAt": "2025-10-28T10:14:52.537Z"
+    },
+    {
+      "id": "cmhirrgdf0007994iiohll9p0",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "title": "Toplantı: Ana Toplantı Salonu",
+      "description": "Proje değerlendirme toplantısı - Tüm ekip üyeleri davetli",
+      "date": "2025-11-03",
+      "startTime": "2025-11-03T11:00:00.000Z",
+      "endTime": "2025-11-03T12:00:00.000Z",
+      "duration": 60,
+      "categoryId": "cmh04hdym000qsjkfgfutvrhv",
+      "createdAt": "2025-11-03T06:38:51.555Z",
+      "updatedAt": "2025-11-03T06:38:51.555Z"
+    },
+    {
+      "id": "cmhm3p33j0005xun3cokrhm2r",
+      "userId": "cmh04hcav000fsjkflx9yx9a7",
+      "title": "Toplantı: Ana Toplantı Salonu",
+      "description": "Test rezervasyonu - Employee tarafından oluşturuldu",
+      "date": "2025-11-06",
+      "startTime": "2025-11-06T11:30:00.000Z",
+      "endTime": "2025-11-06T12:00:00.000Z",
+      "duration": 30,
+      "categoryId": "cmh04hdym000qsjkfgfutvrhv",
+      "createdAt": "2025-11-05T14:36:14.959Z",
+      "updatedAt": "2025-11-05T14:36:14.959Z"
+    },
+    {
+      "id": "cmi1zts650005mmq89x0l7vww",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "title": "Test Aktivitesi - Detaylı Test",
+      "description": "Bu bir detaylı test aktivitesidir. Calendar modülünü test etmek için oluşturulmuştur.",
+      "date": "2025-11-09",
+      "startTime": "2025-11-09T07:00:00.000Z",
+      "endTime": "2025-11-09T08:00:00.000Z",
+      "duration": 60,
+      "categoryId": "cmh04he93000rsjkf6q6sr4oq",
+      "createdAt": "2025-11-16T17:32:14.429Z",
+      "updatedAt": "2025-11-16T17:32:14.429Z"
+    },
+    {
+      "id": "cmi25f3oe0001ga2qetful691",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "title": "Toplantı: Ana Toplantı Salonu",
+      "description": "Test notu - Rezervasyon düzenlendi",
+      "date": "2025-11-17",
+      "startTime": "2025-11-17T11:00:00.000Z",
+      "endTime": "2025-11-17T12:30:00.000Z",
+      "duration": 90,
+      "categoryId": "cmh04hdym000qsjkfgfutvrhv",
+      "createdAt": "2025-11-16T20:08:47.199Z",
+      "updatedAt": "2025-11-16T20:08:47.199Z"
+    },
+    {
+      "id": "cmi8uv0ng00056vofpacxlbm2",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "title": "Toplantı: Ana Toplantı Salonu",
+      "description": "22 Kasım 2025 test rezervasyonu - Yeni tasarım testi",
+      "date": "2025-11-22",
+      "startTime": "2025-11-22T07:00:00.000Z",
+      "endTime": "2025-11-22T08:00:00.000Z",
+      "duration": 60,
+      "categoryId": "cmh04hdym000qsjkfgfutvrhv",
+      "createdAt": "2025-11-21T12:47:37.229Z",
+      "updatedAt": "2025-11-21T12:47:37.229Z"
+    },
+    {
+      "id": "cmlau5r9w000bovpdk1jsmpvu",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "title": "Test Final",
+      "description": "",
+      "date": "2026-02-09",
+      "startTime": "2026-02-09T12:00:00.000Z",
+      "endTime": "2026-02-09T13:00:00.000Z",
+      "duration": 60,
+      "categoryId": "cmh04hgki000vsjkf0l7tu4hh",
+      "createdAt": "2026-02-06T12:02:38.036Z",
+      "updatedAt": "2026-02-06T12:02:38.036Z"
+    },
+    {
+      "id": "cmlaxllvp0005w4nq9i4qx5a0",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "title": "Toplantı: Ana Toplantı Salonu",
+      "description": "Toplantı odası rezervasyonu - 1. Kat, Merkez Bina",
+      "date": "2026-02-07",
+      "startTime": "2026-02-07T07:00:00.000Z",
+      "endTime": "2026-02-07T08:00:00.000Z",
+      "duration": 60,
+      "categoryId": "cmh04hdym000qsjkfgfutvrhv",
+      "createdAt": "2026-02-06T13:38:56.389Z",
+      "updatedAt": "2026-02-06T13:38:56.389Z"
+    },
+    {
+      "id": "cmlf5uhu70001kinsopixwcw1",
+      "userId": "cmlcvps5q000c5pd5cu795i5u",
+      "title": "Toplantı: Ana Toplantı Salonu",
+      "description": "Toplantı odası rezervasyonu - 1. Kat, Merkez Bina",
+      "date": "2026-02-08",
+      "startTime": "2026-02-08T11:00:00.000Z",
+      "endTime": "2026-02-08T12:00:00.000Z",
+      "duration": 60,
+      "categoryId": "cmh04hdym000qsjkfgfutvrhv",
+      "createdAt": "2026-02-09T12:40:52.687Z",
+      "updatedAt": "2026-02-09T12:40:52.687Z"
+    },
+    {
+      "id": "cmm0mreni000aov8xsy8zeh3z",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "title": "Bug Fix - Yula KPI",
+      "description": "KPI uygulamasındaki bug fix çalışmaları gerçekleştirdim.",
+      "date": "2026-02-24",
+      "startTime": "2026-02-24T11:00:00.000Z",
+      "endTime": "2026-02-24T13:15:00.000Z",
+      "duration": 135,
+      "categoryId": "cmh04he93000rsjkf6q6sr4oq",
+      "createdAt": "2026-02-24T13:17:31.758Z",
+      "updatedAt": "2026-02-24T13:17:31.758Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "cmh9l02x3000312kot4e0kcn2",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "ticket",
+      "priority": "medium",
+      "title": "📨 Yeni Ticket: Test Ticket - Admin Oluşturdu",
+      "message": "Admin User (İnsan Kaynakları) tarafından yeni bir ticket oluşturuldu. Öncelik: Orta",
+      "isRead": true,
+      "link": "/tickets",
+      "metadata": null,
+      "createdAt": "2025-10-27T20:19:41.127Z"
+    },
+    {
+      "id": "cmh9lpehn000328vdd86m7oge",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "ticket",
+      "priority": "high",
+      "title": "📨 Yeni Ticket: IT0000002",
+      "message": "Admin User (İnsan Kaynakları) tarafından yeni bir ticket oluşturuldu. Öncelik: Acil",
+      "isRead": true,
+      "link": "/tickets",
+      "metadata": null,
+      "createdAt": "2025-10-27T20:39:22.524Z"
+    },
+    {
+      "id": "cmhm3p3wb0007xun3wepm5ka3",
+      "userId": "cmh04hcav000fsjkflx9yx9a7",
+      "category": "system",
+      "priority": "low",
+      "title": "✅ Toplantı Rezervasyonu Onaylandı",
+      "message": "\"Ana Toplantı Salonu\" odası için 06.11.2025 14:30:00 - 06.11.2025 15:00:00 tarihlerindeki rezervasyonunuz onaylandı.",
+      "isRead": false,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2025-11-05T14:36:15.995Z"
+    },
+    {
+      "id": "cmi1znni90003mmq8gdysrqb8",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "ticket",
+      "priority": "medium",
+      "title": "📨 Yeni Ticket: IT0000001",
+      "message": "Admin User (İnsan Kaynakları) tarafından yeni bir ticket oluşturuldu. Öncelik: Orta",
+      "isRead": true,
+      "link": "/tickets",
+      "metadata": null,
+      "createdAt": "2025-11-16T17:27:28.450Z"
+    },
+    {
+      "id": "cmlatbnqp0003ovpd34loweel",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "ticket",
+      "priority": "medium",
+      "title": "📨 Yeni Ticket: IT0000002",
+      "message": "Admin User (Yönetim) tarafından yeni bir ticket oluşturuldu. Öncelik: Orta",
+      "isRead": true,
+      "link": "/tickets",
+      "metadata": null,
+      "createdAt": "2026-02-06T11:39:13.777Z"
+    },
+    {
+      "id": "cmlaucnkr000fovpdvgk00zfp",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "ticket",
+      "priority": "medium",
+      "title": "📨 Yeni Ticket: IT0000003",
+      "message": "Admin User (Yönetim) tarafından yeni bir ticket oluşturuldu. Öncelik: Orta",
+      "isRead": true,
+      "link": "/tickets",
+      "metadata": null,
+      "createdAt": "2026-02-06T12:07:59.836Z"
+    },
+    {
+      "id": "cmlav9mm600056n2wvol9348q",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "ticket",
+      "priority": "medium",
+      "title": "📨 Yeni Ticket: IT0000005",
+      "message": "Admin User (Yönetim) tarafından yeni bir ticket oluşturuldu. Öncelik: Orta",
+      "isRead": true,
+      "link": "/tickets",
+      "metadata": null,
+      "createdAt": "2026-02-06T12:33:38.239Z"
+    },
+    {
+      "id": "cmlawa3nv000b6n2w6hf0td9q",
+      "userId": "cmh04hcav000fsjkflx9yx9a7",
+      "category": "kpi",
+      "priority": "medium",
+      "title": "📊 Yeni KPI Ataması: Test KPI Optimistic",
+      "message": "Size \"Test KPI Optimistic\" KPI'sı atandı. Hedef: 100 TestUnit, Bitiş: 06.03.2026",
+      "isRead": false,
+      "link": "/kpi",
+      "metadata": null,
+      "createdAt": "2026-02-06T13:01:59.948Z"
+    },
+    {
+      "id": "cmlaxdc5f0003y1ut68s2ly43",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "system",
+      "priority": "medium",
+      "title": "📅 Yeni Toplantı Odası Talebi",
+      "message": "Musa Gürgil \"Ana Toplantı Salonu\" odası için 07.02.2026 10:00:00 - 07.02.2026 11:00:00 tarihlerinde rezervasyon talep etti.",
+      "isRead": true,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-02-06T13:32:30.532Z"
+    },
+    {
+      "id": "cmlaxkofs0003w4nqne447kgj",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "system",
+      "priority": "medium",
+      "title": "📅 Yeni Toplantı Odası Talebi",
+      "message": "Musa Gürgil \"Ana Toplantı Salonu\" odası için 07.02.2026 10:00:00 - 07.02.2026 11:00:00 tarihlerinde rezervasyon talep etti.",
+      "isRead": true,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-02-06T13:38:13.048Z"
+    },
+    {
+      "id": "cmlaxlm360007w4nqy3f7fmrk",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "system",
+      "priority": "low",
+      "title": "✅ Toplantı Rezervasyonu Onaylandı",
+      "message": "\"Ana Toplantı Salonu\" odası için 07.02.2026 10:00:00 - 07.02.2026 11:00:00 tarihlerindeki rezervasyonunuz onaylandı.",
+      "isRead": true,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-02-06T13:38:56.658Z"
+    },
+    {
+      "id": "cmlaxpe0f0009w4nqypirs25e",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "system",
+      "priority": "medium",
+      "title": "❌ Rezervasyon İptal Edildi",
+      "message": "\"Ana Toplantı Salonu\" odası için onayladığınız rezervasyon iptal edildi.",
+      "isRead": true,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-02-06T13:41:52.815Z"
+    },
+    {
+      "id": "cmlcvwkcx000m5pd57noqsp7w",
+      "userId": "cmlcvrf5f000f5pd5baai8zb1",
+      "category": "kpi",
+      "priority": "medium",
+      "title": "📊 Yeni KPI Ataması: QA Test KPI",
+      "message": "Size \"QA Test KPI\" KPI'sı atandı. Hedef: 10 Bugs, Bitiş: 31.12.2026",
+      "isRead": false,
+      "link": "/kpi#cmlcvwjpq000i5pd5ivzphxwo",
+      "metadata": null,
+      "createdAt": "2026-02-07T22:27:00.753Z"
+    },
+    {
+      "id": "cmlcwd0sr000w5pd50vtp4kal",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "system",
+      "priority": "medium",
+      "title": "📅 Yeni Toplantı Odası Talebi",
+      "message": "QA Manager \"Ana Toplantı Salonu\" odası için 08.02.2026 14:00:00 - 08.02.2026 15:00:00 tarihlerinde rezervasyon talep etti.",
+      "isRead": true,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-02-07T22:39:48.555Z"
+    },
+    {
+      "id": "cmlcwd0x9000y5pd5r6zwav7k",
+      "userId": "cmlcvps5q000c5pd5cu795i5u",
+      "category": "system",
+      "priority": "medium",
+      "title": "📅 Yeni Toplantı Odası Talebi",
+      "message": "QA Manager \"Ana Toplantı Salonu\" odası için 08.02.2026 14:00:00 - 08.02.2026 15:00:00 tarihlerinde rezervasyon talep etti.",
+      "isRead": false,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-02-07T22:39:48.718Z"
+    },
+    {
+      "id": "cmldoelgb00045j6xozig6dsf",
+      "userId": "cmh04hcav000fsjkflx9yx9a7",
+      "category": "ticket",
+      "priority": "medium",
+      "title": "🎫 Ticket Durumu Güncellendi: Test Ticket Notification",
+      "message": "\"Test Ticket Notification\" ticket'ının durumu \"Devam Ediyor\" olarak güncellendi.",
+      "isRead": false,
+      "link": "/tickets#cmlauikqb0001ag0en782b8ey",
+      "metadata": null,
+      "createdAt": "2026-02-08T11:44:51.228Z"
+    },
+    {
+      "id": "cmlf5uhzb0003kinsody1ptjx",
+      "userId": "cmlcvps5q000c5pd5cu795i5u",
+      "category": "system",
+      "priority": "low",
+      "title": "✅ Toplantı Rezervasyonu Onaylandı",
+      "message": "\"Ana Toplantı Salonu\" odası için 08.02.2026 14:00:00 - 08.02.2026 15:00:00 tarihlerindeki rezervasyonunuz onaylandı.",
+      "isRead": false,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-02-09T12:40:52.872Z"
+    },
+    {
+      "id": "cmltc8nfi000hhu0chsdl03d0",
+      "userId": "cmh04hcav000fsjkflx9yx9a7",
+      "category": "kpi",
+      "priority": "critical",
+      "title": "🚨 KPI Süresi Doldu: Aylık Satış Hedefi",
+      "message": "\"Aylık Satış Hedefi\" KPI'sının bitiş tarihi 78 gün önce geçti. Lütfen durumu güncelleyin.",
+      "isRead": false,
+      "link": "/kpi",
+      "metadata": null,
+      "createdAt": "2026-02-19T10:48:37.278Z"
+    },
+    {
+      "id": "cmltc9agj000lhu0crr33ldd6",
+      "userId": "cmh04hcav000fsjkflx9yx9a7",
+      "category": "kpi",
+      "priority": "critical",
+      "title": "🚨 KPI Süresi Doldu: Aylık Satış Hedefi",
+      "message": "\"Aylık Satış Hedefi\" KPI'sının bitiş tarihi 78 gün önce geçti. Lütfen durumu güncelleyin.",
+      "isRead": false,
+      "link": "/kpi",
+      "metadata": null,
+      "createdAt": "2026-02-19T10:49:07.124Z"
+    },
+    {
+      "id": "cmlus23bn000332ttic9kk006",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "category": "system",
+      "priority": "medium",
+      "title": "📅 Yeni Toplantı Odası Talebi (Sorumlu Atanmamış)",
+      "message": "Test User \"Ana Toplantı Salonu\" odası için talep oluşturdu.",
+      "isRead": true,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-02-20T10:59:11.315Z"
+    },
+    {
+      "id": "cmlus23fc000532tt2lhh2btr",
+      "userId": "cmlf7s8f20004xeoj3b82t7z9",
+      "category": "system",
+      "priority": "medium",
+      "title": "📅 Yeni Toplantı Odası Talebi (Sorumlu Atanmamış)",
+      "message": "Test User \"Ana Toplantı Salonu\" odası için talep oluşturdu.",
+      "isRead": false,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-02-20T10:59:11.448Z"
+    },
+    {
+      "id": "cmlyryt7t00033r2pwqhcm0xf",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "kpi",
+      "priority": "medium",
+      "title": "📈 KPI İlerlemesi: Test KPI - Departman Yöneticisi",
+      "message": "\"Test KPI - Departman Yöneticisi\" KPI'sında %88.0 ilerleme kaydedildi. Test User +3 adet ekledi.",
+      "isRead": true,
+      "link": "/kpi#cmh68xkfn0001fwud8z4v887a",
+      "metadata": null,
+      "createdAt": "2026-02-23T06:07:42.953Z"
+    },
+    {
+      "id": "cmlyrytbo00053r2pifz6u8cn",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "category": "kpi",
+      "priority": "critical",
+      "title": "🚨 KPI Süresi Doldu: Test KPI - Departman Yöneticisi",
+      "message": "\"Test KPI - Departman Yöneticisi\" KPI'sının bitiş tarihi 54 gün önce geçti. Lütfen durumu güncelleyin.",
+      "isRead": true,
+      "link": "/kpi#cmh68xkfn0001fwud8z4v887a",
+      "metadata": null,
+      "createdAt": "2026-02-23T06:07:43.092Z"
+    },
+    {
+      "id": "cmlyrytfe00073r2p3zhu02fg",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "kpi",
+      "priority": "critical",
+      "title": "🚨 KPI Süresi Doldu: Test KPI - Departman Yöneticisi",
+      "message": "\"Test KPI - Departman Yöneticisi\" KPI'sının bitiş tarihi 54 gün önce geçti. Lütfen durumu güncelleyin.",
+      "isRead": true,
+      "link": "/kpi#cmh68xkfn0001fwud8z4v887a",
+      "metadata": null,
+      "createdAt": "2026-02-23T06:07:43.226Z"
+    },
+    {
+      "id": "cmm0hhs7m0005ov8xd7lsnvh0",
+      "userId": "cmlcu7o1r00015pd5wgoxrpxa",
+      "category": "kpi",
+      "priority": "medium",
+      "title": "📊 Yeni KPI Ataması: Aylık Satış Tutarı",
+      "message": "Size \"Aylık Satış Tutarı\" KPI'sı atandı. Hedef: 10000 TL, Bitiş: 30.04.2026",
+      "isRead": false,
+      "link": "/kpi#cmm0hhs0e0001ov8xjb9qj2gt",
+      "metadata": null,
+      "createdAt": "2026-02-24T10:50:04.690Z"
+    },
+    {
+      "id": "cmm0hhs7m0006ov8x4sl163wj",
+      "userId": "cmlf7b6hg00056yv6hc1g04lq",
+      "category": "kpi",
+      "priority": "medium",
+      "title": "📊 Yeni KPI Ataması: Aylık Satış Tutarı",
+      "message": "Size \"Aylık Satış Tutarı\" KPI'sı atandı. Hedef: 10000 TL, Bitiş: 30.04.2026",
+      "isRead": false,
+      "link": "/kpi#cmm0hhs0e0001ov8xjb9qj2gt",
+      "metadata": null,
+      "createdAt": "2026-02-24T10:50:04.690Z"
+    },
+    {
+      "id": "cmm0mz7bt000eov8xdry79t9r",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "system",
+      "priority": "medium",
+      "title": "📅 Yeni Toplantı Odası Talebi",
+      "message": "Admin User \"Test Room Secretary CJS\" odası için 24.02.2026 16:30:00 - 24.02.2026 17:30:00 tarihlerinde rezervasyon talep etti.",
+      "isRead": true,
+      "link": "/meeting-rooms#cmm0mz75u000cov8xqzakcvgk",
+      "metadata": null,
+      "createdAt": "2026-02-24T13:23:35.513Z"
+    },
+    {
+      "id": "cmmakf7t3000112jo2oc0pby3",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "category": "system",
+      "priority": "medium",
+      "title": "❌ Toplantı Rezervasyonu Reddedildi",
+      "message": "\"Ana Toplantı Salonu\" odası için 20.02.2026 15:00:00 - 20.02.2026 16:30:00 tarihlerindeki rezervasyon talebiniz reddedildi.",
+      "isRead": false,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-03-03T12:09:45.543Z"
+    }
+  ],
+  "meeting_rooms": [
+    {
+      "id": "cmhirjyoq0000994iel4q7abh",
+      "name": "Test Odası 1",
+      "capacity": 8,
+      "location": "Test Lokasyon",
+      "description": "Test açıklaması",
+      "responsibleId": null,
+      "createdAt": "2025-11-03T06:33:02.043Z",
+      "updatedAt": "2025-11-03T06:33:02.043Z"
+    },
+    {
+      "id": "cmhirpao10003994iluwrbntr",
+      "name": "Ana Toplantı Salonu",
+      "capacity": 20,
+      "location": "1. Kat, Merkez Bina",
+      "description": "Büyük toplantılar için ideal - Projeksiyon, beyaz tahta ve video konferans sistemi mevcut",
+      "responsibleId": null,
+      "createdAt": "2025-11-03T06:37:10.849Z",
+      "updatedAt": "2025-11-03T06:37:10.849Z"
+    },
+    {
+      "id": "cmlcu8l8a00035pd5mv1rx7xr",
+      "name": "Test Room Alpha",
+      "capacity": 10,
+      "location": "Floor 1",
+      "description": "For testing purposes",
+      "responsibleId": null,
+      "createdAt": "2026-02-07T21:40:22.522Z",
+      "updatedAt": "2026-02-07T21:40:22.522Z"
+    },
+    {
+      "id": "cmlf7b77a00086yv64ogdmvhu",
+      "name": "Test Room Secretary CJS",
+      "capacity": 5,
+      "location": "Floor 1",
+      "description": null,
+      "responsibleId": "cmh30ydsp0005goiyz8fhclcz",
+      "createdAt": "2026-02-09T13:21:51.670Z",
+      "updatedAt": "2026-02-09T13:21:51.670Z"
+    },
+    {
+      "id": "cmlf7bg680002s1y9jvmvxokz",
+      "name": "Test Room Secretary CJS 1770643323295",
+      "capacity": 5,
+      "location": "Floor 1",
+      "description": null,
+      "responsibleId": null,
+      "createdAt": "2026-02-09T13:22:03.297Z",
+      "updatedAt": "2026-02-09T13:22:03.297Z"
+    },
+    {
+      "id": "cmlf7s8ti000cxeoj5147quc7",
+      "name": "Test Room Responsibility",
+      "capacity": 10,
+      "location": "1st Floor",
+      "description": null,
+      "responsibleId": "cmlf7s8pv000axeojdv628bmo",
+      "createdAt": "2026-02-09T13:35:06.919Z",
+      "updatedAt": "2026-02-09T13:35:06.919Z"
+    }
+  ],
+  "meeting_reservations": [
+    {
+      "id": "cmhirqz100005994iilabg5mg",
+      "roomId": "cmhirpao10003994iluwrbntr",
+      "requestedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "approvedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "startTime": "2025-11-03T11:00:00.000Z",
+      "endTime": "2025-11-03T12:00:00.000Z",
+      "status": "approved",
+      "notes": "Proje değerlendirme toplantısı - Tüm ekip üyeleri davetli",
+      "createdAt": "2025-11-03T06:38:29.077Z",
+      "updatedAt": "2025-11-03T06:38:51.415Z"
+    },
+    {
+      "id": "cmhm3m90v0001xun3yfzvqenj",
+      "roomId": "cmhirpao10003994iluwrbntr",
+      "requestedBy": "cmh04hcav000fsjkflx9yx9a7",
+      "approvedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "startTime": "2025-11-06T11:30:00.000Z",
+      "endTime": "2025-11-06T12:00:00.000Z",
+      "status": "approved",
+      "notes": "Test rezervasyonu - Employee tarafından oluşturuldu",
+      "createdAt": "2025-11-05T14:34:02.671Z",
+      "updatedAt": "2025-11-05T14:36:14.539Z"
+    },
+    {
+      "id": "cmi1zzsyy0007mmq8mqqrl3o0",
+      "roomId": "cmhirpao10003994iluwrbntr",
+      "requestedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "approvedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "startTime": "2025-11-17T11:00:00.000Z",
+      "endTime": "2025-11-17T12:30:00.000Z",
+      "status": "approved",
+      "notes": "Test notu - Rezervasyon düzenlendi",
+      "createdAt": "2025-11-16T17:36:55.402Z",
+      "updatedAt": "2025-11-16T20:08:47.076Z"
+    },
+    {
+      "id": "cmi8uulwv00036vofq22ugayn",
+      "roomId": "cmhirpao10003994iluwrbntr",
+      "requestedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "approvedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "startTime": "2025-11-22T07:00:00.000Z",
+      "endTime": "2025-11-22T08:00:00.000Z",
+      "status": "approved",
+      "notes": "22 Kasım 2025 test rezervasyonu - Yeni tasarım testi",
+      "createdAt": "2025-11-21T12:47:18.127Z",
+      "updatedAt": "2025-11-21T12:47:37.077Z"
+    },
+    {
+      "id": "cmi8v7kx600096vofkf04foei",
+      "roomId": "cmhirpao10003994iluwrbntr",
+      "requestedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "approvedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "startTime": "2025-11-22T12:30:00.000Z",
+      "endTime": "2025-11-22T13:15:00.000Z",
+      "status": "rejected",
+      "notes": null,
+      "createdAt": "2025-11-21T12:57:23.370Z",
+      "updatedAt": "2025-11-21T13:01:47.558Z"
+    },
+    {
+      "id": "cmlcwd0mf000u5pd5yu6w3sbg",
+      "roomId": "cmhirpao10003994iluwrbntr",
+      "requestedBy": "cmlcvps5q000c5pd5cu795i5u",
+      "approvedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "startTime": "2026-02-08T11:00:00.000Z",
+      "endTime": "2026-02-08T12:00:00.000Z",
+      "status": "approved",
+      "notes": null,
+      "createdAt": "2026-02-07T22:39:48.328Z",
+      "updatedAt": "2026-02-09T12:40:51.327Z"
+    },
+    {
+      "id": "cmlf7b7as000a6yv6qm4u069v",
+      "roomId": "cmlf7b77a00086yv64ogdmvhu",
+      "requestedBy": "cmlf7b6hg00056yv6hc1g04lq",
+      "approvedBy": "cmlf7b5wl00016yv6808loq12",
+      "startTime": "2026-02-10T12:00:00.000Z",
+      "endTime": "2026-02-10T13:00:00.000Z",
+      "status": "approved",
+      "notes": "Discussion about Sales",
+      "createdAt": "2026-02-09T13:21:51.797Z",
+      "updatedAt": "2026-02-09T13:21:51.797Z"
+    },
+    {
+      "id": "cmlf7bg9p0004s1y9sd0f7cvq",
+      "roomId": "cmlf7bg680002s1y9jvmvxokz",
+      "requestedBy": "cmlf7b6hg00056yv6hc1g04lq",
+      "approvedBy": "cmlf7b5wl00016yv6808loq12",
+      "startTime": "2026-02-10T12:00:00.000Z",
+      "endTime": "2026-02-10T13:00:00.000Z",
+      "status": "approved",
+      "notes": "Discussion about Sales",
+      "createdAt": "2026-02-09T13:22:03.421Z",
+      "updatedAt": "2026-02-09T13:22:03.421Z"
+    },
+    {
+      "id": "cmlf7s8x9000exeojth4ppntv",
+      "roomId": "cmlf7s8ti000cxeoj5147quc7",
+      "requestedBy": "cmlf7s8pv000axeojdv628bmo",
+      "approvedBy": "cmlf7s8mc0008xeojw9zatjre",
+      "startTime": "2026-02-10T07:00:00.000Z",
+      "endTime": "2026-02-10T08:00:00.000Z",
+      "status": "approved",
+      "notes": null,
+      "createdAt": "2026-02-09T13:35:07.054Z",
+      "updatedAt": "2026-02-09T13:35:07.054Z"
+    },
+    {
+      "id": "cmlus236b000132ttlmnv3rb0",
+      "roomId": "cmhirpao10003994iluwrbntr",
+      "requestedBy": "cmh30nhsw0002goiyz5e58tjk",
+      "approvedBy": "cmh30ydsp0005goiyz8fhclcz",
+      "startTime": "2026-02-20T12:00:00.000Z",
+      "endTime": "2026-02-20T13:30:00.000Z",
+      "status": "rejected",
+      "notes": "Firma tanıtım toplantısı olacak.",
+      "createdAt": "2026-02-20T10:59:11.123Z",
+      "updatedAt": "2026-03-03T12:09:45.091Z"
+    },
+    {
+      "id": "cmm0mz75u000cov8xqzakcvgk",
+      "roomId": "cmlf7b77a00086yv64ogdmvhu",
+      "requestedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "approvedBy": null,
+      "startTime": "2026-02-24T13:30:00.000Z",
+      "endTime": "2026-02-24T14:30:00.000Z",
+      "status": "pending",
+      "notes": null,
+      "createdAt": "2026-02-24T13:23:35.299Z",
+      "updatedAt": "2026-02-24T13:23:35.299Z"
+    }
+  ]
+}

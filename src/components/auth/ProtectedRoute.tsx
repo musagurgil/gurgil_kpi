@@ -6,14 +6,16 @@ interface ProtectedRouteProps {
   children: ReactNode;
   requiredRole?: 'admin' | 'department_manager' | 'employee';
   requiredDepartment?: string;
+  customCheck?: (user: any, hasPermission: (role: string) => boolean) => boolean;
 }
 
-export function ProtectedRoute({ 
-  children, 
-  requiredRole, 
-  requiredDepartment 
+export function ProtectedRoute({
+  children,
+  requiredRole,
+  requiredDepartment,
+  customCheck
 }: ProtectedRouteProps) {
-  const { isAuthenticated, hasPermission, canAccessDepartment, loading } = useAuth();
+  const { isAuthenticated, hasPermission, canAccessDepartment, loading, user } = useAuth();
 
   console.log('ProtectedRoute:', { isAuthenticated, loading, requiredRole, requiredDepartment });
 
@@ -33,6 +35,20 @@ export function ProtectedRoute({
 
   // Check role permission
   if (requiredRole && !hasPermission(requiredRole)) {
+    return (
+      <div className="min-h-screen bg-dashboard-bg flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-foreground">Yetkisiz Erişim</h1>
+          <p className="text-muted-foreground">
+            Bu sayfaya erişmek için gerekli yetkiniz bulunmuyor.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Custom check function (for complex logic like Admin OR specific department)
+  if (customCheck && !customCheck(user, hasPermission)) {
     return (
       <div className="min-h-screen bg-dashboard-bg flex items-center justify-center">
         <div className="text-center space-y-4">

@@ -75,8 +75,14 @@ export function TicketManagement() {
       const hashId = location.hash.replace('#', '');
       const ticketFromHash = tickets.find(t => t.id === hashId);
 
-      if (ticketFromHash && (!selectedTicket || selectedTicket.id !== hashId)) {
-        setSelectedTicket(ticketFromHash);
+      if (ticketFromHash) {
+        if (!selectedTicket || selectedTicket.id !== hashId) {
+          setSelectedTicket(ticketFromHash);
+        }
+      } else {
+        // Ticket not found (possibly deleted), show toast and clear hash
+        sonnerToast.error('Bu ticket bulunamadı. Silinmiş veya erişim izniniz olmayabilir.');
+        window.history.replaceState(null, '', location.pathname + location.search);
       }
     }
   }, [tickets, location.hash]);

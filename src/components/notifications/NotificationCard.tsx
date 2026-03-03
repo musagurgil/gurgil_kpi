@@ -45,7 +45,24 @@ export const NotificationCard = ({ notification, onMarkAsRead, onDelete }: Notif
 
   const handleNavigate = () => {
     if (notification.link) {
-      navigate(notification.link);
+      // Parse the notification link to get pathname and hash
+      const linkParts = notification.link.split('#');
+      const linkPathname = linkParts[0];
+      const linkHash = linkParts[1] ? `#${linkParts[1]}` : '';
+
+      // If we're already on the same page, we need to force hash re-evaluation
+      // by first clearing the hash then setting the new one
+      if (window.location.pathname === linkPathname && linkHash) {
+        // Clear hash first
+        window.history.replaceState(null, '', linkPathname);
+        // Then navigate with the new hash after a tick so React picks up the change
+        setTimeout(() => {
+          navigate(notification.link, { replace: true });
+        }, 0);
+      } else {
+        navigate(notification.link);
+      }
+
       if (!notification.isRead) {
         onMarkAsRead(notification.id);
       }

@@ -62,8 +62,11 @@ export function Sidebar({ onClose }: SidebarProps = {}) {
       // Hide user management for non-admins
       if (item.id === '/users') return false;
 
-      // Hide analytics and reports for employees (only department_manager and admin can see)
-      if ((item.id === '/analytics' || item.id === '/reports') && !hasPermission('department_manager')) return false;
+      // Hide analytics for non-Yönetim (if not admin)
+      if (item.id === '/analytics' && user?.department !== 'Yönetim') return false;
+
+      // Hide reports for employees (only department_manager and admin can see)
+      if (item.id === '/reports' && !hasPermission('department_manager')) return false;
 
       // Show everything else
       return true;

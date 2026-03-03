@@ -6,11 +6,6 @@
       "createdAt": "2025-10-21T05:27:12.695Z"
     },
     {
-      "id": "cmh04h8w10001sjkfdq7uc2mc",
-      "name": "Bilgi İşlem",
-      "createdAt": "2025-10-21T05:27:12.962Z"
-    },
-    {
       "id": "cmh04h9x70002sjkf9on6hsay",
       "name": "Muhasebe",
       "createdAt": "2025-10-21T05:27:14.299Z"
@@ -21,19 +16,9 @@
       "createdAt": "2025-10-21T05:27:14.554Z"
     },
     {
-      "id": "cmh04habb0004sjkfcms8lijs",
-      "name": "Pazarlama",
-      "createdAt": "2025-10-21T05:27:14.808Z"
-    },
-    {
       "id": "cmh04hahz0005sjkfr4yaq5wl",
       "name": "Üretim",
       "createdAt": "2025-10-21T05:27:15.048Z"
-    },
-    {
-      "id": "cmh04hawk0007sjkfxywjwyzz",
-      "name": "Lojistik",
-      "createdAt": "2025-10-21T05:27:15.572Z"
     },
     {
       "id": "cmh30nhov0000goiyup9ma06v",
@@ -41,29 +26,9 @@
       "createdAt": "2025-10-23T06:03:24.367Z"
     },
     {
-      "id": "cmh3150z20000foyxeuoztfx0",
-      "name": "Test Departmanı",
-      "createdAt": "2025-10-23T06:17:02.510Z"
-    },
-    {
-      "id": "cmh315v3i0001foyxahmknx58",
-      "name": "Kazan Satış",
-      "createdAt": "2025-10-23T06:17:41.550Z"
-    },
-    {
-      "id": "cmh4xo8n30000qjge635wb9jl",
-      "name": "Fan Satış",
-      "createdAt": "2025-10-24T14:15:32.800Z"
-    },
-    {
       "id": "cmi22tw3i0000rwhr08oarnwn",
       "name": "Yönetim",
       "createdAt": "2025-11-16T18:56:18.366Z"
-    },
-    {
-      "id": "cmldr93vi000513x6pbd0j78k",
-      "name": "TempDept_1770555874013",
-      "createdAt": "2026-02-08T13:04:34.014Z"
     },
     {
       "id": "cmlf7s7hi0000xeojr9io4mxt",
@@ -85,17 +50,19 @@
     {
       "id": "cmh04hb4j0009sjkfdax7va1q",
       "email": "admin@gurgil.com",
+      "passwordHash": "$2a$10$pWnecNu2yZT34RgEFEqPJO92f0IFM9Ve1nH4Q4VUKNC4EZPAUoK5K",
       "firstName": "Admin",
       "lastName": "User",
       "department": "Yönetim",
       "avatar": null,
       "isActive": true,
-      "lastLogin": null,
+      "lastLogin": "2026-03-03T12:19:48.098Z",
       "createdAt": "2025-10-21T05:27:15.859Z"
     },
     {
       "id": "cmh04hcav000fsjkflx9yx9a7",
       "email": "employee@gurgil.com",
+      "passwordHash": null,
       "firstName": "Employee",
       "lastName": "User",
       "department": "IT",
@@ -107,28 +74,31 @@
     {
       "id": "cmh30nhsw0002goiyz5e58tjk",
       "email": "test@gurgil.com",
+      "passwordHash": "$2a$10$AGZGvyO8mE/sOU7BJe8tnOV4/s3mtzmUfl/tkRSh.udZj0BhuO.qi",
       "firstName": "Test",
       "lastName": "User",
       "department": "IT",
       "avatar": null,
       "isActive": true,
-      "lastLogin": null,
+      "lastLogin": "2026-02-20T10:53:42.232Z",
       "createdAt": "2025-10-23T06:03:24.512Z"
     },
     {
       "id": "cmh30ydsp0005goiyz8fhclcz",
       "email": "musa@gurgil.com",
+      "passwordHash": "$2a$10$c53TjEyvXi6drqZ2Kqt/cOFta1tmi2ilV5Z43lGvImvoeJmtMMt6m",
       "firstName": "Musa",
       "lastName": "Gürgil",
       "department": "IT",
       "avatar": null,
       "isActive": true,
-      "lastLogin": null,
+      "lastLogin": "2026-03-03T11:45:39.544Z",
       "createdAt": "2025-10-23T06:11:52.537Z"
     },
     {
       "id": "cmlb836e00002zpvszx38nh70",
       "email": "testadmin@admin.com",
+      "passwordHash": null,
       "firstName": "Test",
       "lastName": "Admin",
       "department": "Yönetim",
@@ -140,6 +110,7 @@
     {
       "id": "cmlb864sw0005zpvshbluanxb",
       "email": "realadmin@admin.com",
+      "passwordHash": null,
       "firstName": "Real",
       "lastName": "Admin",
       "department": "Yönetim",
@@ -151,6 +122,7 @@
     {
       "id": "cmlcu7o1r00015pd5wgoxrpxa",
       "email": "test_employee@gurgil.com",
+      "passwordHash": null,
       "firstName": "Test",
       "lastName": "Employee",
       "department": "Satış",
@@ -162,6 +134,7 @@
     {
       "id": "cmlcufni400055pd5r22m640z",
       "email": "test_manager@gurgil.com",
+      "passwordHash": null,
       "firstName": "Test",
       "lastName": "password123Manager",
       "department": "Yönetim",
@@ -173,6 +146,7 @@
     {
       "id": "cmlcvps5q000c5pd5cu795i5u",
       "email": "qa_manager@gurgil.com",
+      "passwordHash": null,
       "firstName": "QA",
       "lastName": "Manager",
       "department": "IT",
@@ -184,6 +158,7 @@
     {
       "id": "cmlcvrf5f000f5pd5baai8zb1",
       "email": "qa_employee@gurgil.com",
+      "passwordHash": null,
       "firstName": "QA",
       "lastName": "Employee",
       "department": "IT",
@@ -195,6 +170,7 @@
     {
       "id": "cmldobila00015j6xn0ytcu6x",
       "email": "manager@gurgil.com",
+      "passwordHash": null,
       "firstName": "Manager",
       "lastName": "User",
       "department": "IT",
@@ -206,6 +182,7 @@
     {
       "id": "cmldorjnl00065j6xgit38v7c",
       "email": "board@gurgil.com",
+      "passwordHash": null,
       "firstName": "admin123Board",
       "lastName": "Member",
       "department": "Yönetim",
@@ -217,6 +194,7 @@
     {
       "id": "cmldpgva400095j6x0zd3xe07",
       "email": "board_final@gurgil.com",
+      "passwordHash": null,
       "firstName": "Board",
       "lastName": "Member",
       "department": "Yönetim",
@@ -228,6 +206,7 @@
     {
       "id": "cmldplvmp000c5j6xw2a32ekb",
       "email": "board_v2@gurgil.com",
+      "passwordHash": null,
       "firstName": "Board",
       "lastName": "MemberV2",
       "department": "Yönetim",
@@ -239,6 +218,7 @@
     {
       "id": "cmldr92z5000113x6ucrtf8zw",
       "email": "temp_del_test@test.com",
+      "passwordHash": null,
       "firstName": "Temp",
       "lastName": "User",
       "department": "IT",
@@ -250,6 +230,7 @@
     {
       "id": "cmlf7b5wl00016yv6808loq12",
       "email": "secretary_test_cjs@test.com",
+      "passwordHash": null,
       "firstName": "Fatma",
       "lastName": "Sekreter",
       "department": "Yönetim",
@@ -261,6 +242,7 @@
     {
       "id": "cmlf7b6hg00056yv6hc1g04lq",
       "email": "employee_test_cjs@test.com",
+      "passwordHash": null,
       "firstName": "Ali",
       "lastName": "Çalışan",
       "department": "Satış",
@@ -272,17 +254,19 @@
     {
       "id": "cmlf7s8f20004xeoj3b82t7z9",
       "email": "admin_test@test.com",
+      "passwordHash": "$2a$10$PxQBl7HM/WzqQxIPJIs1s./X2yAcJwr6qwXuYVIsd8qCfsXpUAzpW",
       "firstName": "Admin",
       "lastName": "User",
       "department": "Management",
       "avatar": null,
       "isActive": true,
-      "lastLogin": null,
+      "lastLogin": "2026-02-20T09:26:44.968Z",
       "createdAt": "2026-02-09T13:35:06.398Z"
     },
     {
       "id": "cmlf7s8mc0008xeojw9zatjre",
       "email": "responsible_test@test.com",
+      "passwordHash": null,
       "firstName": "Responsible",
       "lastName": "Person",
       "department": "Sales",
@@ -294,12 +278,13 @@
     {
       "id": "cmlf7s8pv000axeojdv628bmo",
       "email": "requester_test@test.com",
+      "passwordHash": "$2a$10$uXi2.u0iB0k0zmaCxRdaYuaYiTg68G1WyHeSlQvMfgkP5fa2.UzIe",
       "firstName": "Ordinary",
       "lastName": "Requester",
       "department": "Marketing",
       "avatar": null,
       "isActive": true,
-      "lastLogin": null,
+      "lastLogin": "2026-02-20T09:26:31.353Z",
       "createdAt": "2026-02-09T13:35:06.787Z"
     }
   ],
@@ -449,40 +434,6 @@
       "updatedAt": "2025-10-25T13:16:01.544Z"
     },
     {
-      "id": "cmhaemm2g000s51loqgh4a9a5",
-      "title": "Aylık Satış Hedefi",
-      "description": "Bu ay için 100.000 TL satış hedefi",
-      "department": "Satış",
-      "targetValue": 100000,
-      "currentValue": 25000,
-      "unit": "TL",
-      "startDate": "2025-10-28",
-      "endDate": "2025-11-27",
-      "period": "monthly",
-      "priority": "high",
-      "status": "active",
-      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
-      "createdAt": "2025-10-28T10:09:01.239Z",
-      "updatedAt": "2025-10-28T10:09:01.239Z"
-    },
-    {
-      "id": "cmhiri2ot000s11gjacfz6dgm",
-      "title": "Aylık Satış Hedefi",
-      "description": "Bu ay için 100.000 TL satış hedefi",
-      "department": "Satış",
-      "targetValue": 100000,
-      "currentValue": 25000,
-      "unit": "TL",
-      "startDate": "2025-11-03",
-      "endDate": "2025-12-03",
-      "period": "monthly",
-      "priority": "high",
-      "status": "active",
-      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
-      "createdAt": "2025-11-03T06:31:33.917Z",
-      "updatedAt": "2025-11-03T06:31:33.917Z"
-    },
-    {
       "id": "cmlcvwjpq000i5pd5ivzphxwo",
       "title": "QA Test KPI",
       "description": "Test KPI for QA flow.",
@@ -498,6 +449,23 @@
       "createdBy": "cmlcvps5q000c5pd5cu795i5u",
       "createdAt": "2026-02-07T22:26:59.918Z",
       "updatedAt": "2026-02-07T22:26:59.918Z"
+    },
+    {
+      "id": "cmm0hhs0e0001ov8xjb9qj2gt",
+      "title": "Aylık Satış Tutarı",
+      "description": "Aylık yapılacak minumum satış tutarı",
+      "department": "Satış",
+      "targetValue": 10000,
+      "currentValue": 0,
+      "unit": "TL",
+      "startDate": "2026-02-24",
+      "endDate": "2026-04-30",
+      "period": "quarterly",
+      "priority": "medium",
+      "status": "active",
+      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
+      "createdAt": "2026-02-24T10:50:04.430Z",
+      "updatedAt": "2026-02-24T10:50:04.430Z"
     }
   ],
   "kpi_assignments": [
@@ -526,22 +494,22 @@
       "assignedAt": "2025-10-25T13:16:01.544Z"
     },
     {
-      "id": "cmhaemm3b000v51lowxf9znyq",
-      "kpiId": "cmhaemm2g000s51loqgh4a9a5",
-      "userId": "cmh04hcav000fsjkflx9yx9a7",
-      "assignedAt": "2025-10-28T10:09:01.239Z"
-    },
-    {
-      "id": "cmhiri2ot000v11gjojesefeb",
-      "kpiId": "cmhiri2ot000s11gjacfz6dgm",
-      "userId": "cmh04hcav000fsjkflx9yx9a7",
-      "assignedAt": "2025-11-03T06:31:33.917Z"
-    },
-    {
       "id": "cmlcvwjpr000k5pd53q0cdt3t",
       "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
       "userId": "cmlcvrf5f000f5pd5baai8zb1",
       "assignedAt": "2026-02-07T22:26:59.918Z"
+    },
+    {
+      "id": "cmm0hhs0e0003ov8xlalztn1y",
+      "kpiId": "cmm0hhs0e0001ov8xjb9qj2gt",
+      "userId": "cmlcu7o1r00015pd5wgoxrpxa",
+      "assignedAt": "2026-02-24T10:50:04.430Z"
+    },
+    {
+      "id": "cmm0hhs0e0004ov8xj0l6b7nv",
+      "kpiId": "cmm0hhs0e0001ov8xjb9qj2gt",
+      "userId": "cmlf7b6hg00056yv6hc1g04lq",
+      "assignedAt": "2026-02-24T10:50:04.430Z"
     }
   ],
   "kpi_progress": [
@@ -616,6 +584,33 @@
       "note": "Started",
       "recordedAt": "2026-02-07T22:31:45.613Z",
       "recordedBy": "cmlcvrf5f000f5pd5baai8zb1"
+    },
+    {
+      "id": "cmlt9qhoe0005hu0cokpxsn7z",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "value": 5,
+      "note": "Test ilerleme notu",
+      "recordedAt": "2026-02-19T09:38:30.783Z",
+      "recordedBy": "cmh04hb4j0009sjkfdax7va1q"
+    },
+    {
+      "id": "cmltcaep7000nhu0cy4yemftd",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "value": 1,
+      "note": "KPI bug temizliği",
+      "recordedAt": "2026-02-19T10:49:59.275Z",
+      "recordedBy": "cmh04hb4j0009sjkfdax7va1q"
+    },
+    {
+      "id": "cmlyryt1j00013r2p31qxk5l0",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "value": 3,
+      "note": "3 adet test ilerlemesi",
+      "recordedAt": "2026-02-23T06:07:42.727Z",
+      "recordedBy": "cmh30nhsw0002goiyz5e58tjk"
     }
   ],
   "kpi_comments": [
@@ -658,6 +653,54 @@
       "userName": "Musa Gürgil",
       "content": "Bu yorumu anlık güncellenmeyi test etmek için açıyorum.",
       "createdAt": "2025-10-27T12:27:38.730Z"
+    },
+    {
+      "id": "cmltbx25b0007hu0c4czhnhbe",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "userName": "Admin User",
+      "content": "Test etmek için tekrardan yazıyorum.",
+      "createdAt": "2026-02-19T10:39:36.479Z"
+    },
+    {
+      "id": "cmltc2d850009hu0ctz7oifeu",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "userName": "Admin User",
+      "content": "İyi gidiyoruz, böyle devam.",
+      "createdAt": "2026-02-19T10:43:44.117Z"
+    },
+    {
+      "id": "cmltc2pf9000bhu0cyftq5nlj",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "userName": "Admin User",
+      "content": "En alt yorum (bug test)",
+      "createdAt": "2026-02-19T10:43:59.925Z"
+    },
+    {
+      "id": "cmltdqy71000phu0cdjb7mzyf",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "userName": "Admin User",
+      "content": "Test comment 2",
+      "createdAt": "2026-02-19T11:30:50.653Z"
+    },
+    {
+      "id": "cmlyrzasf00093r2prk5w0juw",
+      "kpiId": "cmh68xkfn0001fwud8z4v887a",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "userName": "Test User",
+      "content": "Bu kullanıcı yorumu böyle",
+      "createdAt": "2026-02-23T06:08:05.727Z"
+    },
+    {
+      "id": "cmm0ht6j00008ov8x661w3dc7",
+      "kpiId": "cmlcvwjpq000i5pd5ivzphxwo",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "userName": "Musa Gürgil",
+      "content": "Bug Fix'e devam herşeyi kusursuz hale getirene kadar devam edeceğiz.",
+      "createdAt": "2026-02-24T10:58:56.461Z"
     }
   ],
   "tickets": [
@@ -666,15 +709,15 @@
       "title": "Test Ticket - Detaylı Test",
       "description": "Bu bir detaylı test ticket'ıdır. Tüm özellikleri test etmek için oluşturulmuştur.",
       "priority": "medium",
-      "status": "open",
+      "status": "in_progress",
       "sourceDepartment": "İnsan Kaynakları",
       "targetDepartment": "IT",
       "createdBy": "cmh04hb4j0009sjkfdax7va1q",
       "creatorName": "Admin User",
       "creatorEmail": null,
-      "assignedTo": null,
+      "assignedTo": "cmh30ydsp0005goiyz8fhclcz",
       "createdAt": "2025-11-16T17:27:27.862Z",
-      "updatedAt": "2025-11-16T17:27:27.862Z",
+      "updatedAt": "2026-02-24T12:29:17.373Z",
       "resolvedAt": null,
       "closedAt": null
     },
@@ -700,7 +743,7 @@
       "title": "Test Bildirimi",
       "description": "Bu bir test bildirimidir.",
       "priority": "medium",
-      "status": "open",
+      "status": "resolved",
       "sourceDepartment": "Yönetim",
       "targetDepartment": "IT",
       "createdBy": "cmh04hb4j0009sjkfdax7va1q",
@@ -708,7 +751,7 @@
       "creatorEmail": null,
       "assignedTo": null,
       "createdAt": "2026-02-06T12:07:59.528Z",
-      "updatedAt": "2026-02-06T12:07:59.528Z",
+      "updatedAt": "2026-02-24T12:46:30.631Z",
       "resolvedAt": null,
       "closedAt": null
     },
@@ -730,40 +773,6 @@
       "closedAt": null
     },
     {
-      "id": "cmlaukp0n0005ag0ekrudoih2",
-      "title": "Y",
-      "description": "Testing notifications for the administration department.",
-      "priority": "medium",
-      "status": "open",
-      "sourceDepartment": "Yönetim",
-      "targetDepartment": "Test Departmanı",
-      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
-      "creatorName": "Admin User",
-      "creatorEmail": null,
-      "assignedTo": null,
-      "createdAt": "2026-02-06T12:14:14.951Z",
-      "updatedAt": "2026-02-06T12:14:14.951Z",
-      "resolvedAt": null,
-      "closedAt": null
-    },
-    {
-      "id": "cmlausx5600016n2wv8h99kes",
-      "title": "Test Ticket for Notifications",
-      "description": "This is a test ticket to verify notification functionality.",
-      "priority": "medium",
-      "status": "open",
-      "sourceDepartment": "Yönetim",
-      "targetDepartment": "Test Departmanı",
-      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
-      "creatorName": "Admin User",
-      "creatorEmail": null,
-      "assignedTo": null,
-      "createdAt": "2026-02-06T12:20:38.730Z",
-      "updatedAt": "2026-02-06T12:20:38.730Z",
-      "resolvedAt": null,
-      "closedAt": null
-    },
-    {
       "id": "cmlav9mfl00036n2woihrtd9g",
       "title": "IT Notification Test",
       "description": "Testing notification for IT department.",
@@ -781,62 +790,11 @@
       "closedAt": null
     },
     {
-      "id": "cmlayaydm00018m5b1or45nzc",
-      "title": "Test Ticket for Fix Verification",
-      "description": "This is a test ticket to verify instant notification count update in sidebar.",
-      "priority": "medium",
-      "status": "in_progress",
-      "sourceDepartment": "Yönetim",
-      "targetDepartment": "Bilgi İşlem",
-      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
-      "creatorName": "Admin User",
-      "creatorEmail": null,
-      "assignedTo": null,
-      "createdAt": "2026-02-06T13:58:38.986Z",
-      "updatedAt": "2026-02-06T14:32:19.689Z",
-      "resolvedAt": null,
-      "closedAt": null
-    },
-    {
-      "id": "cmlcvc0mz00085pd528mkh9mm",
-      "title": "Manager Test Ticket",
-      "description": "Testing ticket creation flow.",
-      "priority": "high",
-      "status": "open",
-      "sourceDepartment": "Yönetim",
-      "targetDepartment": "Bilgi İşlem",
-      "createdBy": "cmlcufni400055pd5r22m640z",
-      "creatorName": "Test password123Manager",
-      "creatorEmail": null,
-      "assignedTo": null,
-      "createdAt": "2026-02-07T22:11:02.075Z",
-      "updatedAt": "2026-02-07T22:11:02.075Z",
-      "resolvedAt": null,
-      "closedAt": null
-    },
-    {
-      "id": "cmlcvzneq000o5pd5i8oxsgfm",
-      "title": "QA Ticket",
-      "description": "Test ticket for QA flow.",
-      "priority": "high",
-      "status": "open",
-      "sourceDepartment": "IT",
-      "targetDepartment": "Bilgi İşlem",
-      "createdBy": "cmlcvps5q000c5pd5cu795i5u",
-      "creatorName": "QA Manager",
-      "creatorEmail": null,
-      "assignedTo": "cmh04hb4j0009sjkfdax7va1q",
-      "createdAt": "2026-02-07T22:29:24.674Z",
-      "updatedAt": "2026-02-09T12:30:02.060Z",
-      "resolvedAt": null,
-      "closedAt": null
-    },
-    {
       "id": "cmldr9360000413x6ef3fjch4",
       "title": "Temp Ticket",
       "description": "Desc",
       "priority": "low",
-      "status": "open",
+      "status": "resolved",
       "sourceDepartment": "IT",
       "targetDepartment": "IT",
       "createdBy": "cmldr92z5000113x6ucrtf8zw",
@@ -844,46 +802,20 @@
       "creatorEmail": null,
       "assignedTo": null,
       "createdAt": "2026-02-08T13:04:33.097Z",
-      "updatedAt": "2026-02-08T13:04:33.097Z",
-      "resolvedAt": null,
-      "closedAt": null
-    },
-    {
-      "id": "cmldr944f000713x6t5y7rh9k",
-      "title": "Dept Ticket",
-      "description": "Desc",
-      "priority": "low",
-      "status": "open",
-      "sourceDepartment": "IT",
-      "targetDepartment": "TempDept_1770555874013",
-      "createdBy": "cmh04hb4j0009sjkfdax7va1q",
-      "creatorName": null,
-      "creatorEmail": null,
-      "assignedTo": null,
-      "createdAt": "2026-02-08T13:04:34.336Z",
-      "updatedAt": "2026-02-08T13:04:34.336Z",
+      "updatedAt": "2026-02-20T10:40:27.734Z",
       "resolvedAt": null,
       "closedAt": null
     }
   ],
   "ticket_comments": [
     {
-      "id": "cmlazisuu0001fco9ghy9h77y",
-      "ticketId": "cmlayaydm00018m5b1or45nzc",
-      "authorId": "cmh04hb4j0009sjkfdax7va1q",
-      "authorName": "Admin User",
-      "content": "Merhaba admin olarak yazıyorum.",
+      "id": "cmluufurx000732ttsbylljf2",
+      "ticketId": "cmi1znn1y0001mmq8bozwle6m",
+      "authorId": "cmh30nhsw0002goiyz5e58tjk",
+      "authorName": "Test User",
+      "content": "Test",
       "isInternal": false,
-      "createdAt": "2026-02-06T14:32:44.695Z"
-    },
-    {
-      "id": "cmlcw6go8000s5pd59eefubl7",
-      "ticketId": "cmlcvzneq000o5pd5i8oxsgfm",
-      "authorId": "cmlcvrf5f000f5pd5baai8zb1",
-      "authorName": "QA Employee",
-      "content": "Received",
-      "isInternal": false,
-      "createdAt": "2026-02-07T22:34:42.536Z"
+      "createdAt": "2026-02-20T12:05:52.653Z"
     }
   ],
   "calendar_categories": [
@@ -1106,6 +1038,19 @@
       "categoryId": "cmh04hdym000qsjkfgfutvrhv",
       "createdAt": "2026-02-09T12:40:52.687Z",
       "updatedAt": "2026-02-09T12:40:52.687Z"
+    },
+    {
+      "id": "cmm0mreni000aov8xsy8zeh3z",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "title": "Bug Fix - Yula KPI",
+      "description": "KPI uygulamasındaki bug fix çalışmaları gerçekleştirdim.",
+      "date": "2026-02-24",
+      "startTime": "2026-02-24T11:00:00.000Z",
+      "endTime": "2026-02-24T13:15:00.000Z",
+      "duration": 135,
+      "categoryId": "cmh04he93000rsjkf6q6sr4oq",
+      "createdAt": "2026-02-24T13:17:31.758Z",
+      "updatedAt": "2026-02-24T13:17:31.758Z"
     }
   ],
   "notifications": [
@@ -1141,7 +1086,7 @@
       "title": "✅ Toplantı Rezervasyonu Onaylandı",
       "message": "\"Ana Toplantı Salonu\" odası için 06.11.2025 14:30:00 - 06.11.2025 15:00:00 tarihlerindeki rezervasyonunuz onaylandı.",
       "isRead": false,
-      "link": "/meeting-rooms",
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
       "metadata": null,
       "createdAt": "2025-11-05T14:36:15.995Z"
     },
@@ -1212,8 +1157,8 @@
       "priority": "medium",
       "title": "📅 Yeni Toplantı Odası Talebi",
       "message": "Musa Gürgil \"Ana Toplantı Salonu\" odası için 07.02.2026 10:00:00 - 07.02.2026 11:00:00 tarihlerinde rezervasyon talep etti.",
-      "isRead": false,
-      "link": "/meeting-rooms",
+      "isRead": true,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
       "metadata": null,
       "createdAt": "2026-02-06T13:32:30.532Z"
     },
@@ -1225,7 +1170,7 @@
       "title": "📅 Yeni Toplantı Odası Talebi",
       "message": "Musa Gürgil \"Ana Toplantı Salonu\" odası için 07.02.2026 10:00:00 - 07.02.2026 11:00:00 tarihlerinde rezervasyon talep etti.",
       "isRead": true,
-      "link": "/meeting-rooms",
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
       "metadata": null,
       "createdAt": "2026-02-06T13:38:13.048Z"
     },
@@ -1236,8 +1181,8 @@
       "priority": "low",
       "title": "✅ Toplantı Rezervasyonu Onaylandı",
       "message": "\"Ana Toplantı Salonu\" odası için 07.02.2026 10:00:00 - 07.02.2026 11:00:00 tarihlerindeki rezervasyonunuz onaylandı.",
-      "isRead": false,
-      "link": "/meeting-rooms",
+      "isRead": true,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
       "metadata": null,
       "createdAt": "2026-02-06T13:38:56.658Z"
     },
@@ -1248,8 +1193,8 @@
       "priority": "medium",
       "title": "❌ Rezervasyon İptal Edildi",
       "message": "\"Ana Toplantı Salonu\" odası için onayladığınız rezervasyon iptal edildi.",
-      "isRead": false,
-      "link": "/meeting-rooms",
+      "isRead": true,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
       "metadata": null,
       "createdAt": "2026-02-06T13:41:52.815Z"
     },
@@ -1261,7 +1206,7 @@
       "title": "📊 Yeni KPI Ataması: QA Test KPI",
       "message": "Size \"QA Test KPI\" KPI'sı atandı. Hedef: 10 Bugs, Bitiş: 31.12.2026",
       "isRead": false,
-      "link": "/kpi",
+      "link": "/kpi#cmlcvwjpq000i5pd5ivzphxwo",
       "metadata": null,
       "createdAt": "2026-02-07T22:27:00.753Z"
     },
@@ -1272,8 +1217,8 @@
       "priority": "medium",
       "title": "📅 Yeni Toplantı Odası Talebi",
       "message": "QA Manager \"Ana Toplantı Salonu\" odası için 08.02.2026 14:00:00 - 08.02.2026 15:00:00 tarihlerinde rezervasyon talep etti.",
-      "isRead": false,
-      "link": "/meeting-rooms",
+      "isRead": true,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
       "metadata": null,
       "createdAt": "2026-02-07T22:39:48.555Z"
     },
@@ -1285,7 +1230,7 @@
       "title": "📅 Yeni Toplantı Odası Talebi",
       "message": "QA Manager \"Ana Toplantı Salonu\" odası için 08.02.2026 14:00:00 - 08.02.2026 15:00:00 tarihlerinde rezervasyon talep etti.",
       "isRead": false,
-      "link": "/meeting-rooms",
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
       "metadata": null,
       "createdAt": "2026-02-07T22:39:48.718Z"
     },
@@ -1297,7 +1242,7 @@
       "title": "🎫 Ticket Durumu Güncellendi: Test Ticket Notification",
       "message": "\"Test Ticket Notification\" ticket'ının durumu \"Devam Ediyor\" olarak güncellendi.",
       "isRead": false,
-      "link": "/tickets",
+      "link": "/tickets#cmlauikqb0001ag0en782b8ey",
       "metadata": null,
       "createdAt": "2026-02-08T11:44:51.228Z"
     },
@@ -1309,9 +1254,141 @@
       "title": "✅ Toplantı Rezervasyonu Onaylandı",
       "message": "\"Ana Toplantı Salonu\" odası için 08.02.2026 14:00:00 - 08.02.2026 15:00:00 tarihlerindeki rezervasyonunuz onaylandı.",
       "isRead": false,
-      "link": "/meeting-rooms",
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
       "metadata": null,
       "createdAt": "2026-02-09T12:40:52.872Z"
+    },
+    {
+      "id": "cmltc8nfi000hhu0chsdl03d0",
+      "userId": "cmh04hcav000fsjkflx9yx9a7",
+      "category": "kpi",
+      "priority": "critical",
+      "title": "🚨 KPI Süresi Doldu: Aylık Satış Hedefi",
+      "message": "\"Aylık Satış Hedefi\" KPI'sının bitiş tarihi 78 gün önce geçti. Lütfen durumu güncelleyin.",
+      "isRead": false,
+      "link": "/kpi",
+      "metadata": null,
+      "createdAt": "2026-02-19T10:48:37.278Z"
+    },
+    {
+      "id": "cmltc9agj000lhu0crr33ldd6",
+      "userId": "cmh04hcav000fsjkflx9yx9a7",
+      "category": "kpi",
+      "priority": "critical",
+      "title": "🚨 KPI Süresi Doldu: Aylık Satış Hedefi",
+      "message": "\"Aylık Satış Hedefi\" KPI'sının bitiş tarihi 78 gün önce geçti. Lütfen durumu güncelleyin.",
+      "isRead": false,
+      "link": "/kpi",
+      "metadata": null,
+      "createdAt": "2026-02-19T10:49:07.124Z"
+    },
+    {
+      "id": "cmlus23bn000332ttic9kk006",
+      "userId": "cmh04hb4j0009sjkfdax7va1q",
+      "category": "system",
+      "priority": "medium",
+      "title": "📅 Yeni Toplantı Odası Talebi (Sorumlu Atanmamış)",
+      "message": "Test User \"Ana Toplantı Salonu\" odası için talep oluşturdu.",
+      "isRead": true,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-02-20T10:59:11.315Z"
+    },
+    {
+      "id": "cmlus23fc000532tt2lhh2btr",
+      "userId": "cmlf7s8f20004xeoj3b82t7z9",
+      "category": "system",
+      "priority": "medium",
+      "title": "📅 Yeni Toplantı Odası Talebi (Sorumlu Atanmamış)",
+      "message": "Test User \"Ana Toplantı Salonu\" odası için talep oluşturdu.",
+      "isRead": false,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-02-20T10:59:11.448Z"
+    },
+    {
+      "id": "cmlyryt7t00033r2pwqhcm0xf",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "kpi",
+      "priority": "medium",
+      "title": "📈 KPI İlerlemesi: Test KPI - Departman Yöneticisi",
+      "message": "\"Test KPI - Departman Yöneticisi\" KPI'sında %88.0 ilerleme kaydedildi. Test User +3 adet ekledi.",
+      "isRead": true,
+      "link": "/kpi#cmh68xkfn0001fwud8z4v887a",
+      "metadata": null,
+      "createdAt": "2026-02-23T06:07:42.953Z"
+    },
+    {
+      "id": "cmlyrytbo00053r2pifz6u8cn",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "category": "kpi",
+      "priority": "critical",
+      "title": "🚨 KPI Süresi Doldu: Test KPI - Departman Yöneticisi",
+      "message": "\"Test KPI - Departman Yöneticisi\" KPI'sının bitiş tarihi 54 gün önce geçti. Lütfen durumu güncelleyin.",
+      "isRead": true,
+      "link": "/kpi#cmh68xkfn0001fwud8z4v887a",
+      "metadata": null,
+      "createdAt": "2026-02-23T06:07:43.092Z"
+    },
+    {
+      "id": "cmlyrytfe00073r2p3zhu02fg",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "kpi",
+      "priority": "critical",
+      "title": "🚨 KPI Süresi Doldu: Test KPI - Departman Yöneticisi",
+      "message": "\"Test KPI - Departman Yöneticisi\" KPI'sının bitiş tarihi 54 gün önce geçti. Lütfen durumu güncelleyin.",
+      "isRead": true,
+      "link": "/kpi#cmh68xkfn0001fwud8z4v887a",
+      "metadata": null,
+      "createdAt": "2026-02-23T06:07:43.226Z"
+    },
+    {
+      "id": "cmm0hhs7m0005ov8xd7lsnvh0",
+      "userId": "cmlcu7o1r00015pd5wgoxrpxa",
+      "category": "kpi",
+      "priority": "medium",
+      "title": "📊 Yeni KPI Ataması: Aylık Satış Tutarı",
+      "message": "Size \"Aylık Satış Tutarı\" KPI'sı atandı. Hedef: 10000 TL, Bitiş: 30.04.2026",
+      "isRead": false,
+      "link": "/kpi#cmm0hhs0e0001ov8xjb9qj2gt",
+      "metadata": null,
+      "createdAt": "2026-02-24T10:50:04.690Z"
+    },
+    {
+      "id": "cmm0hhs7m0006ov8x4sl163wj",
+      "userId": "cmlf7b6hg00056yv6hc1g04lq",
+      "category": "kpi",
+      "priority": "medium",
+      "title": "📊 Yeni KPI Ataması: Aylık Satış Tutarı",
+      "message": "Size \"Aylık Satış Tutarı\" KPI'sı atandı. Hedef: 10000 TL, Bitiş: 30.04.2026",
+      "isRead": false,
+      "link": "/kpi#cmm0hhs0e0001ov8xjb9qj2gt",
+      "metadata": null,
+      "createdAt": "2026-02-24T10:50:04.690Z"
+    },
+    {
+      "id": "cmm0mz7bt000eov8xdry79t9r",
+      "userId": "cmh30ydsp0005goiyz8fhclcz",
+      "category": "system",
+      "priority": "medium",
+      "title": "📅 Yeni Toplantı Odası Talebi",
+      "message": "Admin User \"Test Room Secretary CJS\" odası için 24.02.2026 16:30:00 - 24.02.2026 17:30:00 tarihlerinde rezervasyon talep etti.",
+      "isRead": true,
+      "link": "/meeting-rooms#cmm0mz75u000cov8xqzakcvgk",
+      "metadata": null,
+      "createdAt": "2026-02-24T13:23:35.513Z"
+    },
+    {
+      "id": "cmmakf7t3000112jo2oc0pby3",
+      "userId": "cmh30nhsw0002goiyz5e58tjk",
+      "category": "system",
+      "priority": "medium",
+      "title": "❌ Toplantı Rezervasyonu Reddedildi",
+      "message": "\"Ana Toplantı Salonu\" odası için 20.02.2026 15:00:00 - 20.02.2026 16:30:00 tarihlerindeki rezervasyon talebiniz reddedildi.",
+      "isRead": false,
+      "link": "/meeting-rooms#cmlus236b000132ttlmnv3rb0",
+      "metadata": null,
+      "createdAt": "2026-03-03T12:09:45.543Z"
     }
   ],
   "meeting_rooms": [
@@ -1347,11 +1424,11 @@
     },
     {
       "id": "cmlf7b77a00086yv64ogdmvhu",
-      "name": "Test Room Secretary CJS 1770643311669",
+      "name": "Test Room Secretary CJS",
       "capacity": 5,
       "location": "Floor 1",
       "description": null,
-      "responsibleId": null,
+      "responsibleId": "cmh30ydsp0005goiyz8fhclcz",
       "createdAt": "2026-02-09T13:21:51.670Z",
       "updatedAt": "2026-02-09T13:21:51.670Z"
     },
@@ -1484,6 +1561,30 @@
       "notes": null,
       "createdAt": "2026-02-09T13:35:07.054Z",
       "updatedAt": "2026-02-09T13:35:07.054Z"
+    },
+    {
+      "id": "cmlus236b000132ttlmnv3rb0",
+      "roomId": "cmhirpao10003994iluwrbntr",
+      "requestedBy": "cmh30nhsw0002goiyz5e58tjk",
+      "approvedBy": "cmh30ydsp0005goiyz8fhclcz",
+      "startTime": "2026-02-20T12:00:00.000Z",
+      "endTime": "2026-02-20T13:30:00.000Z",
+      "status": "rejected",
+      "notes": "Firma tanıtım toplantısı olacak.",
+      "createdAt": "2026-02-20T10:59:11.123Z",
+      "updatedAt": "2026-03-03T12:09:45.091Z"
+    },
+    {
+      "id": "cmm0mz75u000cov8xqzakcvgk",
+      "roomId": "cmlf7b77a00086yv64ogdmvhu",
+      "requestedBy": "cmh04hb4j0009sjkfdax7va1q",
+      "approvedBy": null,
+      "startTime": "2026-02-24T13:30:00.000Z",
+      "endTime": "2026-02-24T14:30:00.000Z",
+      "status": "pending",
+      "notes": null,
+      "createdAt": "2026-02-24T13:23:35.299Z",
+      "updatedAt": "2026-02-24T13:23:35.299Z"
     }
   ]
 }

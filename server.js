@@ -1560,6 +1560,9 @@ app.post('/api/calendar/activities', authenticateToken, async (req, res) => {
         endTime: endDateTime.toISOString(), // Convert to ISO string
         duration: Math.round((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60)), // duration in minutes
         userId: req.user.id
+      },
+      include: {
+        category: true
       }
     });
 
@@ -2908,7 +2911,7 @@ app.delete('/api/meeting-reservations/:id', authenticateToken, async (req, res) 
         'medium',
         '❌ Rezervasyon İptal Edildi',
         `"${reservation.room.name}" odası için onayladığınız rezervasyon iptal edildi.`,
-        '/meeting-rooms'
+        `/meeting-rooms#${id}`
       );
     }
 
@@ -3185,289 +3188,326 @@ app.post('/api/admin/backup/:id/restore', authenticateToken, async (req, res) =>
 
     console.log(`[RESTORE] Starting restore from: ${id} by ${req.user.email}`);
 
+    // ── Pre-restore safety backup ──────────────────────────────────
+    const dbSourcePath = path.join(__dirname, 'prisma', 'dev.db');
+    const preRestoreId = `pre_restore_${new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19)}`;
+    const preRestoreDir = path.join(BACKUPS_DIR, preRestoreId);
+    ensureBackupsDir();
+    fs.mkdirSync(preRestoreDir, { recursive: true });
+
+    try {
+      if (fs.existsSync(dbSourcePath)) {
+        fs.copyFileSync(dbSourcePath, path.join(preRestoreDir, 'database.db'));
+      }
+      const [depts, profs, uRoles, kTargets, kAssigns, kProg, kComm, tix, tComm, cCats, cActs, notifs, mRooms, mRes] = await Promise.all([
+        prisma.department.findMany(), prisma.profile.findMany(), prisma.userRole.findMany(),
+        prisma.kpiTarget.findMany(), prisma.kpiAssignment.findMany(), prisma.kpiProgress.findMany(),
+        prisma.kpiComment.findMany(), prisma.ticket.findMany(), prisma.ticketComment.findMany(),
+        prisma.calendarCategory.findMany(), prisma.calendarActivity.findMany(),
+        prisma.notification.findMany(), prisma.meetingRoom.findMany(), prisma.meetingReservation.findMany()
+      ]);
+      const preData = { departments: depts, profiles: profs, user_roles: uRoles, kpi_targets: kTargets, kpi_assignments: kAssigns, kpi_progress: kProg, kpi_comments: kComm, tickets: tix, ticket_comments: tComm, calendar_categories: cCats, calendar_activities: cActs, notifications: notifs, meeting_rooms: mRooms, meeting_reservations: mRes };
+      fs.writeFileSync(path.join(preRestoreDir, 'data.json'), JSON.stringify(preData, null, 2), 'utf8');
+      const preTables = Object.entries(preData).map(([name, records]) => ({ name, displayName: TABLE_DISPLAY_NAMES[name] || name, count: records.length, size: calculateJsonSize(records) }));
+      fs.writeFileSync(path.join(preRestoreDir, 'metadata.json'), JSON.stringify({
+        id: preRestoreId, createdAt: new Date().toISOString(), createdBy: req.user.id,
+        createdByName: `${req.user.firstName} ${req.user.lastName}`, version: '1.0',
+        totalSize: calculateJsonSize(preData), dbFileSize: fs.existsSync(dbSourcePath) ? fs.statSync(dbSourcePath).size : 0,
+        tables: preTables, totalRecords: preTables.reduce((s, t) => s + t.count, 0),
+        isAutoBackup: true, description: `Geri yükleme öncesi otomatik yedek (${id})`
+      }, null, 2), 'utf8');
+      console.log(`[RESTORE] Pre-restore safety backup created: ${preRestoreId}`);
+    } catch (preErr) {
+      console.warn(`[RESTORE] Pre-restore backup warning: ${preErr.message}`);
+    }
+
     const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-
-    // Delete existing data in reverse dependency order
-    await prisma.$transaction([
-      prisma.meetingReservation.deleteMany(),
-      prisma.meetingRoom.deleteMany(),
-      prisma.notification.deleteMany(),
-      prisma.calendarActivity.deleteMany(),
-      prisma.calendarCategory.deleteMany(),
-      prisma.ticketComment.deleteMany(),
-      prisma.ticket.deleteMany(),
-      prisma.kpiComment.deleteMany(),
-      prisma.kpiProgress.deleteMany(),
-      prisma.kpiAssignment.deleteMany(),
-      prisma.kpiTarget.deleteMany(),
-      prisma.userRole.deleteMany(),
-      prisma.profile.deleteMany(),
-      prisma.department.deleteMany()
-    ]);
-
     let restoredRecords = 0;
 
-    // Restore in dependency order
-    // 1. Departments
-    if (data.departments?.length) {
-      for (const dept of data.departments) {
-        await prisma.department.create({ data: dept });
-      }
-      restoredRecords += data.departments.length;
-    }
+    // ── Atomic restore using interactive transaction ───────────────
+    await prisma.$transaction(async (tx) => {
+      // Delete existing data in reverse dependency order
+      await tx.meetingReservation.deleteMany();
+      await tx.meetingRoom.deleteMany();
+      await tx.notification.deleteMany();
+      await tx.calendarActivity.deleteMany();
+      await tx.calendarCategory.deleteMany();
+      await tx.ticketComment.deleteMany();
+      await tx.ticket.deleteMany();
+      await tx.kpiComment.deleteMany();
+      await tx.kpiProgress.deleteMany();
+      await tx.kpiAssignment.deleteMany();
+      await tx.kpiTarget.deleteMany();
+      await tx.userRole.deleteMany();
+      await tx.profile.deleteMany();
+      await tx.department.deleteMany();
 
-    // 2. Profiles
-    if (data.profiles?.length) {
-      for (const profile of data.profiles) {
-        await prisma.profile.create({
-          data: {
-            id: profile.id,
-            email: profile.email,
-            firstName: profile.firstName,
-            lastName: profile.lastName,
-            department: profile.department,
-            avatar: profile.avatar,
-            isActive: profile.isActive,
-            lastLogin: profile.lastLogin ? new Date(profile.lastLogin) : null,
-            createdAt: new Date(profile.createdAt)
-          }
-        });
+      // Restore in dependency order
+      // 1. Departments
+      if (data.departments?.length) {
+        for (const dept of data.departments) {
+          await tx.department.create({ data: dept });
+        }
+        restoredRecords += data.departments.length;
       }
-      restoredRecords += data.profiles.length;
-    }
 
-    // 3. User Roles
-    if (data.user_roles?.length) {
-      for (const role of data.user_roles) {
-        await prisma.userRole.create({
-          data: {
-            id: role.id,
-            userId: role.userId,
-            role: role.role,
-            createdAt: new Date(role.createdAt)
-          }
-        });
+      // 2. Profiles
+      if (data.profiles?.length) {
+        for (const profile of data.profiles) {
+          await tx.profile.create({
+            data: {
+              id: profile.id,
+              email: profile.email,
+              passwordHash: profile.passwordHash || null,
+              firstName: profile.firstName,
+              lastName: profile.lastName,
+              department: profile.department,
+              avatar: profile.avatar,
+              isActive: profile.isActive,
+              lastLogin: profile.lastLogin ? new Date(profile.lastLogin) : null,
+              createdAt: new Date(profile.createdAt)
+            }
+          });
+        }
+        restoredRecords += data.profiles.length;
       }
-      restoredRecords += data.user_roles.length;
-    }
 
-    // 4. KPI Targets
-    if (data.kpi_targets?.length) {
-      for (const kpi of data.kpi_targets) {
-        await prisma.kpiTarget.create({
-          data: {
-            id: kpi.id,
-            title: kpi.title,
-            description: kpi.description,
-            department: kpi.department,
-            targetValue: kpi.targetValue,
-            currentValue: kpi.currentValue,
-            unit: kpi.unit,
-            startDate: kpi.startDate,
-            endDate: kpi.endDate,
-            period: kpi.period,
-            priority: kpi.priority,
-            status: kpi.status,
-            createdBy: kpi.createdBy,
-            createdAt: new Date(kpi.createdAt),
-            updatedAt: new Date(kpi.updatedAt)
-          }
-        });
+      // 3. User Roles
+      if (data.user_roles?.length) {
+        for (const role of data.user_roles) {
+          await tx.userRole.create({
+            data: {
+              id: role.id,
+              userId: role.userId,
+              role: role.role,
+              createdAt: new Date(role.createdAt)
+            }
+          });
+        }
+        restoredRecords += data.user_roles.length;
       }
-      restoredRecords += data.kpi_targets.length;
-    }
 
-    // 5. KPI Assignments
-    if (data.kpi_assignments?.length) {
-      for (const assignment of data.kpi_assignments) {
-        await prisma.kpiAssignment.create({
-          data: {
-            id: assignment.id,
-            kpiId: assignment.kpiId,
-            userId: assignment.userId,
-            assignedAt: new Date(assignment.assignedAt)
-          }
-        });
+      // 4. KPI Targets
+      if (data.kpi_targets?.length) {
+        for (const kpi of data.kpi_targets) {
+          await tx.kpiTarget.create({
+            data: {
+              id: kpi.id,
+              title: kpi.title,
+              description: kpi.description,
+              department: kpi.department,
+              targetValue: kpi.targetValue,
+              currentValue: kpi.currentValue,
+              unit: kpi.unit,
+              startDate: kpi.startDate,
+              endDate: kpi.endDate,
+              period: kpi.period,
+              priority: kpi.priority,
+              status: kpi.status,
+              createdBy: kpi.createdBy,
+              createdAt: new Date(kpi.createdAt),
+              updatedAt: new Date(kpi.updatedAt)
+            }
+          });
+        }
+        restoredRecords += data.kpi_targets.length;
       }
-      restoredRecords += data.kpi_assignments.length;
-    }
 
-    // 6. KPI Progress
-    if (data.kpi_progress?.length) {
-      for (const progress of data.kpi_progress) {
-        await prisma.kpiProgress.create({
-          data: {
-            id: progress.id,
-            kpiId: progress.kpiId,
-            userId: progress.userId,
-            value: progress.value,
-            note: progress.note,
-            recordedAt: new Date(progress.recordedAt),
-            recordedBy: progress.recordedBy
-          }
-        });
+      // 5. KPI Assignments
+      if (data.kpi_assignments?.length) {
+        for (const assignment of data.kpi_assignments) {
+          await tx.kpiAssignment.create({
+            data: {
+              id: assignment.id,
+              kpiId: assignment.kpiId,
+              userId: assignment.userId,
+              assignedAt: new Date(assignment.assignedAt)
+            }
+          });
+        }
+        restoredRecords += data.kpi_assignments.length;
       }
-      restoredRecords += data.kpi_progress.length;
-    }
 
-    // 7. KPI Comments
-    if (data.kpi_comments?.length) {
-      for (const comment of data.kpi_comments) {
-        await prisma.kpiComment.create({
-          data: {
-            id: comment.id,
-            kpiId: comment.kpiId,
-            userId: comment.userId,
-            userName: comment.userName,
-            content: comment.content,
-            createdAt: new Date(comment.createdAt)
-          }
-        });
+      // 6. KPI Progress
+      if (data.kpi_progress?.length) {
+        for (const progress of data.kpi_progress) {
+          await tx.kpiProgress.create({
+            data: {
+              id: progress.id,
+              kpiId: progress.kpiId,
+              userId: progress.userId,
+              value: progress.value,
+              note: progress.note,
+              recordedAt: new Date(progress.recordedAt),
+              recordedBy: progress.recordedBy
+            }
+          });
+        }
+        restoredRecords += data.kpi_progress.length;
       }
-      restoredRecords += data.kpi_comments.length;
-    }
 
-    // 8. Tickets
-    if (data.tickets?.length) {
-      for (const ticket of data.tickets) {
-        await prisma.ticket.create({
-          data: {
-            id: ticket.id,
-            title: ticket.title,
-            description: ticket.description,
-            priority: ticket.priority,
-            status: ticket.status,
-            sourceDepartment: ticket.sourceDepartment,
-            targetDepartment: ticket.targetDepartment,
-            createdBy: ticket.createdBy,
-            creatorName: ticket.creatorName,
-            creatorEmail: ticket.creatorEmail,
-            assignedTo: ticket.assignedTo,
-            createdAt: new Date(ticket.createdAt),
-            updatedAt: new Date(ticket.updatedAt),
-            resolvedAt: ticket.resolvedAt ? new Date(ticket.resolvedAt) : null,
-            closedAt: ticket.closedAt ? new Date(ticket.closedAt) : null
-          }
-        });
+      // 7. KPI Comments
+      if (data.kpi_comments?.length) {
+        for (const comment of data.kpi_comments) {
+          await tx.kpiComment.create({
+            data: {
+              id: comment.id,
+              kpiId: comment.kpiId,
+              userId: comment.userId,
+              userName: comment.userName,
+              content: comment.content,
+              createdAt: new Date(comment.createdAt)
+            }
+          });
+        }
+        restoredRecords += data.kpi_comments.length;
       }
-      restoredRecords += data.tickets.length;
-    }
 
-    // 9. Ticket Comments
-    if (data.ticket_comments?.length) {
-      for (const comment of data.ticket_comments) {
-        await prisma.ticketComment.create({
-          data: {
-            id: comment.id,
-            ticketId: comment.ticketId,
-            authorId: comment.authorId,
-            authorName: comment.authorName,
-            content: comment.content,
-            isInternal: comment.isInternal,
-            createdAt: new Date(comment.createdAt)
-          }
-        });
+      // 8. Tickets
+      if (data.tickets?.length) {
+        for (const ticket of data.tickets) {
+          await tx.ticket.create({
+            data: {
+              id: ticket.id,
+              title: ticket.title,
+              description: ticket.description,
+              priority: ticket.priority,
+              status: ticket.status,
+              sourceDepartment: ticket.sourceDepartment,
+              targetDepartment: ticket.targetDepartment,
+              createdBy: ticket.createdBy,
+              creatorName: ticket.creatorName,
+              creatorEmail: ticket.creatorEmail,
+              assignedTo: ticket.assignedTo,
+              createdAt: new Date(ticket.createdAt),
+              updatedAt: new Date(ticket.updatedAt),
+              resolvedAt: ticket.resolvedAt ? new Date(ticket.resolvedAt) : null,
+              closedAt: ticket.closedAt ? new Date(ticket.closedAt) : null
+            }
+          });
+        }
+        restoredRecords += data.tickets.length;
       }
-      restoredRecords += data.ticket_comments.length;
-    }
 
-    // 10. Calendar Categories
-    if (data.calendar_categories?.length) {
-      for (const cat of data.calendar_categories) {
-        await prisma.calendarCategory.create({
-          data: {
-            id: cat.id,
-            name: cat.name,
-            color: cat.color,
-            createdAt: new Date(cat.createdAt)
-          }
-        });
+      // 9. Ticket Comments
+      if (data.ticket_comments?.length) {
+        for (const comment of data.ticket_comments) {
+          await tx.ticketComment.create({
+            data: {
+              id: comment.id,
+              ticketId: comment.ticketId,
+              authorId: comment.authorId,
+              authorName: comment.authorName,
+              content: comment.content,
+              isInternal: comment.isInternal,
+              createdAt: new Date(comment.createdAt)
+            }
+          });
+        }
+        restoredRecords += data.ticket_comments.length;
       }
-      restoredRecords += data.calendar_categories.length;
-    }
 
-    // 11. Calendar Activities
-    if (data.calendar_activities?.length) {
-      for (const activity of data.calendar_activities) {
-        await prisma.calendarActivity.create({
-          data: {
-            id: activity.id,
-            userId: activity.userId,
-            title: activity.title,
-            description: activity.description,
-            date: activity.date,
-            startTime: activity.startTime,
-            endTime: activity.endTime,
-            duration: activity.duration,
-            categoryId: activity.categoryId,
-            createdAt: new Date(activity.createdAt),
-            updatedAt: new Date(activity.updatedAt)
-          }
-        });
+      // 10. Calendar Categories
+      if (data.calendar_categories?.length) {
+        for (const cat of data.calendar_categories) {
+          await tx.calendarCategory.create({
+            data: {
+              id: cat.id,
+              name: cat.name,
+              color: cat.color,
+              createdAt: new Date(cat.createdAt)
+            }
+          });
+        }
+        restoredRecords += data.calendar_categories.length;
       }
-      restoredRecords += data.calendar_activities.length;
-    }
 
-    // 12. Notifications
-    if (data.notifications?.length) {
-      for (const notif of data.notifications) {
-        await prisma.notification.create({
-          data: {
-            id: notif.id,
-            userId: notif.userId,
-            category: notif.category,
-            priority: notif.priority,
-            title: notif.title,
-            message: notif.message,
-            isRead: notif.isRead,
-            link: notif.link,
-            metadata: notif.metadata,
-            createdAt: new Date(notif.createdAt)
-          }
-        });
+      // 11. Calendar Activities
+      if (data.calendar_activities?.length) {
+        for (const activity of data.calendar_activities) {
+          await tx.calendarActivity.create({
+            data: {
+              id: activity.id,
+              userId: activity.userId,
+              title: activity.title,
+              description: activity.description,
+              date: activity.date,
+              startTime: activity.startTime,
+              endTime: activity.endTime,
+              duration: activity.duration,
+              categoryId: activity.categoryId,
+              createdAt: new Date(activity.createdAt),
+              updatedAt: new Date(activity.updatedAt)
+            }
+          });
+        }
+        restoredRecords += data.calendar_activities.length;
       }
-      restoredRecords += data.notifications.length;
-    }
 
-    // 13. Meeting Rooms
-    if (data.meeting_rooms?.length) {
-      for (const room of data.meeting_rooms) {
-        await prisma.meetingRoom.create({
-          data: {
-            id: room.id,
-            name: room.name,
-            capacity: room.capacity,
-            location: room.location,
-            description: room.description,
-            responsibleId: room.responsibleId,
-            createdAt: new Date(room.createdAt),
-            updatedAt: new Date(room.updatedAt)
-          }
-        });
+      // 12. Notifications
+      if (data.notifications?.length) {
+        for (const notif of data.notifications) {
+          await tx.notification.create({
+            data: {
+              id: notif.id,
+              userId: notif.userId,
+              category: notif.category,
+              priority: notif.priority,
+              title: notif.title,
+              message: notif.message,
+              isRead: notif.isRead,
+              link: notif.link,
+              metadata: notif.metadata,
+              createdAt: new Date(notif.createdAt)
+            }
+          });
+        }
+        restoredRecords += data.notifications.length;
       }
-      restoredRecords += data.meeting_rooms.length;
-    }
 
-    // 14. Meeting Reservations
-    if (data.meeting_reservations?.length) {
-      for (const reservation of data.meeting_reservations) {
-        await prisma.meetingReservation.create({
-          data: {
-            id: reservation.id,
-            roomId: reservation.roomId,
-            requestedBy: reservation.requestedBy,
-            approvedBy: reservation.approvedBy,
-            startTime: new Date(reservation.startTime),
-            endTime: new Date(reservation.endTime),
-            status: reservation.status,
-            notes: reservation.notes,
-            createdAt: new Date(reservation.createdAt),
-            updatedAt: new Date(reservation.updatedAt)
-          }
-        });
+      // 13. Meeting Rooms
+      if (data.meeting_rooms?.length) {
+        for (const room of data.meeting_rooms) {
+          await tx.meetingRoom.create({
+            data: {
+              id: room.id,
+              name: room.name,
+              capacity: room.capacity,
+              location: room.location,
+              description: room.description,
+              responsibleId: room.responsibleId,
+              createdAt: new Date(room.createdAt),
+              updatedAt: new Date(room.updatedAt)
+            }
+          });
+        }
+        restoredRecords += data.meeting_rooms.length;
       }
-      restoredRecords += data.meeting_reservations.length;
-    }
+
+      // 14. Meeting Reservations
+      if (data.meeting_reservations?.length) {
+        for (const reservation of data.meeting_reservations) {
+          await tx.meetingReservation.create({
+            data: {
+              id: reservation.id,
+              roomId: reservation.roomId,
+              requestedBy: reservation.requestedBy,
+              approvedBy: reservation.approvedBy,
+              startTime: new Date(reservation.startTime),
+              endTime: new Date(reservation.endTime),
+              status: reservation.status,
+              notes: reservation.notes,
+              createdAt: new Date(reservation.createdAt),
+              updatedAt: new Date(reservation.updatedAt)
+            }
+          });
+        }
+        restoredRecords += data.meeting_reservations.length;
+      }
+    }, {
+      // Increase timeout for large restores (5 minutes)
+      timeout: 300000
+    });
 
     const restoredTables = Object.keys(data).filter(k => data[k]?.length > 0).length;
 
@@ -3477,7 +3517,8 @@ app.post('/api/admin/backup/:id/restore', authenticateToken, async (req, res) =>
       success: true,
       message: `Geri yükleme başarıyla tamamlandı. ${restoredRecords} kayıt geri yüklendi.`,
       restoredTables,
-      restoredRecords
+      restoredRecords,
+      preRestoreBackupId: preRestoreId
     });
   } catch (error) {
     console.error('Backup restore error:', error);

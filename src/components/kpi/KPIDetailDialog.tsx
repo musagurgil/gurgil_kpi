@@ -594,7 +594,7 @@ export function KPIDetailDialog({
                       </div>
                     ) : (
                       <div className="relative border-l-2 border-muted/50 pl-6 space-y-6 ml-3 my-4">
-                        {kpiStats.recentProgress.map((record: any, index: number) => (
+                        {[...kpiStats.recentProgress].sort((a: any, b: any) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()).map((record: any, index: number) => (
                           <div key={record.id || index} className="relative group">
                             <div className="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full bg-background border-2 border-primary group-hover:scale-125 transition-transform duration-200" />
                             <div className="bg-card border border-border/50 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200">
