@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Building2 } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { useKPI } from "@/hooks/useKPI";
+import { useMemo } from "react";
 
 export function DepartmentPerformance() {
   const { stats, loading, currentUser } = useDashboard();
@@ -16,61 +17,66 @@ export function DepartmentPerformance() {
   const isAdmin = user?.roles.includes('admin');
   const userDepartment = user?.department || '';
 
+  // ⚡ Bolt Optimization: Memoize department performance calculation
+  // What: Wraps the O(N) KPI filtering, mapping, and sorting logic in useMemo
+  // Why: Prevents expensive array operations and map grouping on every render when unrelated context state changes
   // Calculate department performance from actual KPI data
-  const departmentPerformanceMap = new Map<string, {
-    name: string;
-    totalKPIs: number;
-    completedKPIs: number;
-    totalProgress: number;
-  }>();
+  const departmentPerformance = useMemo(() => {
+    const departmentPerformanceMap = new Map<string, {
+      name: string;
+      totalKPIs: number;
+      completedKPIs: number;
+      totalProgress: number;
+    }>();
 
-  kpiStats.forEach(kpi => {
-    // Filter based on user role
-    if (!isAdmin && kpi.department !== userDepartment) {
-      return; // Skip departments not matching user's department
-    }
+    kpiStats.forEach(kpi => {
+      // Filter based on user role
+      if (!isAdmin && kpi.department !== userDepartment) {
+        return; // Skip departments not matching user's department
+      }
 
-    if (!departmentPerformanceMap.has(kpi.department)) {
-      departmentPerformanceMap.set(kpi.department, {
-        name: kpi.department,
-        totalKPIs: 0,
-        completedKPIs: 0,
-        totalProgress: 0
-      });
-    }
+      if (!departmentPerformanceMap.has(kpi.department)) {
+        departmentPerformanceMap.set(kpi.department, {
+          name: kpi.department,
+          totalKPIs: 0,
+          completedKPIs: 0,
+          totalProgress: 0
+        });
+      }
 
-    const dept = departmentPerformanceMap.get(kpi.department)!;
-    dept.totalKPIs++;
-    if (kpi.status === 'success' || kpi.progressPercentage >= 100) {
-      dept.completedKPIs++;
-    }
-    dept.totalProgress += kpi.progressPercentage;
-  });
+      const dept = departmentPerformanceMap.get(kpi.department)!;
+      dept.totalKPIs++;
+      if (kpi.status === 'success' || kpi.progressPercentage >= 100) {
+        dept.completedKPIs++;
+      }
+      dept.totalProgress += kpi.progressPercentage;
+    });
 
-  // Convert to array and calculate performance percentage
-  const departmentPerformance = Array.from(departmentPerformanceMap.values())
-    .map(dept => {
-      const performance = dept.totalKPIs > 0
-        ? Math.round(dept.totalProgress / dept.totalKPIs)
-        : 0;
+    // Convert to array and calculate performance percentage
+    return Array.from(departmentPerformanceMap.values())
+      .map(dept => {
+        const performance = dept.totalKPIs > 0
+          ? Math.round(dept.totalProgress / dept.totalKPIs)
+          : 0;
 
-      // Calculate change (mock for now, can be enhanced with historical data)
-      const change = performance > 80 ? 10 : performance > 60 ? 5 : -5;
+        // Calculate change (mock for now, can be enhanced with historical data)
+        const change = performance > 80 ? 10 : performance > 60 ? 5 : -5;
 
-      const changeType: 'increase' | 'decrease' = change >= 0 ? 'increase' : 'decrease';
+        const changeType: 'increase' | 'decrease' = change >= 0 ? 'increase' : 'decrease';
 
-      return {
-        name: dept.name,
-        performance,
-        change,
-        target: 100,
-        completedKPIs: dept.completedKPIs,
-        kpiCount: dept.totalKPIs,
-        changeType
-      };
-    })
-    .sort((a, b) => b.performance - a.performance)
-    .slice(0, isAdmin ? 10 : 1); // Show all for admin, only user's department for others
+        return {
+          name: dept.name,
+          performance,
+          change,
+          target: 100,
+          completedKPIs: dept.completedKPIs,
+          kpiCount: dept.totalKPIs,
+          changeType
+        };
+      })
+      .sort((a, b) => b.performance - a.performance)
+      .slice(0, isAdmin ? 10 : 1); // Show all for admin, only user's department for others
+  }, [kpiStats, isAdmin, userDepartment]);
 
   if (loading) {
     return (
