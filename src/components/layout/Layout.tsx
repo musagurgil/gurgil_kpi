@@ -35,6 +35,8 @@ export function Layout() {
             size="icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="bg-card shadow-lg"
+            aria-label={sidebarOpen ? "Menüyü kapat" : "Menüyü aç"}
+            aria-expanded={sidebarOpen}
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
