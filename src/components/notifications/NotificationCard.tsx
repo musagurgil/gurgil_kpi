@@ -113,8 +113,9 @@ export const NotificationCard = ({ notification, onMarkAsRead, onDelete }: Notif
                   className="h-7 w-7 relative z-10"
                   onClick={(e) => { e.stopPropagation(); onMarkAsRead(notification.id); }}
                   title="Okundu olarak işaretle"
+                  aria-label="Okundu olarak işaretle"
                 >
-                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
               )}
               <Button
@@ -123,8 +124,9 @@ export const NotificationCard = ({ notification, onMarkAsRead, onDelete }: Notif
                 className="h-7 w-7 text-destructive/70 hover:text-destructive relative z-10"
                 onClick={(e) => { e.stopPropagation(); onDelete(notification.id); }}
                 title="Sil"
+                aria-label="Bildirimi sil"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -152,8 +154,9 @@ export const NotificationCard = ({ notification, onMarkAsRead, onDelete }: Notif
                   size="sm"
                   onClick={(e) => { e.stopPropagation(); handleNavigate(); }}
                   className="h-5 px-1.5 text-[10px] gap-1 relative z-10"
+                  aria-label={`${notification.title} detayına git`}
                 >
-                  <ExternalLink className="h-3 w-3" />
+                  <ExternalLink className="h-3 w-3" aria-hidden="true" />
                   Git
                 </Button>
               )}
