@@ -8,7 +8,7 @@ import { useTickets } from "@/hooks/useTickets";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { TICKET_PRIORITIES, TICKET_STATUSES, PRIORITY_COLORS, STATUS_COLORS } from "@/types/ticket";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { User as UserType } from "@/types/user";
 import { apiClient } from "@/lib/api";
 
@@ -33,11 +33,24 @@ export function TicketOverview() {
 
   const loading = dashboardLoading || ticketsLoading;
 
+  // ⚡ Bolt Optimization: Memoize user mapping and ticket filtering/sorting
+  // What: Created a O(1) users lookup map and wrapped O(N log N) filtering/sorting in useMemo
+  // Why: Replaces O(N*M) array iteration inside render (.find inside .map) with O(1) hash map lookups,
+  //      and prevents unnecessary ticket recalculation on every re-render when context changes
+  const usersMap = useMemo(() => {
+    return users.reduce((acc, u) => {
+      acc[u.id] = u;
+      return acc;
+    }, {} as Record<string, UserType>);
+  }, [users]);
+
   // Filter tickets targeted to the user's department, sort by newest, take top 5
-  const recentTickets = [...tickets]
-    .filter(t => !user || t.targetDepartment === user.department || user.roles.includes('admin'))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
+  const recentTickets = useMemo(() => {
+    return [...tickets]
+      .filter(t => !user || t.targetDepartment === user.department || user.roles.includes('admin'))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+  }, [tickets, user]);
 
   if (loading) {
     return (
@@ -140,7 +153,7 @@ export function TicketOverview() {
                       <User className="w-3 h-3" />
                       <span>
                         {ticket.assignedTo
-                          ? (users.find(u => u.id === ticket.assignedTo)?.firstName + ' ' + users.find(u => u.id === ticket.assignedTo)?.lastName || 'Atanmış Kullanıcı')
+                          ? (usersMap[ticket.assignedTo]?.firstName + ' ' + usersMap[ticket.assignedTo]?.lastName || 'Atanmış Kullanıcı')
                           : 'Atanmamış'}
                       </span>
                     </div>
