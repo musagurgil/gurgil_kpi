@@ -3146,6 +3146,12 @@ app.get('/api/admin/backup/:id/download', authenticateToken, async (req, res) =>
     }
 
     const { id } = req.params;
+
+    // Security: Prevent path traversal vulnerabilities
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+      return res.status(400).json({ error: 'Geçersiz yedek kimliği' });
+    }
+
     const backupDir = path.join(BACKUPS_DIR, id);
 
     if (!fs.existsSync(backupDir)) {
@@ -3175,6 +3181,12 @@ app.post('/api/admin/backup/:id/restore', authenticateToken, async (req, res) =>
     }
 
     const { id } = req.params;
+
+    // Security: Prevent path traversal vulnerabilities
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+      return res.status(400).json({ error: 'Geçersiz yedek kimliği' });
+    }
+
     const backupDir = path.join(BACKUPS_DIR, id);
 
     if (!fs.existsSync(backupDir)) {
@@ -3534,6 +3546,12 @@ app.delete('/api/admin/backup/:id', authenticateToken, async (req, res) => {
     }
 
     const { id } = req.params;
+
+    // Security: Prevent path traversal vulnerabilities
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+      return res.status(400).json({ error: 'Geçersiz yedek kimliği' });
+    }
+
     const backupDir = path.join(BACKUPS_DIR, id);
 
     if (!fs.existsSync(backupDir)) {
