@@ -17,9 +17,13 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
+
+// Security: Configure CORS to only allow trusted origins
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000,http://localhost:3001').split(',');
+
 const io = new Server(httpServer, {
   cors: {
-    origin: "*", // In production, replace with specific frontend URL
+    origin: allowedOrigins,
     methods: ["GET", "POST"]
   }
 });
@@ -30,7 +34,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Middleware
 app.use(helmet()); // Add HTTP security headers
-app.use(cors());
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 // Socket.io Connection Handler
