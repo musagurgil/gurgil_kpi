@@ -124,32 +124,32 @@ export function TicketFilters({ filter, onFilterChange, users }: TicketFiltersPr
           {filter.status && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
               {TICKET_STATUSES[filter.status as keyof typeof TICKET_STATUSES]}
-              <button onClick={() => updateFilter({ status: undefined })} className="ml-1 hover:text-indigo-800">×</button>
+              <button aria-label="Durum filtresini temizle" onClick={() => updateFilter({ status: undefined })} className="ml-1 hover:text-indigo-800">×</button>
             </span>
           )}
           {filter.priority && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-medium">
               {TICKET_PRIORITIES[filter.priority as keyof typeof TICKET_PRIORITIES]}
-              <button onClick={() => updateFilter({ priority: undefined })} className="ml-1 hover:text-amber-800">×</button>
+              <button aria-label="Öncelik filtresini temizle" onClick={() => updateFilter({ priority: undefined })} className="ml-1 hover:text-amber-800">×</button>
             </span>
           )}
           {filter.department && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-medium">
               {filter.department}
-              <button onClick={() => updateFilter({ department: undefined })} className="ml-1 hover:text-purple-800">×</button>
+              <button aria-label="Departman filtresini temizle" onClick={() => updateFilter({ department: undefined })} className="ml-1 hover:text-purple-800">×</button>
             </span>
           )}
           {filter.assignedTo && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
               {filter.assignedTo === 'unassigned' ? 'Atanmamış' :
                 users.find(u => u.id === filter.assignedTo)?.firstName || 'Bilinmiyor'}
-              <button onClick={() => updateFilter({ assignedTo: undefined })} className="ml-1 hover:text-emerald-800">×</button>
+              <button aria-label="Atanan filtresini temizle" onClick={() => updateFilter({ assignedTo: undefined })} className="ml-1 hover:text-emerald-800">×</button>
             </span>
           )}
           {filter.search && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-500/10 text-gray-600 dark:text-gray-400 text-xs font-medium">
               "{filter.search}"
-              <button onClick={() => updateFilter({ search: undefined })} className="ml-1 hover:text-gray-800">×</button>
+              <button aria-label="Arama filtresini temizle" onClick={() => updateFilter({ search: undefined })} className="ml-1 hover:text-gray-800">×</button>
             </span>
           )}
         </div>
