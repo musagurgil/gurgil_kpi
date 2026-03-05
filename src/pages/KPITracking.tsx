@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -175,17 +175,40 @@ export default function KPITracking() {
     }
   };
 
+  // ⚡ Bolt Optimization: Memoize KPI filtering
+  // What: Wraps the O(N) array filtering in useMemo
+  // Why: Prevents recalculating the filtered array on every render
   // Filter KPIs based on filters
-  const filteredKPIs = kpiStats.filter(kpi => {
-    if (filters.department && kpi.department !== filters.department) return false;
-    if (filters.status && kpi.lifecycleStatus !== filters.status) return false;
-    if (filters.priority && kpi.priority !== filters.priority) return false;
-    if (filters.period && kpi.period !== filters.period) return false;
-    if (filters.assignedTo && !kpi.assignedUsers?.includes(filters.assignedTo)) return false;
-    if (filters.startDate && new Date(kpi.startDate) < new Date(filters.startDate)) return false;
-    if (filters.endDate && new Date(kpi.endDate) > new Date(filters.endDate)) return false;
-    return true;
-  });
+  const filteredKPIs = useMemo(() => {
+    return kpiStats.filter(kpi => {
+      if (filters.department && kpi.department !== filters.department) return false;
+      if (filters.status && kpi.lifecycleStatus !== filters.status) return false;
+      if (filters.priority && kpi.priority !== filters.priority) return false;
+      if (filters.period && kpi.period !== filters.period) return false;
+      if (filters.assignedTo && !kpi.assignedUsers?.includes(filters.assignedTo)) return false;
+      if (filters.startDate && new Date(kpi.startDate) < new Date(filters.startDate)) return false;
+      if (filters.endDate && new Date(kpi.endDate) > new Date(filters.endDate)) return false;
+      return true;
+    });
+  }, [kpiStats, filters]);
+
+  // ⚡ Bolt Optimization: Memoize KPI summary stats
+  // What: Wraps O(N) array calculations in useMemo
+  // Why: Prevents redundant loops over the full kpiStats array on every re-render
+  const { totalKPIs, completedKPIs, atRiskKPIs, onTrackKPIs } = useMemo(() => {
+    return {
+      totalKPIs: kpiStats.length,
+      completedKPIs: kpiStats.filter(kpi => kpi.progressPercentage >= 100).length,
+      // At risk: danger status or warning status with low progress
+      atRiskKPIs: kpiStats.filter(kpi =>
+        kpi.status === 'danger' || (kpi.status === 'warning' && kpi.progressPercentage < 50)
+      ).length,
+      // On track: success status (completed) or normal status with good progress and time remaining
+      onTrackKPIs: kpiStats.filter(kpi =>
+        kpi.status === 'success' || (kpi.status === 'warning' && kpi.progressPercentage >= 50 && kpi.remainingDays > 7)
+      ).length
+    };
+  }, [kpiStats]);
 
   if (loading) {
     return (
@@ -201,17 +224,6 @@ export default function KPITracking() {
       </div>
     );
   }
-
-  const totalKPIs = kpiStats.length;
-  const completedKPIs = kpiStats.filter(kpi => kpi.progressPercentage >= 100).length;
-  // At risk: danger status or warning status with low progress
-  const atRiskKPIs = kpiStats.filter(kpi =>
-    kpi.status === 'danger' || (kpi.status === 'warning' && kpi.progressPercentage < 50)
-  ).length;
-  // On track: success status (completed) or normal status with good progress and time remaining
-  const onTrackKPIs = kpiStats.filter(kpi =>
-    kpi.status === 'success' || (kpi.status === 'warning' && kpi.progressPercentage >= 50 && kpi.remainingDays > 7)
-  ).length;
 
   return (
     <div className="min-h-screen bg-dashboard-bg p-4 sm:p-6 space-y-6">
