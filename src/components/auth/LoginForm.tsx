@@ -155,6 +155,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 type="button"
                 variant="ghost"
                 size="icon"
+                aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
                 className="absolute right-0 top-0 h-11 w-11 text-muted-foreground hover:text-foreground"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}

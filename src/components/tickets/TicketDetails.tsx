@@ -188,13 +188,14 @@ export function TicketDetails({
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Button variant="ghost" size="icon" onClick={handleExportTicket}
+                    aria-label="PDF olarak indir"
                     className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10">
                     <Download className="w-4 h-4" />
                   </Button>
                   {canDeleteTicket() && onDeleteTicket && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-white/70 hover:text-red-300 hover:bg-white/10">
+                        <Button variant="ghost" size="icon" aria-label="Ticket'ı sil" className="h-8 w-8 text-white/70 hover:text-red-300 hover:bg-white/10">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </AlertDialogTrigger>

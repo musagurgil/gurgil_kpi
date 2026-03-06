@@ -168,6 +168,7 @@ export function SignUpForm({ onSuccess, onSwitchToLogin }: SignUpFormProps) {
                 type="button"
                 variant="ghost"
                 size="icon"
+                aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
                 className="absolute right-0 top-0 h-full px-3"
                 onClick={() => setShowPassword(!showPassword)}
                 tabIndex={-1}
