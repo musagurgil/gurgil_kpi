@@ -173,7 +173,7 @@ export function TicketOverview() {
                 <Badge className={`text-xs ${PRIORITY_COLORS[ticket.priority]}`}>
                   {TICKET_PRIORITIES[ticket.priority]}
                 </Badge>
-                <Button variant="ghost" size="icon" className="w-8 h-8">
+                <Button variant="ghost" size="icon" aria-label="Daha fazla seçenek" className="w-8 h-8">
                   <MoreHorizontal className="w-4 h-4" />
                 </Button>
               </div>

@@ -321,7 +321,7 @@ export function KPIDetailDialog({
                   <span className="ml-1.5">{getStatusText()}</span>
                 </Badge>
                 <DialogClose asChild>
-                  <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10 rounded-full h-8 w-8">
+                  <Button variant="ghost" size="icon" aria-label="Kapat" className="text-white/70 hover:text-white hover:bg-white/10 rounded-full h-8 w-8">
                     <X className="w-5 h-5" />
                   </Button>
                 </DialogClose>
@@ -685,6 +685,7 @@ export function KPIDetailDialog({
                   <Button
                     onClick={handleAddComment}
                     size="icon"
+                    aria-label="Yorum gönder"
                     className="h-11 w-11 shrink-0 rounded-xl shadow-sm transition-all hover:scale-105 active:scale-95"
                     disabled={!newComment.trim()}
                   >
