@@ -9,3 +9,7 @@
 ## 2026-03-05 - [React Render Bottleneck: O(N) Derived State in KPI Tracking]
 **Learning:** `src/pages/KPITracking.tsx` suffered from unmemoized O(N) array filtering and calculations for `filteredKPIs` and KPI summary statistics (`completedKPIs`, `atRiskKPIs`, `onTrackKPIs`). Because these derived state operations were calculated directly in the component body, any unrelated re-render or state update would trigger unnecessary recalculations over the full KPI array.
 **Action:** Always utilize `useMemo` to memoize derived state calculations such as filtering and reducing large dataset arrays (like KPI stats) to prevent costly, repetitive O(N) operations across multiple re-renders.
+
+## 2024-03-06 - Frontend Performance Anti-Pattern: O(N*M) Derived State
+**Learning:** Found a critical anti-pattern in `src/pages/MeetingRooms.tsx` where `.filter()` was being called inside a `.map()` during derived state calculation (`getRoomReservations` inside `filteredRooms.map`), resulting in O(N*R) complexity (Rooms * Reservations) which causes significant main-thread blocking as data scales.
+**Action:** Always pre-compute lookup maps using a single-pass `reduce` inside a `useMemo` (changing complexity from O(N*M) to O(N+M)). I replaced the inline `reservations.filter` with a `reservationsByRoomId` lookup map, creating an O(1) access pattern for child component rendering loops.
