@@ -233,10 +233,21 @@ export default function MeetingRooms() {
     await refreshReservations();
   };
 
+  // Pre-compute reservations by room ID for O(1) lookup
+  const reservationsByRoomId = useMemo(() => {
+    return reservations.reduce((acc, reservation) => {
+      if (!acc[reservation.roomId]) {
+        acc[reservation.roomId] = [];
+      }
+      acc[reservation.roomId].push(reservation);
+      return acc;
+    }, {} as Record<string, typeof reservations>);
+  }, [reservations]);
+
   // Get reservations for a room
   const getRoomReservations = useCallback((roomId: string) => {
-    return reservations.filter(r => r.roomId === roomId);
-  }, [reservations]);
+    return reservationsByRoomId[roomId] || [];
+  }, [reservationsByRoomId]);
 
   // Filter rooms
   const filteredRooms = useMemo(() => {
@@ -253,7 +264,7 @@ export default function MeetingRooms() {
     }
 
     return filtered;
-  }, [rooms, searchQuery, getRoomReservations]);
+  }, [rooms, searchQuery]);
 
   // Handle room card click
   const handleRoomClick = (room: MeetingRoom) => {
