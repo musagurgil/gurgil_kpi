@@ -41,7 +41,7 @@ const UserDeactivationDialog: React.FC<UserDeactivationDialogProps> = ({
 
     const fetchUsers = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('auth_token');
             const res = await fetch(`${API_URL}/api/users`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -55,7 +55,7 @@ const UserDeactivationDialog: React.FC<UserDeactivationDialogProps> = ({
     const handleDeactivate = async () => {
         setStep('processing');
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('auth_token');
 
             // 1. Deactivate
             const res = await fetch(`${API_URL}/api/admin/profiles/${user.id}/deactivate`, {
@@ -83,7 +83,7 @@ const UserDeactivationDialog: React.FC<UserDeactivationDialogProps> = ({
         if (!targetUser) return;
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('auth_token');
             await fetch(`${API_URL}/api/admin/profiles/transfer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

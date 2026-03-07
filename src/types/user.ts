@@ -47,6 +47,5 @@ export const ROLES = {
   admin: 'Sistem Yöneticisi',
   department_manager: 'Departman Yöneticisi',
   employee: 'Çalışan',
-  board_member: 'Yönetim Kurulu Üyesi',
-  secretary: 'Firma Sekreteri'
+  board_member: 'Yönetim Kurulu Üyesi'
 } as const;

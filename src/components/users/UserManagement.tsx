@@ -41,6 +41,7 @@ import {
   KeyRound,
   TrendingUp,
   Building2,
+  RefreshCcw,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useKPI } from "@/hooks/useKPI";
@@ -88,7 +89,7 @@ function UserAvatar({ firstName, lastName, role }: { firstName: string; lastName
 }
 
 export const UserManagement = () => {
-  const { profiles, loading: adminLoading, deleteProfile, refetch } = useAdmin();
+  const { profiles, loading: adminLoading, deleteProfile, reactivateProfile, refetch } = useAdmin();
   const { kpiStats, loading: kpiLoading } = useKPI();
   const { tickets, loading: ticketsLoading } = useTickets();
 
@@ -100,6 +101,7 @@ export const UserManagement = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
   const [passwordUser, setPasswordUser] = useState<User | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   const loading = adminLoading || kpiLoading || ticketsLoading;
 
@@ -149,8 +151,14 @@ export const UserManagement = () => {
       processed = processed.filter(user => user.role === selectedRole);
     }
 
+    if (showInactive) {
+      processed = processed.filter(user => !user.isActive);
+    } else {
+      processed = processed.filter(user => user.isActive);
+    }
+
     setFilteredUsers(processed as User[]);
-  }, [profiles, tickets, kpiStats, searchTerm, selectedDepartment, selectedRole]);
+  }, [profiles, tickets, kpiStats, searchTerm, selectedDepartment, selectedRole, showInactive]);
 
   // Stats
   const totalUsers = profiles?.length || 0;
@@ -163,6 +171,14 @@ export const UserManagement = () => {
     const user = filteredUsers.find(u => u.id === userId);
     if (user) {
       setUserToDeactivate(user);
+    }
+  };
+
+  const handleReactivateUser = async (userId: string) => {
+    try {
+      await reactivateProfile(userId);
+    } catch (error) {
+      console.error('Failed to reactivate user:', error);
     }
   };
 
@@ -253,10 +269,19 @@ export const UserManagement = () => {
                   <UsersIcon className="w-5 h-5 text-primary" />
                   Kullanıcı Listesi
                 </CardTitle>
-                <Button onClick={() => setShowCreateDialog(true)} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:opacity-90 text-white shadow-sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Yeni Kullanıcı
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={showInactive ? "default" : "outline"}
+                    onClick={() => setShowInactive(!showInactive)}
+                    className={showInactive ? "bg-orange-500 hover:bg-orange-600 text-white shadow-sm" : "border-border/50 shadow-sm"}
+                  >
+                    {showInactive ? "Aktifleri Göster" : "Pasifleri Göster"}
+                  </Button>
+                  <Button onClick={() => setShowCreateDialog(true)} className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:opacity-90 text-white shadow-sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Yeni Kullanıcı
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -394,7 +419,7 @@ export const UserManagement = () => {
                                 <KeyRound className="w-4 h-4 mr-2" />
                                 Şifre Değiştir
                               </DropdownMenuItem>
-                              {user.isActive && (
+                              {user.isActive ? (
                                 <>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
@@ -403,6 +428,17 @@ export const UserManagement = () => {
                                   >
                                     <Trash2 className="w-4 h-4 mr-2" />
                                     Pasife Al / Sil
+                                  </DropdownMenuItem>
+                                </>
+                              ) : (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleReactivateUser(user.id)}
+                                    className="text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50"
+                                  >
+                                    <RefreshCcw className="w-4 h-4 mr-2" />
+                                    Hesabı Aktifleştir
                                   </DropdownMenuItem>
                                 </>
                               )}

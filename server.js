@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
@@ -533,6 +534,43 @@ app.post('/api/admin/profiles/:id/deactivate', authenticateToken, async (req, re
     });
   } catch (error) {
     console.error('Deactivate profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Reactivate profile (admin only)
+app.put('/api/admin/profiles/:id/reactivate', authenticateToken, async (req, res) => {
+  try {
+    // Check if user has admin role
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Only admins can reactivate profiles' });
+    }
+
+    const { id } = req.params;
+
+    // Check if user exists
+    const user = await prisma.profile.findUnique({
+      where: { id }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Reactivate user
+    const updatedProfile = await prisma.profile.update({
+      where: { id },
+      data: { isActive: true },
+      include: { userRoles: true }
+    });
+
+    res.json({
+      success: true,
+      profile: updatedProfile
+    });
+  } catch (error) {
+    console.error('Reactivate profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -2222,11 +2260,10 @@ app.get('/api/meeting-reservations', authenticateToken, async (req, res) => {
     const user = req.user;
     const isAdmin = user.roles && user.roles.includes('admin');
     const isDepartmentManager = user.roles && user.roles.includes('department_manager');
-    const isSecretary = user.roles && user.roles.includes('secretary');
 
     let reservations;
 
-    if (isAdmin || isSecretary) {
+    if (isAdmin) {
       // Admin can see all reservations
       reservations = await prisma.meetingReservation.findMany({
         include: {
@@ -2452,9 +2489,7 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
         `/meeting-rooms#${reservation.id}`
       );
     } else {
-      // Fallback: Notify Admins if no responsible person assigned?
-      // Or keep Secretary/Manager logic as backup?
-      // For now, let's notify Admins as fallback to ensure someone sees it
+      // Fallback: Notify Admins if no responsible person assigned
       const admins = await prisma.userRole.findMany({
         where: { role: 'admin' }
       });
@@ -2503,7 +2538,6 @@ app.put('/api/meeting-reservations/:id/approve', authenticateToken, async (req, 
   try {
     const user = req.user;
     const isAdmin = user.roles && user.roles.includes('admin');
-    const isSecretary = user.roles && user.roles.includes('secretary');
 
     const { id } = req.params;
 
@@ -2522,12 +2556,12 @@ app.put('/api/meeting-reservations/:id/approve', authenticateToken, async (req, 
     // Check if user is the responsible person for this room
     const isRoomResponsible = reservation.room.responsibleId === user.id;
 
-    if (!isAdmin && !isDepartmentManager && !isSecretary && !isRoomResponsible) {
-      return res.status(403).json({ error: 'Only managers, secretaries, or room responsibles can approve reservations' });
+    if (!isAdmin && !isDepartmentManager && !isRoomResponsible) {
+      return res.status(403).json({ error: 'Only managers or room responsibles can approve reservations' });
     }
 
-    // Check if user can approve (admin, secretary, responsible, or same department manager)
-    if (!isAdmin && !isSecretary && !isRoomResponsible) {
+    // Check if user can approve (admin, responsible, or same department manager)
+    if (!isAdmin && !isRoomResponsible) {
       const userProfile = await prisma.profile.findUnique({
         where: { id: user.id }
       });
@@ -2673,10 +2707,9 @@ app.put('/api/meeting-reservations/:id/reject', authenticateToken, async (req, r
     const user = req.user;
     const isAdmin = user.roles && user.roles.includes('admin');
     const isDepartmentManager = user.roles && user.roles.includes('department_manager');
-    const isSecretary = user.roles && user.roles.includes('secretary');
 
-    if (!isAdmin && !isDepartmentManager && !isSecretary) {
-      return res.status(403).json({ error: 'Only managers or secretaries can reject reservations' });
+    if (!isAdmin && !isDepartmentManager) {
+      return res.status(403).json({ error: 'Only managers or admins can reject reservations' });
     }
 
     const { id } = req.params;
@@ -2693,8 +2726,8 @@ app.put('/api/meeting-reservations/:id/reject', authenticateToken, async (req, r
       return res.status(404).json({ error: 'Reservation not found' });
     }
 
-    // Check if user can reject (admin, secretary, or same department manager)
-    if (!isAdmin && !isSecretary) {
+    // Check if user can reject (admin or same department manager)
+    if (!isAdmin) {
       const userProfile = await prisma.profile.findUnique({
         where: { id: user.id }
       });

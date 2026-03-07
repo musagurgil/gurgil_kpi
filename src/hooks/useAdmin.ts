@@ -90,11 +90,25 @@ export const useAdmin = () => {
   const deleteProfile = async (id: string) => {
     try {
       await apiClient.deleteProfile(id);
-      setProfiles(prev => prev.filter(p => p.id !== id));
+      setProfiles(prev => prev.map(p => p.id === id ? { ...p, isActive: false } : p));
       toast.success('Kullanıcı başarıyla silindi');
     } catch (err) {
       console.error('Error deleting profile:', err);
       const message = err instanceof Error ? err.message : 'Kullanıcı silinirken hata oluştu';
+      toast.error(message);
+      throw err;
+    }
+  };
+
+  const reactivateProfile = async (id: string) => {
+    try {
+      const response = await apiClient.reactivateProfile(id);
+      setProfiles(prev => prev.map(p => p.id === id ? { ...p, isActive: true } : p));
+      toast.success('Kullanıcı başarıyla yeniden aktifleştirildi');
+      return response.profile;
+    } catch (err) {
+      console.error('Error reactivating profile:', err);
+      const message = err instanceof Error ? err.message : 'Kullanıcı aktifleştirilirken hata oluştu';
       toast.error(message);
       throw err;
     }
@@ -160,6 +174,7 @@ export const useAdmin = () => {
     createProfile,
     updateProfile,
     deleteProfile,
+    reactivateProfile,
     currentUser: user ? {
       id: user.id,
       roles: user.roles,

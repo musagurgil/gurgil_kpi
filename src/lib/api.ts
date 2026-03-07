@@ -115,6 +115,12 @@ class ApiClient {
     });
   }
 
+  async reactivateProfile(id: string) {
+    return this.request<{ success: boolean; profile: User }>(`/admin/profiles/${id}/reactivate`, {
+      method: 'PUT',
+    });
+  }
+
   async adminResetPassword(userId: string, newPassword: string) {
     return this.request<{ success: boolean; message: string }>(`/admin/profiles/${userId}/password`, {
       method: 'PUT',
