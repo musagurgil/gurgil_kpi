@@ -578,22 +578,44 @@ app.post('/api/admin/profiles/transfer', authenticateToken, async (req, res) => 
         where: { userId: fromUserId, kpi: { status: 'active' } }
       });
 
-      for (const assignment of assignments) {
-        // 2. Check if target user already assigned
-        const existingAssignment = await prisma.kpiAssignment.findUnique({
-          where: { kpiId_userId: { kpiId: assignment.kpiId, userId: toUserId } }
+      if (assignments.length > 0) {
+        // ⚡ Bolt: Optimize KPI transfer with bulk operations to fix N+1 query issue.
+        const kpiIds = assignments.map(a => a.kpiId);
+
+        // Pre-fetch all existing assignments for the target user that overlap
+        const existingAssignments = await prisma.kpiAssignment.findMany({
+          where: {
+            userId: toUserId,
+            kpiId: { in: kpiIds }
+          }
         });
 
-        if (!existingAssignment) {
-          // Reassign
-          await prisma.kpiAssignment.update({
-            where: { id: assignment.id },
+        const existingKpiIds = new Set(existingAssignments.map(ea => ea.kpiId));
+
+        const idsToReassign = [];
+        const idsToRemove = [];
+
+        for (const assignment of assignments) {
+          if (!existingKpiIds.has(assignment.kpiId)) {
+            idsToReassign.push(assignment.id);
+          } else {
+            idsToRemove.push(assignment.id);
+          }
+        }
+
+        // Execute bulk operations
+        if (idsToReassign.length > 0) {
+          await prisma.kpiAssignment.updateMany({
+            where: { id: { in: idsToReassign } },
             data: { userId: toUserId }
           });
-          results.kpis++;
-        } else {
-          // Target user already has this KPI, just remove old assignment
-          await prisma.kpiAssignment.delete({ where: { id: assignment.id } });
+          results.kpis += idsToReassign.length;
+        }
+
+        if (idsToRemove.length > 0) {
+          await prisma.kpiAssignment.deleteMany({
+            where: { id: { in: idsToRemove } }
+          });
         }
       }
     }
