@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
-import { BackupListItem, BackupMetadata } from '@/types/backup';
+import { BackupListItem } from '@/types/backup';
 
 export const useBackup = () => {
     const [backups, setBackups] = useState<BackupListItem[]>([]);
