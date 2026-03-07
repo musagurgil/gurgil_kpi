@@ -85,7 +85,6 @@ describe('Notification Performance Optimization', () => {
         }
         const endSequential = performance.now();
         const durationSequential = endSequential - startSequential;
-        console.log(`Sequential creation for ${NUM_USERS} users took: ${durationSequential.toFixed(2)}ms`);
 
         // 2. Optimized (createMany)
         const startOptimized = performance.now();
@@ -117,14 +116,12 @@ describe('Notification Performance Optimization', () => {
 
         const endOptimized = performance.now();
         const durationOptimized = endOptimized - startOptimized;
-        console.log(`Optimized creation (createMany + fetch) for ${NUM_USERS} users took: ${durationOptimized.toFixed(2)}ms`);
 
         // Assertions
         expect(notifications.length).toBe(NUM_USERS);
 
         // Expect optimized to be faster
         // Note: In some environments with small N, overhead might make them close, but with N=50 it should be faster.
-        // We'll just log it for now, or expect it to be at least 2x faster?
         // Let's be conservative.
         expect(durationOptimized).toBeLessThan(durationSequential);
     });
