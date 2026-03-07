@@ -25,7 +25,6 @@ export const useAuth = () => {
   });
 
   useEffect(() => {
-    console.log('useAuth useEffect: Checking token...');
     // Check if user is already logged in
     const token = localStorage.getItem('auth_token');
     if (token) {
@@ -65,7 +64,6 @@ export const useAuth = () => {
             department: payload.department || '',
             roles: payload.roles || []
           };
-          console.log('useAuth useEffect: Token found, user:', user);
           setAuthState({
             user,
             isAuthenticated: true,
@@ -76,7 +74,6 @@ export const useAuth = () => {
           // Base64 encoded JSON format (fallback)
           const decodedToken = decodeBase64(token);
           const user = JSON.parse(decodedToken);
-          console.log('useAuth useEffect: Token found, user:', user);
           setAuthState({
             user,
             isAuthenticated: true,
@@ -85,20 +82,15 @@ export const useAuth = () => {
           return;
         }
       } catch (error) {
-        console.log('useAuth useEffect: Invalid token, removing...', error);
         localStorage.removeItem('auth_token');
       }
     }
-    console.log('useAuth useEffect: No token found, setting loading false');
     setAuthState(prev => ({ ...prev, loading: false }));
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
-      console.log('Login attempt:', email);
       const response = await apiClient.login(email, password);
-
-      console.log('Login successful:', response.user);
 
       // Store JWT token
       localStorage.setItem('auth_token', response.token);
@@ -127,10 +119,7 @@ export const useAuth = () => {
     department: string
   ) => {
     try {
-      console.log('Signup attempt:', email);
       const response = await apiClient.signup(email, password, firstName, lastName, department);
-
-      console.log('Signup successful:', response.user);
 
       // Store JWT token
       localStorage.setItem('auth_token', response.token);
@@ -191,10 +180,8 @@ export const useAuth = () => {
 
   const refreshAuth = useCallback(async () => {
     try {
-      console.log('refreshAuth: Refreshing auth state...');
       const token = localStorage.getItem('auth_token');
       if (!token) {
-        console.log('refreshAuth: No token found');
         setAuthState({
           user: null,
           isAuthenticated: false,
@@ -225,7 +212,6 @@ export const useAuth = () => {
               roles: roles
             };
 
-            console.log('refreshAuth: Updated user from backend:', user);
             setAuthState({
               user,
               isAuthenticated: true,
@@ -235,8 +221,7 @@ export const useAuth = () => {
           }
         }
       } catch (backendError) {
-        console.log('refreshAuth: Could not fetch from backend, using token:', backendError);
-        // Fallback to token decode
+        // Fallback to token decode if backend fetch fails
       }
 
       // Fallback: Decode JWT token
@@ -268,7 +253,6 @@ export const useAuth = () => {
           roles: payload.roles || []
         };
 
-        console.log('refreshAuth: Updated user from token:', user);
         setAuthState({
           user,
           isAuthenticated: true,
@@ -286,9 +270,7 @@ export const useAuth = () => {
     } catch (error) {
       console.error('refreshAuth: Error refreshing auth:', error);
       const token = localStorage.getItem('auth_token');
-      if (token) {
-        console.log('refreshAuth: Token decode failed, keeping current state');
-      } else {
+      if (!token) {
         setAuthState({
           user: null,
           isAuthenticated: false,
