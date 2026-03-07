@@ -20,7 +20,6 @@ import Settings from "./pages/Settings";
 import MeetingRooms from "./pages/MeetingRooms";
 import { SocketProvider } from "./contexts/SocketContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
-import React from "react";
 
 const queryClient = new QueryClient();
 
