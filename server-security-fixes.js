@@ -10,7 +10,11 @@ app.use(cors({
 
 // JWT Secret Handling
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret'; // Should be stored in environment variables
+
+if (!process.env.JWT_SECRET) {
+    throw new Error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Password Hashing for New Users
 const bcrypt = require('bcrypt');
