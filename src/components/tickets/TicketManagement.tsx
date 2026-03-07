@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -85,6 +85,7 @@ export function TicketManagement() {
         window.history.replaceState(null, '', location.pathname + location.search);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickets, location.hash]);
 
   // Sync selectedTicket with tickets array to get realtime updates (e.g. new comments)
@@ -115,39 +116,45 @@ export function TicketManagement() {
     fetchUsers();
   }, []);
 
-  const filterTickets = (tickets: TicketType[], currentFilter: TicketFilter) => {
+  // ⚡ Bolt Optimization: Memoize and optimize filtering & stats calculation
+  // What: Wraps filtering in useMemo and changes stats calculation from O(4N) to O(N) using a single-pass reduce.
+  // Why: Prevents recalculating the filtered array and looping multiple times on every render when unrelated state (like selectedTab or modal) changes.
+  const filteredTickets = useMemo(() => {
     return tickets.filter(ticket => {
-      if (currentFilter.status && ticket.status !== currentFilter.status) return false;
-      if (currentFilter.priority && ticket.priority !== currentFilter.priority) return false;
-      if (currentFilter.department && ticket.targetDepartment !== currentFilter.department) return false;
-      if (currentFilter.search && !ticket.title.toLowerCase().includes(currentFilter.search.toLowerCase())) return false;
-      if (currentFilter.assignedTo) {
-        if (currentFilter.assignedTo === 'unassigned') {
+      if (filter.status && ticket.status !== filter.status) return false;
+      if (filter.priority && ticket.priority !== filter.priority) return false;
+      if (filter.department && ticket.targetDepartment !== filter.department) return false;
+      if (filter.search && !ticket.title.toLowerCase().includes(filter.search.toLowerCase())) return false;
+      if (filter.assignedTo) {
+        if (filter.assignedTo === 'unassigned') {
           if (ticket.assignedTo) return false;
         } else {
-          if (ticket.assignedTo !== currentFilter.assignedTo) return false;
+          if (ticket.assignedTo !== filter.assignedTo) return false;
         }
       }
       return true;
     });
-  };
+  }, [tickets, filter]);
 
-  const getTicketStats = (ticketList: TicketType[]) => {
-    const total = ticketList.length;
-    const open = ticketList.filter(t => t.status === 'open').length;
-    const inProgress = ticketList.filter(t => t.status === 'in_progress').length;
-    const resolved = ticketList.filter(t => t.status === 'resolved').length;
-    const closed = ticketList.filter(t => t.status === 'closed').length;
-    return { total, open, inProgress, resolved, closed };
-  };
+  const stats = useMemo(() => {
+    return filteredTickets.reduce(
+      (acc, ticket) => {
+        acc.total++;
+        if (ticket.status === 'open') acc.open++;
+        else if (ticket.status === 'in_progress') acc.inProgress++;
+        else if (ticket.status === 'resolved') acc.resolved++;
+        else if (ticket.status === 'closed') acc.closed++;
+        return acc;
+      },
+      { total: 0, open: 0, inProgress: 0, resolved: 0, closed: 0 }
+    );
+  }, [filteredTickets]);
 
-  const filteredTickets = filterTickets(tickets, filter);
-  const stats = getTicketStats(filteredTickets);
   const completionRate = stats.total > 0 ? Math.round(((stats.resolved + stats.closed) / stats.total) * 100) : 0;
 
-  const getTicketsByTab = (tab: string) => {
-    if (!user) return [];
-    switch (tab) {
+  const currentTabTickets = useMemo(() => {
+    if (!user?.id) return [];
+    switch (activeTab) {
       case 'my-tickets':
         return filteredTickets.filter(ticket => ticket.createdBy === user.id);
       case 'assigned':
@@ -159,9 +166,18 @@ export function TicketManagement() {
       default:
         return filteredTickets;
     }
-  };
+  }, [filteredTickets, activeTab, user?.id]);
 
-  const currentTabTickets = getTicketsByTab(activeTab);
+  // Memoize counts for tabs to avoid additional filtering per tab in render
+  const tabCounts = useMemo(() => {
+    if (!user?.id) return { myTickets: 0, assigned: 0, open: 0, inProgress: 0 };
+    return {
+      myTickets: filteredTickets.filter(ticket => ticket.createdBy === user.id).length,
+      assigned: filteredTickets.filter(ticket => ticket.assignedTo === user.id).length,
+      open: filteredTickets.filter(ticket => ticket.status === 'open').length,
+      inProgress: filteredTickets.filter(ticket => ticket.status === 'in_progress').length,
+    };
+  }, [filteredTickets, user?.id]);
 
   const handleCreateTicket = async (data: CreateTicketData) => {
     await createTicket(data);
@@ -204,8 +220,9 @@ export function TicketManagement() {
     try {
       exportTicketsToCSV(currentTabTickets, 'ticket-raporu');
       sonnerToast.success(`✅ ${currentTabTickets.length} ticket Excel dosyasına aktarıldı!`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      sonnerToast.error('❌ Export işlemi başarısız: ' + error.message);
+      sonnerToast.error('❌ Export işlemi başarısız: ' + (error instanceof Error ? error.message : String(error)));
     }
   };
 
@@ -357,10 +374,10 @@ export function TicketManagement() {
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 bg-transparent gap-1">
             {[
               { value: 'all', label: 'Tüm Ticketlar', count: filteredTickets.length },
-              { value: 'my-tickets', label: 'Oluşturduklarım', count: getTicketsByTab('my-tickets').length },
-              { value: 'assigned', label: 'Atananlar', count: getTicketsByTab('assigned').length },
-              { value: 'open', label: 'Açık', count: getTicketsByTab('open').length },
-              { value: 'in-progress', label: 'Devam Eden', count: getTicketsByTab('in-progress').length },
+              { value: 'my-tickets', label: 'Oluşturduklarım', count: tabCounts.myTickets },
+              { value: 'assigned', label: 'Atananlar', count: tabCounts.assigned },
+              { value: 'open', label: 'Açık', count: tabCounts.open },
+              { value: 'in-progress', label: 'Devam Eden', count: tabCounts.inProgress },
             ].map(tab => (
               <TabsTrigger
                 key={tab.value}
@@ -425,6 +442,7 @@ export function TicketManagement() {
                   currentUser={mockUser}
                   onViewTicket={handleViewTicket}
                   onAssignTicket={handleAssignTicket}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   onStatusChange={(ticketId, newStatus) => handleUpdateTicket(ticketId, { status: newStatus as any })}
                 />
               )}
