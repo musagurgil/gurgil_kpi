@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 import { useAuth } from './useAuth';
-import { KPIStats, CreateKPIData, KPIFilters, KPITarget, KPIProgress, KPIComment, RawKPI, KPIUser } from '@/types/kpi';
+import { KPIStats, CreateKPIData, KPIFilters, KPIProgress, KPIComment, RawKPI, KPIUser } from '@/types/kpi';
 import { User } from '@/types/user';
 
 export const useKPI = () => {
