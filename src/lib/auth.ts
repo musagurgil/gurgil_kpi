@@ -1,7 +1,11 @@
 import jwt from 'jsonwebtoken'
 import { prisma } from './db'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+if (!process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is not set. The application cannot start securely.')
+}
+
+const JWT_SECRET = process.env.JWT_SECRET
 
 export interface AuthUser {
   id: string
