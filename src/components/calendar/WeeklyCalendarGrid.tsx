@@ -71,18 +71,15 @@ export const WeeklyCalendarGrid = ({
     const dateActivities = getActivitiesForDate(date);
     return dateActivities.filter(activity => {
       try {
-        let startTime, endTime;
+        let startTime;
 
         if (activity.startTime?.includes('T')) {
           // ISO string format
           const startDate = new Date(activity.startTime);
-          //   const endDate = new Date(activity.endTime); // unused
           startTime = startDate.getHours();
-          //   endTime = endDate.getHours(); // unused
         } else if (activity.startTime?.includes(':')) {
           // Time string format (HH:MM)
           startTime = parseInt(activity.startTime.split(':')[0]);
-          //   endTime = parseInt(activity.endTime?.split(':')[0] || activity.startTime.split(':')[0]); // unused
         } else {
           return false;
         }
