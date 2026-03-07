@@ -139,8 +139,7 @@ export const useKPI = () => {
       return processedData[0]; // Return the newly created KPI
     } catch (err) {
       console.error('Error creating KPI:', err);
-      const message = err instanceof Error ? err.message : 'KPI oluşturulurken hata oluştu';
-      toast.error('❌ ' + message);
+      toast.error('KPI oluşturulurken hata oluştu');
       throw err;
     }
   };
