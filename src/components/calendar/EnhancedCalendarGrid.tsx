@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-// import { Card } from '@/components/ui/card'; // unused
-// import { Badge } from '@/components/ui/badge'; // unused
-// import { useCalendar } from '@/hooks/useCalendar'; // unused
 import { ActivityDialog } from './ActivityDialog';
 import { EventDetailDialog } from './EventDetailDialog';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns';
+import { format, startOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import * as LucideIcons from 'lucide-react';
 import { Activity } from '@/types/calendar';
@@ -61,10 +58,6 @@ export const EnhancedCalendarGrid = ({
       }
     }
   }, [autoOpenActivityId, selectedDate, getActivitiesForDate]);
-
-  // Get month boundaries
-  // const monthStart = startOfMonth(selectedDate); // unused
-  // const monthEnd = endOfMonth(selectedDate); // unused
 
   // Get all days in the month view (including previous/next month days)
   const startDate = startOfMonth(selectedDate);
