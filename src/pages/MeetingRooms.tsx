@@ -56,10 +56,19 @@ export default function MeetingRooms() {
 
   const { hasPermission, user } = useAuth();
   const isAdmin = hasPermission('admin');
+
+  // ⚡ Bolt: Convert rooms array to a lookup dictionary (O(N) -> O(1) per reservation lookup)
+  const roomsById = useMemo(() => {
+    return rooms.reduce((acc, room) => {
+      acc[room.id] = room;
+      return acc;
+    }, {} as Record<string, MeetingRoom>);
+  }, [rooms]);
+
   // Only admin and room responsible can approve/reject reservations
   const canApproveReservation = (reservation: any) => {
     if (isAdmin) return true;
-    const room = rooms.find(r => r.id === reservation?.roomId);
+    const room = reservation?.roomId ? roomsById[reservation.roomId] : undefined;
     return room?.responsibleId === user?.id;
   };
 
@@ -526,7 +535,7 @@ export default function MeetingRooms() {
                         if (tab === 'pending') return !isPastRes && r.status === 'pending';
                         return false;
                       }).map((reservation) => {
-                        const room = rooms.find(r => r.id === reservation.roomId);
+                        const room = roomsById[reservation.roomId];
                         const startDate = new Date(reservation.startTime);
                         const endDate = new Date(reservation.endTime);
 
@@ -668,7 +677,7 @@ export default function MeetingRooms() {
                 }
               }}
               reservation={selectedReservation}
-              room={rooms.find(r => r.id === selectedReservation.roomId)}
+              room={selectedReservation ? roomsById[selectedReservation.roomId] : undefined}
               onEdit={handleEditReservation}
               onDelete={handleDeleteReservation}
               onApprove={handleApprove}
