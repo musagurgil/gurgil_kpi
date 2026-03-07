@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ActivityCategory } from '@/types/calendar';
 import { apiClient } from '@/lib/api';
+import { toast } from 'sonner';
 
 const DEFAULT_CATEGORIES: ActivityCategory[] = [
   { id: 'meeting', name: 'Toplantı', color: 'hsl(217, 91%, 60%)' },
@@ -82,10 +83,15 @@ export const useCategories = () => {
     localStorage.setItem('activity-categories', JSON.stringify(updatedCategories));
   };
 
-  const deleteCategory = (id: string) => {
-    const updatedCategories = categories.filter(cat => cat.id !== id);
-    setCategories(updatedCategories);
-    localStorage.setItem('activity-categories', JSON.stringify(updatedCategories));
+  const deleteCategory = async (id: string) => {
+    try {
+        await apiClient.deleteCategory(id);
+        setCategories(prev => prev.filter(cat => cat.id !== id));
+        toast.success('✅ Kategori başarıyla silindi!');
+    } catch (err: any) {
+        console.error('Error deleting category:', err);
+        toast.error(err.response?.data?.message || 'Kategori silinirken hata oluştu');
+    }
   };
 
   const getCategoryById = (id: string) => {
