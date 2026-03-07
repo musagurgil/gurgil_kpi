@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { apiClient } from '@/lib/api';
 import { useKPI } from '@/hooks/useKPI';
 import { useTickets } from '@/hooks/useTickets';
-import { KPIStats, KPIProgress } from '@/types/kpi';
+import { KPIProgress } from '@/types/kpi';
 import { DashboardStats, CriticalKPI, RecentActivity, UpcomingDeadline } from '@/types/dashboard';
 
 export const useDashboard = () => {
