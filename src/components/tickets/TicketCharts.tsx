@@ -4,7 +4,7 @@ import {
   Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 import { PieChart as PieIcon, BarChart3, Target } from "lucide-react";
-import { Ticket, TICKET_STATUSES, TICKET_PRIORITIES } from "@/types/ticket";
+import { Ticket } from "@/types/ticket";
 
 interface TicketChartsProps {
   tickets: Ticket[];
