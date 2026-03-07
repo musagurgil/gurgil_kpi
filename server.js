@@ -3127,32 +3127,51 @@ app.get('/api/admin/backup/list', authenticateToken, async (req, res) => {
 
     ensureBackupsDir();
 
-    const backupDirs = fs.readdirSync(BACKUPS_DIR)
-      .filter(d => d.startsWith('backup_'))
-      .filter(d => fs.statSync(path.join(BACKUPS_DIR, d)).isDirectory());
+    const allDirs = await fs.promises.readdir(BACKUPS_DIR);
 
-    const backups = [];
-    for (const dir of backupDirs) {
-      const metadataPath = path.join(BACKUPS_DIR, dir, 'metadata.json');
-      if (fs.existsSync(metadataPath)) {
+    // Use Promise.all to map directories and check if they are actually directories concurrently
+    const dirStatsPromises = allDirs
+      .filter(d => d.startsWith('backup_'))
+      .map(async d => {
         try {
-          const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
-          backups.push({
-            id: metadata.id,
-            createdAt: metadata.createdAt,
-            createdBy: metadata.createdBy,
-            createdByName: metadata.createdByName,
-            totalSize: metadata.totalSize,
-            dbFileSize: metadata.dbFileSize,
-            totalRecords: metadata.totalRecords,
-            tableCount: metadata.tables.length,
-            tables: metadata.tables
-          });
-        } catch (e) {
-          console.warn(`[BACKUP] Invalid metadata in ${dir}:`, e.message);
+          const stat = await fs.promises.stat(path.join(BACKUPS_DIR, d));
+          return stat.isDirectory() ? d : null;
+        } catch {
+          return null;
         }
+      });
+
+    const dirStatsResults = await Promise.all(dirStatsPromises);
+    const backupDirs = dirStatsResults.filter(d => d !== null);
+
+    // Read metadata files concurrently using Promise.all to avoid blocking the event loop
+    const backupsPromises = backupDirs.map(async (dir) => {
+      const metadataPath = path.join(BACKUPS_DIR, dir, 'metadata.json');
+      try {
+        const data = await fs.promises.readFile(metadataPath, 'utf8');
+        const metadata = JSON.parse(data);
+        return {
+          id: metadata.id,
+          createdAt: metadata.createdAt,
+          createdBy: metadata.createdBy,
+          createdByName: metadata.createdByName,
+          totalSize: metadata.totalSize,
+          dbFileSize: metadata.dbFileSize,
+          totalRecords: metadata.totalRecords,
+          tableCount: metadata.tables.length,
+          tables: metadata.tables
+        };
+      } catch (e) {
+        if (e.code === 'ENOENT') {
+          return null;
+        }
+        console.warn(`[BACKUP] Invalid metadata in ${dir}:`, e.message);
+        return null;
       }
-    }
+    });
+
+    const results = await Promise.all(backupsPromises);
+    const backups = results.filter(b => b !== null);
 
     // Sort by date descending (newest first)
     backups.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
