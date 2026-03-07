@@ -17,27 +17,13 @@ export function MeetingRoomStats({ rooms, reservations, userReservations, canApp
     const now = new Date();
     const availableRooms = rooms.filter(room => {
       // Check if room has active reservation
-      const active = room.reservations?.find((r) => {
+      const roomReservations = room.reservations ?? reservations.filter(r => r.roomId === room.id);
+      const active = roomReservations.some((r) => {
         if (r.status !== 'approved') return false;
         const start = new Date(r.startTime);
         const end = new Date(r.endTime);
         return start <= now && end >= now;
       });
-
-      // Also check against global reservations list if needed, 
-      // but assuming room.reservations is populated or we should use the reservations prop passed in
-      // The original code used room.reservations, so we stick to that if it exists on MeetingRoom type
-      // If MeetingRoom type doesn't have reservations, we might need to filter the reservations prop.
-      // Checking type definition from memory/previous turns: MeetingRoom usually has relations if included.
-      // Let's assume room.reservations is available or optional.
-
-      // Actually, looking at the original code: 
-      // const active = room.reservations?.find((r: any) => { ...
-
-      // If MeetingRoom definition doesn't include reservations, this will fail.
-      // Let's assume for now it does, or I might need to cross-check.
-      // If the `reservations` prop contains ALL reservations, maybe we should use that instead? 
-      // But `room.reservations` is more direct if available.
 
       return !active;
     });
