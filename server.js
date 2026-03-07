@@ -3114,7 +3114,7 @@ app.get('/api/admin/backup/list', authenticateToken, async (req, res) => {
       const metadataPath = path.join(BACKUPS_DIR, dir, 'metadata.json');
       if (fs.existsSync(metadataPath)) {
         try {
-          const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+          const metadata = JSON.parse(await fs.promises.readFile(metadataPath, 'utf8'));
           backups.push({
             id: metadata.id,
             createdAt: metadata.createdAt,
@@ -3237,7 +3237,7 @@ app.post('/api/admin/backup/:id/restore', authenticateToken, async (req, res) =>
       console.warn(`[RESTORE] Pre-restore backup warning: ${preErr.message}`);
     }
 
-    const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    const data = JSON.parse(await fs.promises.readFile(dataPath, 'utf8'));
     let restoredRecords = 0;
 
     // ── Atomic restore using interactive transaction ───────────────
