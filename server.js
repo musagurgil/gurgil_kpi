@@ -30,7 +30,12 @@ const io = new Server(httpServer, {
 
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET environment variable is not defined.');
+  process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware
 app.use(helmet()); // Add HTTP security headers
