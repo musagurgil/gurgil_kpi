@@ -187,7 +187,7 @@ export function KPITable({
                                 <TableCell>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-secondary/80">
+                                            <Button variant="ghost" size="icon" aria-label="KPI İşlemleri" className="h-8 w-8 hover:bg-secondary/80">
                                                 <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
                                             </Button>
                                         </DropdownMenuTrigger>

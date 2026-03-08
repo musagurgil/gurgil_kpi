@@ -229,6 +229,7 @@ export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: Roo
                 <Button
                   variant="outline"
                   size="icon"
+                  aria-label="Önceki hafta"
                   onClick={() => setWeekStart(addWeeks(weekStart, -1))}
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -239,6 +240,7 @@ export function RoomList({ rooms, onReserve, onDelete, showDelete = false }: Roo
                 <Button
                   variant="outline"
                   size="icon"
+                  aria-label="Sonraki hafta"
                   onClick={() => setWeekStart(addWeeks(weekStart, 1))}
                 >
                   <ChevronRight className="w-4 h-4" />

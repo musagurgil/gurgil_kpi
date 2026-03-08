@@ -154,6 +154,7 @@ export function CreateUserDialog({ open, onOpenChange, onUserCreated }: CreateUs
                 type="button"
                 variant="ghost"
                 size="icon"
+                aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
                 className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
                 onClick={() => setShowPassword(!showPassword)}
                 disabled={loading}

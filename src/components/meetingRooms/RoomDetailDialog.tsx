@@ -193,13 +193,13 @@ export function RoomDetailDialog({
                     <div className="divide-y">
                       {/* Navigation */}
                       <div className="flex items-center justify-between p-3 bg-muted/20">
-                        <Button variant="ghost" size="icon" onClick={handlePrevDay}>
+                        <Button variant="ghost" size="icon" aria-label="Önceki gün" onClick={handlePrevDay}>
                           <ChevronRight className="w-4 h-4 rotate-180" />
                         </Button>
                         <span className="font-medium text-sm sm:text-base">
                           {format(selectedDate, "d MMMM yyyy, EEEE", { locale: tr })}
                         </span>
-                        <Button variant="ghost" size="icon" onClick={handleNextDay}>
+                        <Button variant="ghost" size="icon" aria-label="Sonraki gün" onClick={handleNextDay}>
                           <ChevronRight className="w-4 h-4" />
                         </Button>
                       </div>
