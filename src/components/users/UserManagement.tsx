@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,7 +93,6 @@ export const UserManagement = () => {
   const { kpiStats, loading: kpiLoading } = useKPI();
   const { tickets, loading: ticketsLoading } = useTickets();
 
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedRole, setSelectedRole] = useState('all');
@@ -105,20 +104,37 @@ export const UserManagement = () => {
 
   const loading = adminLoading || kpiLoading || ticketsLoading;
 
-  // Process and filter users
-  useEffect(() => {
-    if (!profiles) return;
+  // ⚡ Bolt Optimization: Memoize and pre-compute user statistics
+  // What: Replaced O(N*M) nested filtering inside useEffect with pre-computed O(N) hash maps and useMemo
+  // Why: Prevents recalculating active tickets and KPIs for all users on every re-render (e.g. search keystroke)
+  const processedUsers = useMemo(() => {
+    if (!profiles) return [];
 
-    let processed = profiles.map(profile => {
-      const activeTicketsCount = tickets.filter(t =>
-        t.assignedTo === profile.id &&
-        t.status !== 'resolved' &&
-        t.status !== 'closed'
-      ).length;
+    // Pre-calculate active tickets per user in O(T) time
+    const activeTicketsMap = tickets.reduce((acc, t) => {
+      if (t.assignedTo && t.status !== 'resolved' && t.status !== 'closed') {
+        acc[t.assignedTo] = (acc[t.assignedTo] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
 
-      const userKPIs = kpiStats.filter(k => k.assignedUsers?.includes(profile.id));
-      const totalKPIs = userKPIs.length;
-      const completedKPIs = userKPIs.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
+    // Pre-calculate KPIs per user in O(K * U) time where U is usually small
+    const userKPIMap = kpiStats.reduce((acc, k) => {
+      const isCompleted = k.status === 'success' || k.progressPercentage >= 100;
+      k.assignedUsers?.forEach(userId => {
+        if (!acc[userId]) acc[userId] = { total: 0, completed: 0 };
+        acc[userId].total += 1;
+        if (isCompleted) acc[userId].completed += 1;
+      });
+      return acc;
+    }, {} as Record<string, { total: number, completed: number }>);
+
+    return profiles.map(profile => {
+      const activeTicketsCount = activeTicketsMap[profile.id] || 0;
+
+      const kpiData = userKPIMap[profile.id] || { total: 0, completed: 0 };
+      const totalKPIs = kpiData.total;
+      const completedKPIs = kpiData.completed;
       const kpiPercentage = totalKPIs > 0 ? (completedKPIs / totalKPIs) * 100 : 0;
 
       return {
@@ -131,34 +147,39 @@ export const UserManagement = () => {
           completed: completedKPIs,
           percentage: kpiPercentage
         }
-      };
+      } as User;
     });
+  }, [profiles, tickets, kpiStats]);
 
-    // Apply filters
+  // Apply filters on top of processed users
+  const filteredUsers = useMemo(() => {
+    let result = processedUsers;
+
     if (searchTerm) {
-      processed = processed.filter(user =>
-        user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      const lowerSearch = searchTerm.toLowerCase();
+      result = result.filter(user =>
+        user.firstName.toLowerCase().includes(lowerSearch) ||
+        user.lastName.toLowerCase().includes(lowerSearch) ||
+        user.email.toLowerCase().includes(lowerSearch)
       );
     }
 
     if (selectedDepartment !== 'all') {
-      processed = processed.filter(user => user.department === selectedDepartment);
+      result = result.filter(user => user.department === selectedDepartment);
     }
 
     if (selectedRole !== 'all') {
-      processed = processed.filter(user => user.role === selectedRole);
+      result = result.filter(user => user.role === selectedRole);
     }
 
     if (showInactive) {
-      processed = processed.filter(user => !user.isActive);
+      result = result.filter(user => !user.isActive);
     } else {
-      processed = processed.filter(user => user.isActive);
+      result = result.filter(user => user.isActive);
     }
 
-    setFilteredUsers(processed as User[]);
-  }, [profiles, tickets, kpiStats, searchTerm, selectedDepartment, selectedRole, showInactive]);
+    return result;
+  }, [processedUsers, searchTerm, selectedDepartment, selectedRole, showInactive]);
 
   // Stats
   const totalUsers = profiles?.length || 0;

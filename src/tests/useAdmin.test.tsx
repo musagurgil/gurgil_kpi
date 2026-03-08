@@ -215,7 +215,7 @@ describe('useAdmin Hook', () => {
     });
 
     expect(apiClient.deleteProfile).toHaveBeenCalledWith('user-1');
-    expect(result.current.profiles.find(p => p.id === 'user-1')).toBeUndefined();
+    expect(result.current.profiles.find(p => p.id === 'user-1')?.isActive).toBe(false);
     expect(toast.success).toHaveBeenCalledWith('Kullanıcı başarıyla silindi');
   });
 
