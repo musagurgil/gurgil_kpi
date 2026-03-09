@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Clock, Ticket, Target, Activity } from "lucide-react";
 
@@ -29,8 +30,15 @@ export function ReportSummaryCards({
     activityCount,
     dateRange
 }: ReportSummaryCardsProps) {
-    const activeKPIs = kpiStats.filter(k => k.status !== 'success').length;
-    const completedKPIs = kpiStats.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
+    // ⚡ Bolt Optimization: Memoize KPI summary stats
+    // What: Wraps O(N) array calculations in useMemo
+    // Why: Prevents redundant loops over the kpiStats array on every component re-render
+    const { activeKPIs, completedKPIs } = useMemo(() => {
+        return {
+            activeKPIs: kpiStats.filter(k => k.status !== 'success').length,
+            completedKPIs: kpiStats.filter(k => k.status === 'success' || k.progressPercentage >= 100).length
+        };
+    }, [kpiStats]);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

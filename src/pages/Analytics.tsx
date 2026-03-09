@@ -67,6 +67,20 @@ export default function Analytics() {
 
   const isLoading = loading || kpiLoading || ticketsLoading;
 
+  const { totalKPIs, completedKPIs, successRate, activeKPIs } = useMemo(() => {
+    // ⚡ Bolt Optimization: Memoized overall KPI summary stats
+    // What: Pre-computes and memoizes aggregated KPI stats
+    // Why: Prevents redundant O(N) filtering array passes across the kpiStats array on every re-render
+    const total = kpiStats.length;
+    const completed = kpiStats.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
+    return {
+      totalKPIs: total,
+      completedKPIs: completed,
+      successRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+      activeKPIs: total - completed
+    };
+  }, [kpiStats]);
+
   // 1. KPI Status Distribution
   const statusDistribution = useMemo(() => {
     const counts = kpiStats.reduce((acc, kpi) => {
@@ -231,11 +245,6 @@ export default function Analytics() {
       </div>
     );
   }
-
-  const totalKPIs = kpiStats.length;
-  const completedKPIs = kpiStats.filter(k => k.status === 'success' || k.progressPercentage >= 100).length;
-  const successRate = totalKPIs > 0 ? Math.round((completedKPIs / totalKPIs) * 100) : 0;
-  const activeKPIs = totalKPIs - completedKPIs;
 
   return (
     <div className="flex-1 bg-dashboard-bg min-h-screen">

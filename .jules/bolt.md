@@ -19,3 +19,7 @@
 ## 2024-05-19 - O(N) to O(1) Dictionary Lookup inside Maps
  **Learning:** When rendering large lists (e.g. userReservations) where each item requires a lookup in another array (rooms), using `.find()` inside a `.map()` results in an O(N*M) operation.
  **Action:** Converting the target array (rooms) into a dictionary/hash map using `useMemo` changes the lookup to O(1), significantly improving performance (from ~70ms to ~3ms for 1000 rooms and 10000 reservations).
+
+## 2026-03-09 - [React Rules of Hooks vs Performance Optimization]
+**Learning:** When adding `useMemo` hooks to optimize large array `.filter()` operations (like those for KPI tracking stats), it is easy to accidentally violate React's Rules of Hooks if the new hooks are placed after early returns (e.g., `if (isLoading) return <LoadingSpinner />`). This results in a critical crash: "Rendered fewer hooks than expected".
+**Action:** Always verify the placement of newly introduced hooks. Ensure they are declared at the top level of the component hierarchy, before any conditional logic or early `return` statements.
