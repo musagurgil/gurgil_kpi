@@ -95,6 +95,9 @@ export default function Reports() {
     : 0;
 
   const handleExport = () => {
+    // ⚡ Bolt Optimization: Use already filtered KPI data instead of iterating over global kpiStats
+    // What: Reuse filteredData.kpis which is already memoized for the selected date range
+    // Why: Prevents redundant array filtering when exporting reports
     const reportData = {
       dateRange: dateRange === "all" ? "Tümü" : `Son ${dateRange} Gün`,
       generatedAt: new Date().toLocaleString('tr-TR'),
@@ -102,8 +105,8 @@ export default function Reports() {
         totalWorkHours: totalHours,
         totalTicketsCreated: ticketStats.created,
         totalTicketsResolved: ticketStats.resolved,
-        activeKPIs: kpiStats.filter(k => k.status !== 'success').length,
-        completedKPIs: kpiStats.filter(k => k.status === 'success' || k.progressPercentage >= 100).length
+        activeKPIs: filteredData.kpis.filter(k => k.status !== 'success').length,
+        completedKPIs: filteredData.kpis.filter(k => k.status === 'success' || k.progressPercentage >= 100).length
       },
       categoryBreakdown: categoryStats
     };
