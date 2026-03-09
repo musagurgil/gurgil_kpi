@@ -140,8 +140,8 @@ export const useAuth = () => {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    apiClient.logout();
+  const logout = useCallback(async () => {
+    await apiClient.logout();
     setAuthState({
       user: null,
       isAuthenticated: false,

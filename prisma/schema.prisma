@@ -274,3 +274,15 @@ model MeetingReservation {
   // Index for user reservation history
   @@index([requestedBy])
 }
+
+model TokenBlacklist {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("token_blacklist")
+  // Index for fast lookup and cleanup
+  @@index([token])
+  @@index([expiresAt])
+}

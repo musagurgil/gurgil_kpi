@@ -167,7 +167,7 @@ async function checkKPIDeadlineAndNotify(kpi) {
 }
 
 // Auth middleware
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -175,11 +175,26 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ error: 'Access token required' });
   }
 
+  // Check if token is blacklisted
+  try {
+    const isBlacklisted = await prisma.tokenBlacklist.findUnique({
+      where: { token }
+    });
+
+    if (isBlacklisted) {
+      return res.status(401).json({ error: 'Token has been invalidated by logout' });
+    }
+  } catch (error) {
+    console.error('Error checking token blacklist:', error);
+    return res.status(500).json({ error: 'Internal server error while verifying token' });
+  }
+
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid token' });
     }
     req.user = user;
+    req.token = token; // Store token for logout
     next();
   });
 };
@@ -194,6 +209,30 @@ const authLimiter = rateLimit({
 });
 
 // Auth routes
+app.post('/api/auth/logout', authenticateToken, async (req, res) => {
+  try {
+    const token = req.token;
+    
+    // Calculate exact expiration for efficient DB cleanup
+    const decoded = jwt.decode(token);
+    // JWT exp is in seconds, convert to MS
+    const expiresAt = decoded && decoded.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 24 * 60 * 60 * 1000); // fallback 1 day
+
+    // Add to blacklist
+    await prisma.tokenBlacklist.create({
+      data: {
+        token,
+        expiresAt
+      }
+    });
+
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Internal server error during logout' });
+  }
+});
+
 app.post('/api/auth/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -571,6 +610,50 @@ app.put('/api/admin/profiles/:id/reactivate', authenticateToken, async (req, res
     });
   } catch (error) {
     console.error('Reactivate profile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin reset user password
+app.put('/api/admin/profiles/:id/password', authenticateToken, async (req, res) => {
+  try {
+    // Check if user has admin role
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Sadece adminler şifre sıfırlayabilir' });
+    }
+
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Yeni şifre en az 6 karakter olmalıdır' });
+    }
+
+    // Check if user exists
+    const user = await prisma.profile.findUnique({
+      where: { id }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+
+    // Hash the new password
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update the password
+    await prisma.profile.update({
+      where: { id },
+      data: { passwordHash }
+    });
+
+    res.json({
+      success: true,
+      message: 'Şifre başarıyla güncellendi'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1280,7 +1363,7 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
 
 app.post('/api/tickets', authenticateToken, async (req, res) => {
   try {
-    const { title, description, priority, targetDepartment } = req.body;
+    const { title, description, priority, targetDepartment, assignedTo } = req.body;
 
     // Generate ticket number based on target department
     const departmentPrefix = targetDepartment.substring(0, 2).toUpperCase();
@@ -1301,21 +1384,23 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
         sourceDepartment: req.user.department,
         targetDepartment,
         createdBy: req.user.id,
-        creatorName: `${req.user.firstName} ${req.user.lastName}`
+        creatorName: `${req.user.firstName} ${req.user.lastName}`,
+        ...(assignedTo && { assignedTo }) // Add assignedTo if provided
       },
       include: {
-        comments: true
+        comments: true,
+        assignee: true
       }
     });
 
     // Add ticket number to response (computed field)
     const ticketWithNumber = {
       ...ticket,
-      ticketNumber
+      ticketNumber,
+      assignedToName: ticket.assignee
+        ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}`
+        : null
     };
-
-    // Emit real-time event
-    io.to(`dept:${targetDepartment}`).to(`dept:${req.user.department}`).emit('ticket_created', ticketWithNumber);
 
     // Notify all users in target department
     const targetDepartmentUsers = await prisma.profile.findMany({
@@ -1334,7 +1419,7 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
     io.to(`dept:${targetDepartment}`).to(`dept:${req.user.department}`).emit('ticket_created', ticketWithNumber);
 
     // Filter users to notify (department managers and admins)
-    const usersToNotify = targetDepartmentUsers
+    let usersToNotify = targetDepartmentUsers
       .filter(user => {
         const isManager = user.userRoles.some(r => r.role === 'department_manager');
         const isAdmin = user.userRoles.some(r => r.role === 'admin');
@@ -1342,12 +1427,17 @@ app.post('/api/tickets', authenticateToken, async (req, res) => {
       })
       .map(user => user.id);
 
+    // Add exactly assigned user to notifications array if they are not already in it
+    if (assignedTo && !usersToNotify.includes(assignedTo)) {
+      usersToNotify.push(assignedTo);
+    }
+
     await createNotifications(
       usersToNotify,
       'ticket',
       priority === 'urgent' ? 'high' : 'medium',
       `📨 Yeni Ticket: ${ticketNumber}`,
-      `${req.user.firstName} ${req.user.lastName} (${req.user.department}) tarafından yeni bir ticket oluşturuldu. Öncelik: ${priorityLabels[priority]}`,
+      `${req.user.firstName} ${req.user.lastName} (${req.user.department}) tarafından yeni bir ticket ${assignedTo ? 'size atandı' : 'oluşturuldu'}. Öncelik: ${priorityLabels[priority]}`,
       `/tickets#${ticketWithNumber.id}`
     );
 
@@ -2467,7 +2557,6 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
         error: 'This time slot is already reserved. Please choose another time.'
       });
     }
-
     const reservation = await prisma.meetingReservation.create({
       data: {
         roomId,
@@ -2475,7 +2564,7 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
         startTime: start,
         endTime: end,
         notes: notes?.trim() || null,
-        status: 'pending'
+        status: 'pending' // Always pending first
       },
       include: {
         room: true,
@@ -2491,6 +2580,10 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
       }
     });
 
+    const requesterProfile = await prisma.profile.findUnique({
+      where: { id: user.id }
+    });
+
     // Notify room responsible person
     const roomWithResponsible = await prisma.meetingRoom.findUnique({
       where: { id: roomId },
@@ -2498,10 +2591,6 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
     });
 
     if (roomWithResponsible && roomWithResponsible.responsibleId) {
-      const requesterProfile = await prisma.profile.findUnique({
-        where: { id: user.id }
-      });
-
       await createNotification(
         roomWithResponsible.responsibleId,
         'system',
@@ -2516,18 +2605,18 @@ app.post('/api/meeting-reservations', authenticateToken, async (req, res) => {
         where: { role: 'admin' }
       });
 
-      const requesterProfile = await prisma.profile.findUnique({
-        where: { id: user.id }
-      });
+      const adminIds = admins.map(a => a.userId);
 
-      await createNotifications(
-        admins.map(admin => admin.userId),
-        'system',
-        'medium',
-        '📅 Yeni Toplantı Odası Talebi (Sorumlu Atanmamış)',
-        `${requesterProfile ? requesterProfile.firstName + ' ' + requesterProfile.lastName : 'Biri'} "${reservation.room.name}" odası için talep oluşturdu.`,
-        `/meeting-rooms#${reservation.id}`
-      );
+      if (adminIds.length > 0) {
+        await createNotifications(
+          adminIds,
+          'system',
+          'high', // Elevated priority since there's no dedicated responsible
+          '📅 Oda Onayı Bekleniyor (Sorumlu Yok)',
+          `${requesterProfile ? requesterProfile.firstName + ' ' + requesterProfile.lastName : 'Biri'} yetkilisi olmayan "${reservation.room.name}" odası için rezervasyon talep etti. Lütfen onaylayın veya reddedin.`,
+          `/meeting-rooms#${reservation.id}`
+        );
+      }
     }
 
     // Emit real-time event

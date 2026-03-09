@@ -114,6 +114,19 @@ export const useAdmin = () => {
     }
   };
 
+  const updateUserPassword = async (id: string, newPassword: string) => {
+    try {
+      await apiClient.adminResetPassword(id, newPassword);
+      toast.success('Kullanıcının şifresi başarıyla sıfırlandı');
+      return true;
+    } catch (err) {
+      console.error('Error resetting password:', err);
+      const message = err instanceof Error ? err.message : 'Şifre sıfırlanırken hata oluştu';
+      toast.error(message);
+      throw err;
+    }
+  };
+
   // Get real departments from DB profiles
   const getAvailableDepartments = useCallback(() => {
     const deptSet = new Set(profiles.map(p => p.department).filter(Boolean));
@@ -175,6 +188,7 @@ export const useAdmin = () => {
     updateProfile,
     deleteProfile,
     reactivateProfile,
+    updateUserPassword,
     currentUser: user ? {
       id: user.id,
       roles: user.roles,

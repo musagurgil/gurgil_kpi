@@ -80,9 +80,15 @@ class ApiClient {
     return response;
   }
 
-  logout() {
-    this.token = null;
-    localStorage.removeItem('auth_token');
+  async logout() {
+    try {
+      await this.request('/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('API logout error:', error);
+    } finally {
+      this.token = null;
+      localStorage.removeItem('auth_token');
+    }
   }
 
   // User management

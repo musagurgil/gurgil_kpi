@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import * as LucideIcons from 'lucide-react';
 import { useCategories } from '@/hooks/useCategories';
+import { useAuth } from '@/hooks/useAuth';
 
 interface EventDetailDialogProps {
   activity: any;
@@ -34,9 +35,13 @@ export const EventDetailDialog = ({
   onDelete
 }: EventDetailDialogProps) => {
   const { categories } = useCategories();
+  const { user, hasRole } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 
   if (!activity) return null;
+
+  // Check if current user has permission to edit/delete this activity
+  const canEdit = user && (user.id === activity.userId || hasRole('admin'));
 
   // Get category info from categoryId
   const getCategoryInfo = (categoryId: string) => {
@@ -176,25 +181,27 @@ export const EventDetailDialog = ({
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex justify-between pt-4">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              <LucideIcons.Trash2 className="w-4 h-4 mr-2" />
-              Sil
-            </Button>
+          {/* Action Buttons - Only visible to creator or admin */}
+          {canEdit && (
+            <div className="flex justify-between pt-4">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <LucideIcons.Trash2 className="w-4 h-4 mr-2" />
+                Sil
+              </Button>
 
-            <Button
-              onClick={() => onEdit(activity)}
-              size="sm"
-            >
-              <LucideIcons.Edit className="w-4 h-4 mr-2" />
-              Düzenle
-            </Button>
-          </div>
+              <Button
+                onClick={() => onEdit(activity)}
+                size="sm"
+              >
+                <LucideIcons.Edit className="w-4 h-4 mr-2" />
+                Düzenle
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
 
@@ -223,6 +230,6 @@ export const EventDetailDialog = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Dialog >
+    </Dialog>
   );
 };

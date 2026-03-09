@@ -164,7 +164,7 @@ export function ReservationTable({
                 <TableCell>
                   <div className="flex items-center gap-2 flex-wrap">
                     {/* Approve/Reject buttons for managers */}
-                    {canApprove && reservation.status === 'pending' && onApprove && onReject && (
+                    {(canApprove || isAdmin) && reservation.status === 'pending' && onApprove && onReject && (
                       <>
                         <Button
                           size="sm"

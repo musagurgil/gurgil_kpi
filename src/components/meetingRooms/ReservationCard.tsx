@@ -104,7 +104,7 @@ export function ReservationCard({
           {/* Actions */}
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
             {/* Approve/Reject buttons for managers */}
-            {canApprove && reservation.status === 'pending' && onApprove && onReject && (
+            {(canApprove || isAdmin) && reservation.status === 'pending' && onApprove && onReject && (
               <>
                 <Button
                   size="sm"
