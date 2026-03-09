@@ -118,6 +118,7 @@ export function DashboardHeader() {
             <div className="hidden md:block relative flex-1 min-w-[240px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
               <Input
+                aria-label="Arama yap"
                 placeholder="KPI, ticket, kullanıcı ara..."
                 className="pl-10 w-full bg-black/20 border-white/10 text-white placeholder:text-white/40 focus-visible:ring-1 focus-visible:ring-white/30"
               />
