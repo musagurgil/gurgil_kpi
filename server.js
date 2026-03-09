@@ -1239,11 +1239,23 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
     const tickets = await prisma.ticket.findMany({
       where: whereClause,
       include: {
-        comments: true,
+        comments: {
+          orderBy: { createdAt: 'asc' }
+        },
         assignee: true // Include assigned user details
       },
       orderBy: { createdAt: 'desc' }
     });
+
+    // Filter out internal comments for users who are not admin or from the target department
+    if (!isAdmin) {
+      tickets.forEach(ticket => {
+        const isTargetDepartment = ticket.targetDepartment === req.user.department;
+        if (!isTargetDepartment && ticket.comments) {
+          ticket.comments = ticket.comments.filter(c => !c.isInternal);
+        }
+      });
+    }
 
     // Add ticket numbers and transform assigned user
     const ticketsWithNumbers = tickets.map((ticket, index) => {
@@ -1512,9 +1524,19 @@ app.get('/api/tickets/:id/comments', authenticateToken, async (req, res) => {
       });
     }
 
+    // Determine if user can see internal comments
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    const isTargetDepartment = ticket.targetDepartment === req.user.department;
+    const canSeeInternal = isAdmin || isTargetDepartment;
+
+    const commentsWhere = { ticketId: id };
+    if (!canSeeInternal) {
+      commentsWhere.isInternal = false;
+    }
+
     // Get comments for the ticket
     const comments = await prisma.ticketComment.findMany({
-      where: { ticketId: id },
+      where: commentsWhere,
       orderBy: { createdAt: 'asc' }
     });
 

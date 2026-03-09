@@ -2,3 +2,7 @@
 **Vulnerability:** Missing rate limiting on authentication endpoints (`/api/auth/login`, `/api/auth/signup`) allowed brute-force and credential stuffing attacks. Additionally, missing basic HTTP security headers left the app vulnerable to common web attacks.
 **Learning:** The application lacked basic defense-in-depth mechanisms for its Express server, exposing it to automated attacks.
 **Prevention:** Implement `express-rate-limit` on all sensitive authentication routes and use `helmet` for foundational HTTP security headers.
+## 2025-03-03 - [Ticket Internal Comments Leakage (IDOR)]
+**Vulnerability:** Internal comments (`isInternal: true`) on tickets were returned to any user who had access to the ticket, rather than being restricted to administrators or target department members.
+**Learning:** Returning full object graphs via Prisma's `include` (e.g., `include: { comments: true }`) or simple unfiltered `findMany` queries on child relationships bypasses authorization checks that should apply only to specific rows (like internal comments).
+**Prevention:** Explicitly filter nested relationships or fetch operations using `where` clauses based on user roles and attributes (e.g., filtering `isInternal` out for non-admin/non-target-dept users).
