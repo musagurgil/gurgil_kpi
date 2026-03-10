@@ -1330,23 +1330,24 @@ app.get('/api/tickets', authenticateToken, async (req, res) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    // Filter out internal comments for users who are not admin or from the target department
-    if (!isAdmin) {
-      tickets.forEach(ticket => {
-        const isTargetDepartment = ticket.targetDepartment === req.user.department;
-        if (!isTargetDepartment && ticket.comments) {
-          ticket.comments = ticket.comments.filter(c => !c.isInternal);
-        }
-      });
-    }
-
-    // Add ticket numbers and transform assigned user
+    // ⚡ Bolt Optimization: Combined ticket processing passes
+    // What: Merged internal comment filtering and ticket mapping into a single O(N) map pass
+    // Why: Eliminates redundant O(N) loop over tickets array
     const ticketsWithNumbers = tickets.map((ticket, index) => {
+      const isTargetDepartment = ticket.targetDepartment === req.user.department;
+
+      // Filter out internal comments for users who are not admin or from the target department
+      let comments = ticket.comments;
+      if (!isAdmin && !isTargetDepartment && comments) {
+        comments = comments.filter(c => !c.isInternal);
+      }
+
       const departmentPrefix = ticket.targetDepartment.substring(0, 2).toUpperCase();
       const ticketNumber = `${departmentPrefix}${String(index + 1).padStart(7, '0')}`;
 
       return {
         ...ticket,
+        comments,
         ticketNumber,
         assignedToName: ticket.assignee
           ? `${ticket.assignee.firstName} ${ticket.assignee.lastName}`
@@ -2001,23 +2002,27 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
       })
     ]);
 
-    // Process KPI stats
+    // ⚡ Bolt Optimization: Calculate total KPIs during initial reduce
+    // What: Added total calculation inside the reduce loop
+    // Why: Eliminates O(N) Object.values and second reduce iteration
+    let totalKPIs = 0;
     const kpiCounts = kpiStats.reduce((acc, curr) => {
       acc[curr.status] = curr._count.id;
+      totalKPIs += curr._count.id;
       return acc;
     }, {});
-
-    const totalKPIs = Object.values(kpiCounts).reduce((a, b) => a + b, 0);
     const completedKPIs = kpiCounts['completed'] || 0;
     const activeKPIs = kpiCounts['active'] || 0;
 
-    // Process Ticket stats
+    // ⚡ Bolt Optimization: Use numeric map instead of Object.values for performance
+    // What: Processed ticket stats directly to calculate total
+    // Why: Faster than O(N) Object.values array creation
+    let totalTickets = 0;
     const ticketCounts = ticketStats.reduce((acc, curr) => {
       acc[curr.status] = curr._count.id;
+      totalTickets += curr._count.id;
       return acc;
     }, {});
-
-    const totalTickets = Object.values(ticketCounts).reduce((a, b) => a + b, 0);
     const openTickets = ticketCounts['open'] || 0;
     const inProgressTickets = ticketCounts['in_progress'] || 0;
     const resolvedTickets = ticketCounts['resolved'] || 0;
