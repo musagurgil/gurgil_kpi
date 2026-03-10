@@ -8,7 +8,7 @@ import { ActivityDialog } from './ActivityDialog';
 import { cn } from '@/lib/utils';
 
 export const CalendarGrid = () => {
-  const { selectedDate, setSelectedDate, getActivitiesForDate } = useCalendar();
+  const { selectedDate, setSelectedDate, getActivitiesForDate, createActivity, updateActivity, deleteActivity } = useCalendar();
   const { getCategoryById } = useCategories();
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [showActivityDialog, setShowActivityDialog] = useState(false);
@@ -166,6 +166,9 @@ export const CalendarGrid = () => {
           date={selectedDay}
           isOpen={showActivityDialog}
           onClose={() => setShowActivityDialog(false)}
+          onCreateActivity={createActivity}
+          onUpdateActivity={updateActivity}
+          onDeleteActivity={deleteActivity}
         />
       )}
     </Card>

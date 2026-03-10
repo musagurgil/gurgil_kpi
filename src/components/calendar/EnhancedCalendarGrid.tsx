@@ -235,6 +235,9 @@ export const EnhancedCalendarGrid = ({
         isOpen={activityDialog.isOpen}
         onClose={() => setActivityDialog(prev => ({ ...prev, isOpen: false }))}
         editingActivity={activityDialog.editingActivity}
+        onCreateActivity={onCreateActivity}
+        onUpdateActivity={onUpdateActivity}
+        onDeleteActivity={onDeleteActivity}
       />
 
       <EventDetailDialog

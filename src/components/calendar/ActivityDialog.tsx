@@ -29,6 +29,9 @@ interface ActivityDialogProps {
   onClose: () => void;
   initialHour?: number;
   editingActivity?: any;
+  onCreateActivity: (data: any) => Promise<any>;
+  onUpdateActivity: (id: string, data: any) => Promise<any>;
+  onDeleteActivity: (id: string) => Promise<void>;
 }
 
 export const ActivityDialog = ({
@@ -36,9 +39,11 @@ export const ActivityDialog = ({
   isOpen,
   onClose,
   initialHour,
-  editingActivity
+  editingActivity,
+  onCreateActivity,
+  onUpdateActivity,
+  onDeleteActivity
 }: ActivityDialogProps) => {
-  const { createActivity, updateActivity, deleteActivity } = useCalendar();
   const { categories, loading: categoriesLoading } = useCategories();
 
   const [form, setForm] = useState({
@@ -132,14 +137,14 @@ export const ActivityDialog = ({
       const duration = endMinutes - startMinutes;
 
       if (editingActivity) {
-        await updateActivity(editingActivity.id, {
+        await onUpdateActivity(editingActivity.id, {
           ...form,
           date: dateStr,
           duration
         });
         toast.success('Aktivite başarıyla güncellendi');
       } else {
-        await createActivity({
+        await onCreateActivity({
           ...form,
           date: dateStr,
           duration
@@ -171,7 +176,7 @@ export const ActivityDialog = ({
     if (!editingActivity) return;
 
     try {
-      await deleteActivity(editingActivity.id);
+      await onDeleteActivity(editingActivity.id);
       // Toast useCalendar hook'undan gösterilecek
       onClose();
     } catch (error: any) {
