@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 import { Activity } from '@/types/calendar';
+import { format } from 'date-fns';
 
 export const useCalendar = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -86,7 +87,7 @@ export const useCalendar = () => {
   };
 
   const getActivitiesForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = format(date, 'yyyy-MM-dd');
     let filteredActivities = activities.filter(activity => {
       try {
         // Use activity.date field directly for date comparison
@@ -128,8 +129,8 @@ export const useCalendar = () => {
   };
 
   const getViewRangeStats = (startDate: Date, endDate: Date) => {
-    const startStr = startDate.toISOString().split('T')[0];
-    const endStr = endDate.toISOString().split('T')[0];
+    const startStr = format(startDate, 'yyyy-MM-dd');
+    const endStr = format(endDate, 'yyyy-MM-dd');
 
     const rangeActivities = activities.filter(activity => {
       try {
@@ -174,7 +175,7 @@ export const useCalendar = () => {
     const dailyBreakdown: { date: string; dateLabel: string; hours: number; activities: number }[] = [];
     const cursor = new Date(startDate);
     while (cursor <= endDate) {
-      const dStr = cursor.toISOString().split('T')[0];
+      const dStr = format(cursor, 'yyyy-MM-dd');
       const dayActs = rangeActivities.filter(a => a.date === dStr);
       const dayHours = dayActs.reduce((s, a) => s + calcHours(a), 0);
       dailyBreakdown.push({

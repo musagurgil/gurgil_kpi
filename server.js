@@ -1510,6 +1510,18 @@ app.put('/api/tickets/:id', authenticateToken, async (req, res) => {
       );
     }
 
+    // Notify newly assigned user
+    if (assignedTo && assignedTo !== ticket.assignedTo) {
+       await createNotification(
+        assignedTo,
+        'ticket',
+        'high',
+        `👤 Yeni Görev Atandı`,
+        `"${ticket.title}" başlıklı ticket size atandı. Lütfen inceleyin.`,
+        `/tickets#${updatedTicket.id}`
+      );
+    }
+
     res.json(updatedTicket);
   } catch (error) {
     console.error('Update ticket error:', error);
@@ -2654,6 +2666,7 @@ app.put('/api/meeting-reservations/:id/approve', authenticateToken, async (req, 
   try {
     const user = req.user;
     const isAdmin = user.roles && user.roles.includes('admin');
+    const isDepartmentManager = user.roles && user.roles.includes('department_manager');
 
     const { id } = req.params;
 
@@ -2824,10 +2837,6 @@ app.put('/api/meeting-reservations/:id/reject', authenticateToken, async (req, r
     const isAdmin = user.roles && user.roles.includes('admin');
     const isDepartmentManager = user.roles && user.roles.includes('department_manager');
 
-    if (!isAdmin && !isDepartmentManager) {
-      return res.status(403).json({ error: 'Only managers or admins can reject reservations' });
-    }
-
     const { id } = req.params;
 
     const reservation = await prisma.meetingReservation.findUnique({
@@ -2842,8 +2851,14 @@ app.put('/api/meeting-reservations/:id/reject', authenticateToken, async (req, r
       return res.status(404).json({ error: 'Reservation not found' });
     }
 
-    // Check if user can reject (admin or same department manager)
-    if (!isAdmin) {
+    const isRoomResponsible = reservation.room.responsibleId === user.id;
+
+    if (!isAdmin && !isDepartmentManager && !isRoomResponsible) {
+      return res.status(403).json({ error: 'Only managers, admins, or room responsibles can reject reservations' });
+    }
+
+    // Check if user can reject (admin, responsible or same department manager)
+    if (!isAdmin && !isRoomResponsible) {
       const userProfile = await prisma.profile.findUnique({
         where: { id: user.id }
       });

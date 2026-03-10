@@ -1,35 +1,35 @@
 {
-  "id": "backup_2026-02-19_08-25-51",
-  "createdAt": "2026-02-19T08:25:51.784Z",
+  "id": "backup_2026-03-09_11-14-16",
+  "createdAt": "2026-03-09T11:14:16.795Z",
   "createdBy": "cmh04hb4j0009sjkfdax7va1q",
   "createdByName": "Admin User",
   "version": "1.0",
-  "totalSize": 224924,
-  "dbFileSize": 176128,
+  "totalSize": 335901,
+  "dbFileSize": 249856,
   "tables": [
     {
       "name": "departments",
       "displayName": "Departmanlar",
-      "count": 16,
-      "size": 1511
+      "count": 10,
+      "size": 923
     },
     {
       "name": "profiles",
       "displayName": "Kullanıcılar",
-      "count": 20,
-      "size": 4311
+      "count": 71,
+      "size": 17904
     },
     {
       "name": "user_roles",
       "displayName": "Kullanıcı Rolleri",
       "count": 18,
-      "size": 2356
+      "size": 2355
     },
     {
       "name": "kpi_targets",
       "displayName": "KPI Hedefleri",
-      "count": 5,
-      "size": 2070
+      "count": 4,
+      "size": 1655
     },
     {
       "name": "kpi_assignments",
@@ -40,26 +40,26 @@
     {
       "name": "kpi_progress",
       "displayName": "KPI İlerleme",
-      "count": 8,
-      "size": 1999
+      "count": 11,
+      "size": 2684
     },
     {
       "name": "kpi_comments",
       "displayName": "KPI Yorumları",
-      "count": 5,
-      "size": 1335
+      "count": 11,
+      "size": 2642
     },
     {
       "name": "tickets",
       "displayName": "Talepler",
-      "count": 12,
-      "size": 5236
+      "count": 8,
+      "size": 3542
     },
     {
       "name": "ticket_comments",
       "displayName": "Talep Yorumları",
       "count": 2,
-      "size": 462
+      "size": 467
     },
     {
       "name": "calendar_categories",
@@ -70,27 +70,27 @@
     {
       "name": "calendar_activities",
       "displayName": "Takvim Aktiviteleri",
-      "count": 14,
-      "size": 5692
+      "count": 16,
+      "size": 6518
     },
     {
       "name": "notifications",
       "displayName": "Bildirimler",
-      "count": 17,
-      "size": 6116
+      "count": 58,
+      "size": 19518
     },
     {
       "name": "meeting_rooms",
       "displayName": "Toplantı Odaları",
       "count": 6,
-      "size": 1500
+      "size": 1555
     },
     {
       "name": "meeting_reservations",
       "displayName": "Toplantı Rezervasyonları",
-      "count": 9,
-      "size": 3315
+      "count": 13,
+      "size": 4701
     }
   ],
-  "totalRecords": 145
+  "totalRecords": 241
 }

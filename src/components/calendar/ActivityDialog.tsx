@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -127,9 +128,7 @@ export const ActivityDialog = ({
 
     try {
       // Use local date string (YYYY-MM-DD)
-      const offset = date.getTimezoneOffset();
-      const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-      const dateStr = localDate.toISOString().split('T')[0];
+      const dateStr = format(date, 'yyyy-MM-dd');
       const duration = endMinutes - startMinutes;
 
       if (editingActivity) {
