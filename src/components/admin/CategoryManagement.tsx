@@ -171,6 +171,7 @@ export const CategoryManagement = () => {
                     size="sm"
                     onClick={() => handleEdit(category)}
                     className="h-8 w-8 p-0"
+                    aria-label="Kategoriyi düzenle"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -179,6 +180,7 @@ export const CategoryManagement = () => {
                     size="sm"
                     onClick={() => handleDelete(category.id)}
                     className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                    aria-label="Kategoriyi sil"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
