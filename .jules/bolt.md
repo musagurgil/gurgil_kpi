@@ -23,3 +23,7 @@
 ## 2026-03-09 - [React Rules of Hooks vs Performance Optimization]
 **Learning:** When adding `useMemo` hooks to optimize large array `.filter()` operations (like those for KPI tracking stats), it is easy to accidentally violate React's Rules of Hooks if the new hooks are placed after early returns (e.g., `if (isLoading) return <LoadingSpinner />`). This results in a critical crash: "Rendered fewer hooks than expected".
 **Action:** Always verify the placement of newly introduced hooks. Ensure they are declared at the top level of the component hierarchy, before any conditional logic or early `return` statements.
+
+## 2024-03-10 - O(N) Array Iteration Optimizations in Node Express Endpoints
+**Learning:** Pre-computing derived statistics or mapped data inside single `reduce` or `map` loops is significantly faster than chaining multiple array iteration methods like `reduce` followed by `Object.values(...).reduce()` or `forEach` followed by `map`. Node's event loop struggles with redundant synchronous passes over large datasets returned from the database.
+**Action:** Always inspect `.map()`, `.forEach()`, and `.reduce()` chains for combination opportunities. Eliminate intermediate array allocations, especially on DB query results that can easily number in the hundreds of items. Calculate aggregate counts and inline mutations within existing iteration loops wherever possible.
