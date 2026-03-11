@@ -13,11 +13,36 @@ interface MeetingRoomStatsProps {
 }
 
 export function MeetingRoomStats({ rooms, reservations, userReservations, canApprove }: MeetingRoomStatsProps) {
+  // ⚡ Bolt Optimization: Memoize and pre-compute meeting room statistics
+  // What: Replaced multiple O(N) array filtering passes and O(N*M) room reservations lookup with a single O(N) reduce pass
+  // Why: Prevents blocking the main thread with redundant loops over the reservations array on every dashboard render
   const stats = useMemo(() => {
     const now = new Date();
+
+    // Single pass to calculate all reservation stats and group by roomId
+    const resStats = reservations.reduce((acc, r) => {
+      const start = new Date(r.startTime);
+      const isApproved = r.status === 'approved';
+
+      // Group by roomId for O(1) active room checking later
+      if (!acc.byRoom[r.roomId]) acc.byRoom[r.roomId] = [];
+      acc.byRoom[r.roomId].push(r);
+
+      // Calculate upcoming
+      if (isApproved && start >= now) acc.upcoming++;
+
+      // Calculate today
+      if (isToday(start)) acc.today++;
+
+      // Calculate pending
+      if (r.status === 'pending') acc.pending++;
+
+      return acc;
+    }, { byRoom: {} as Record<string, MeetingReservation[]>, upcoming: 0, today: 0, pending: 0 });
+
     const availableRooms = rooms.filter(room => {
-      // Check if room has active reservation
-      const roomReservations = room.reservations ?? reservations.filter(r => r.roomId === room.id);
+      // O(1) lookup instead of O(N) find
+      const roomReservations = room.reservations ?? (resStats.byRoom[room.id] || []);
       const active = roomReservations.some((r) => {
         if (r.status !== 'approved') return false;
         const start = new Date(r.startTime);
@@ -28,31 +53,17 @@ export function MeetingRoomStats({ rooms, reservations, userReservations, canApp
       return !active;
     });
 
-    const upcomingReservations = reservations.filter(r => {
-      if (r.status !== 'approved') return false;
-      const start = new Date(r.startTime);
-      return start >= now;
-    });
-
-    const todayReservations = reservations.filter(r => {
-      const start = new Date(r.startTime);
-      return isToday(start);
-    });
-
-    const pendingReservations = reservations.filter(r => r.status === 'pending');
-
     return {
       totalRooms: rooms.length,
       availableRooms: availableRooms.length,
       totalReservations: reservations.length,
-      upcomingReservations: upcomingReservations.length,
-      todayReservations: todayReservations.length,
-      pendingReservations: pendingReservations.length,
-      userUpcomingReservations: userReservations?.filter(r => {
-        if (r.status !== 'approved') return false;
-        const start = new Date(r.startTime);
-        return start >= now;
-      }).length || 0
+      upcomingReservations: resStats.upcoming,
+      todayReservations: resStats.today,
+      pendingReservations: resStats.pending,
+      userUpcomingReservations: userReservations?.reduce((count, r) => {
+        if (r.status === 'approved' && new Date(r.startTime) >= now) return count + 1;
+        return count;
+      }, 0) || 0
     };
   }, [rooms, reservations, userReservations]);
 

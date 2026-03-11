@@ -27,3 +27,7 @@
 ## 2024-03-10 - O(N) Array Iteration Optimizations in Node Express Endpoints
 **Learning:** Pre-computing derived statistics or mapped data inside single `reduce` or `map` loops is significantly faster than chaining multiple array iteration methods like `reduce` followed by `Object.values(...).reduce()` or `forEach` followed by `map`. Node's event loop struggles with redundant synchronous passes over large datasets returned from the database.
 **Action:** Always inspect `.map()`, `.forEach()`, and `.reduce()` chains for combination opportunities. Eliminate intermediate array allocations, especially on DB query results that can easily number in the hundreds of items. Calculate aggregate counts and inline mutations within existing iteration loops wherever possible.
+
+## 2024-05-20 - [React Render Bottleneck: O(N) array loops over identical arrays]
+**Learning:** Found multiple instances where `.filter().length` was called on the same array consecutively inside `useMemo` hooks to derive summary statistics, causing O(N*C) iterations (where C is the number of filtered views). E.g., `MeetingRoomStats.tsx` iterating `reservations` to calculate `upcoming`, `pending`, and `today` reservations in independent loops.
+**Action:** Always combine consecutive identical-source array filters into a single `.reduce()` pass. In React components with derived aggregate stats, this changes O(N*C) to O(N), saving critical main thread processing time when dashboards initialize or filter states change.

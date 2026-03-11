@@ -64,13 +64,19 @@ export default function Reports() {
       .sort((a, b) => b.value - a.value);
   }, [filteredData.activities, categories]);
 
-  // 2. Ticket Resolution Stats
+  // ⚡ Bolt Optimization: Replace multiple O(N) array filtering passes with a single O(N) reduce
+  // What: Calculates resolved, created, and open tickets in one single-pass reduce loop
+  // Why: Prevents redundant loops over the filteredData.tickets array and O(2N) complexity on every render
   const ticketStats = useMemo(() => {
-    const resolved = filteredData.tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length;
-    const created = filteredData.tickets.length;
-    const open = filteredData.tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
-
-    return { resolved, created, open };
+    return filteredData.tickets.reduce((acc, t) => {
+      acc.created++;
+      if (t.status === 'resolved' || t.status === 'closed') {
+        acc.resolved++;
+      } else if (t.status === 'open' || t.status === 'in_progress') {
+        acc.open++;
+      }
+      return acc;
+    }, { resolved: 0, created: 0, open: 0 });
   }, [filteredData.tickets]);
 
   // 4. Daily Activity Trend
