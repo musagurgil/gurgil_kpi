@@ -26,7 +26,9 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retries: number = 2,
+    delay: number = 1000
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     const headers: Record<string, string> = {
@@ -40,12 +42,48 @@ class ApiClient {
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    let response: Response | null = null;
+    let fetchError: Error | null = null;
 
+    for (let i = 0; i <= retries; i++) {
+      try {
+        response = await fetch(url, {
+          ...options,
+          headers,
+        });
+
+        // Break out of retry loop if successful or it's an error not suitable for retrying (e.g. 401, 400)
+        if (response.ok || (response.status !== 500 && response.status !== 502 && response.status !== 503 && response.status !== 504)) {
+          break;
+        }
+      } catch (error: unknown) {
+        response = null; // Clear response on network error so we don't accidentally preserve an old 5xx response
+        fetchError = error as Error;
+      }
+
+      if (i < retries) {
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    if (!response) {
+      throw fetchError || new Error('Network error');
+    }
+
+    // Interceptors for response
     if (!response.ok) {
+      if (response.status === 401) {
+        // Handle token expiration / unauthorized
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('auth_token'); // Make sure auth_token is removed
+        window.location.href = '/login';
+        const customError = new Error('Oturum süresi doldu. Lütfen tekrar giriş yapın.') as ApiError;
+        customError.status = response.status;
+        throw customError;
+      }
+
       const error = await response.json().catch(() => ({ error: 'Network error' }));
       const errorMessage = error.error || error.details || 'Request failed';
       const customError = new Error(errorMessage) as ApiError;
