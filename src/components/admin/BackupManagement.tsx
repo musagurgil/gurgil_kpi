@@ -478,6 +478,7 @@ export function BackupManagement() {
                                                     size="sm"
                                                     className="text-destructive border-destructive/30 hover:bg-destructive/10"
                                                     title="Yedeği Sil"
+                                                    aria-label="Yedeği Sil"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
