@@ -251,4 +251,33 @@ describe('NotificationContext', () => {
             description: 'Real-time update'
         }));
     });
+
+    it('should handle error when marking a notification as read fails', async () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        vi.mocked(apiClient.markNotificationAsRead).mockRejectedValue(new Error('Test error'));
+
+        const { result } = renderHook(() => useNotificationContext(), { wrapper });
+
+        await waitFor(() => {
+            expect(result.current.loading).toBe(false);
+        });
+
+        // Current state before action
+        const initialUnreadCount = result.current.unreadCount;
+        const isReadInitial = result.current.allNotifications[0].isRead;
+
+        await act(async () => {
+            await result.current.markAsRead('notif-1');
+        });
+
+        expect(apiClient.markNotificationAsRead).toHaveBeenCalledWith('notif-1');
+        expect(consoleSpy).toHaveBeenCalledWith('Error marking notification as read:', expect.any(Error));
+        expect(toast.error).toHaveBeenCalledWith('Hata oluştu');
+
+        // Verify state is NOT updated
+        expect(result.current.unreadCount).toBe(initialUnreadCount);
+        expect(result.current.allNotifications[0].isRead).toBe(isReadInitial);
+
+        consoleSpy.mockRestore();
+    });
 });
