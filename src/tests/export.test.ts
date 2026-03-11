@@ -81,6 +81,72 @@ describe('export utilities', () => {
       expect(mockClick).toHaveBeenCalled();
       expect(mockRemoveChild).toHaveBeenCalled();
     });
+
+    it('should handle undefined or null fields gracefully', async () => {
+      const mockKPIs: Partial<KPIStats>[] = [
+        {
+          id: '2',
+          title: undefined as unknown as string,
+          department: undefined as unknown as string,
+          period: undefined as unknown as string,
+          priority: undefined as unknown as string,
+          targetValue: undefined as unknown as number,
+          currentValue: undefined as unknown as number,
+          unit: undefined as unknown as string,
+          progressPercentage: undefined as unknown as number,
+          status: undefined as unknown as string,
+          startDate: undefined as unknown as string,
+          endDate: undefined as unknown as string,
+          remainingDays: undefined as unknown as number,
+          velocity: undefined as unknown as number,
+          description: undefined as unknown as string,
+        }
+      ];
+
+      exportKPIsToCSV(mockKPIs as KPIStats[]);
+
+      expect(mockCreateObjectURL).toHaveBeenCalled();
+      const createObjCall = mockCreateObjectURL.mock.calls[0][0];
+
+      // Since blob.text() is not natively available in this jsdom setup, we can read the properties indirectly
+      // because Blob in jsdom might be a mock or simplified object.
+      // A common workaround is to use FileReader.
+      const blob = createObjCall as Blob;
+      const text = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsText(blob);
+      });
+
+      // Ensure we don't have literal "undefined" or "null" strings where we expect empty quotes or 0s
+      expect(text).toContain('"",0,0,"",0.00,"",,,0,0.00,""');
+      expect(mockClick).toHaveBeenCalled();
+    });
+
+    it('should escape double quotes in descriptions correctly', async () => {
+      const mockKPIs: Partial<KPIStats>[] = [
+        {
+          id: '3',
+          title: 'Quote Test',
+          description: 'This is a "quoted" text'
+        }
+      ];
+
+      exportKPIsToCSV(mockKPIs as KPIStats[]);
+
+      expect(mockCreateObjectURL).toHaveBeenCalled();
+      const createObjCall = mockCreateObjectURL.mock.calls[0][0];
+
+      const blob = createObjCall as Blob;
+      const text = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsText(blob);
+      });
+
+      expect(text).toContain('"This is a ""quoted"" text"');
+      expect(mockClick).toHaveBeenCalled();
+    });
   });
 
   describe('exportKPIDetailToCSV', () => {
