@@ -29,6 +29,12 @@ vi.mock('../contexts/SocketContext', () => ({
     useSocket: vi.fn(),
 }));
 
+vi.mock('@/hooks/useAuth', () => ({
+    useAuth: vi.fn(() => ({
+        isAuthenticated: true
+    }))
+}));
+
 const mockNotifications = [
     {
         id: 'notif-1',

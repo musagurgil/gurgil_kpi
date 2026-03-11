@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 import { useSocket } from './SocketContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Notification, NotificationFilter } from '@/types/notification';
 
 interface NotificationContextType {
@@ -33,9 +34,15 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     });
 
     const { socket } = useSocket();
+    const { isAuthenticated } = useAuth();
 
     // Load notifications
     useEffect(() => {
+        if (!isAuthenticated) {
+            setLoading(false);
+            return;
+        }
+
         const loadNotifications = async () => {
             try {
                 setLoading(true);
@@ -71,7 +78,7 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         };
 
         loadNotifications();
-    }, []);
+    }, [isAuthenticated]);
 
     // Real-time updates with Socket.io
     useEffect(() => {

@@ -212,7 +212,7 @@ const authLimiter = rateLimit({
 app.post('/api/auth/logout', authenticateToken, async (req, res) => {
   try {
     const token = req.token;
-    
+
     // Calculate exact expiration for efficient DB cleanup
     const decoded = jwt.decode(token);
     // JWT exp is in seconds, convert to MS
@@ -1512,7 +1512,7 @@ app.put('/api/tickets/:id', authenticateToken, async (req, res) => {
 
     // Notify newly assigned user
     if (assignedTo && assignedTo !== ticket.assignedTo) {
-       await createNotification(
+      await createNotification(
         assignedTo,
         'ticket',
         'high',
@@ -1672,50 +1672,16 @@ app.get('/api/calendar/activities', authenticateToken, async (req, res) => {
       include: { userRoles: true }
     });
 
-    let activities;
-
-    // Check if user is admin or department manager
-    const isAdmin = userProfile?.userRoles?.some(role => role.role === 'admin');
-    const isDepartmentManager = userProfile?.userRoles?.some(role => role.role === 'department_manager');
-
-    if (isAdmin) {
-      // Admin can see all activities
-      activities = await prisma.calendarActivity.findMany({
-        include: {
-          category: true
-        },
-        orderBy: { startTime: 'desc' }
-      });
-    } else if (isDepartmentManager) {
-      // Department manager can see activities from their department users
-      const departmentUsers = await prisma.profile.findMany({
-        where: { department: userProfile.department },
-        select: { id: true }
-      });
-
-      const userIds = departmentUsers.map(user => user.id);
-
-      activities = await prisma.calendarActivity.findMany({
-        where: {
-          userId: { in: userIds }
-        },
-        include: {
-          category: true
-        },
-        orderBy: { startTime: 'desc' }
-      });
-    } else {
-      // Regular users can only see their own activities
-      activities = await prisma.calendarActivity.findMany({
-        where: {
-          userId: req.user.id
-        },
-        include: {
-          category: true
-        },
-        orderBy: { startTime: 'desc' }
-      });
-    }
+    // User explicit request: all users (including admins/managers) should only see their own private calendar.
+    const activities = await prisma.calendarActivity.findMany({
+      where: {
+        userId: req.user.id
+      },
+      include: {
+        category: true
+      },
+      orderBy: { startTime: 'desc' }
+    });
 
     res.json(activities);
   } catch (error) {
@@ -2034,24 +2000,25 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
       };
     }
 
-    // Optimization: Run queries in parallel and use groupBy to reduce DB calls from 9 to 3
-    const [kpiStats, ticketStats, ticketDeptGroup] = await Promise.all([
-      prisma.kpiTarget.groupBy({
-        by: ['status'],
-        where: kpiWhereClause,
-        _count: { id: true }
-      }),
-      prisma.ticket.groupBy({
-        by: ['status'],
-        where: ticketWhereClause,
-        _count: { id: true }
-      }),
-      prisma.ticket.groupBy({
-        by: ['targetDepartment'],
-        where: ticketWhereClause,
-        _count: { id: true }
-      })
-    ]);
+    // Optimization: Use groupBy to reduce DB calls from 9 to 3
+    // Note: Sequential execution instead of Promise.all to prevent SQLite write/read engine deadlocks wrapper
+    const kpiStats = await prisma.kpiTarget.groupBy({
+      by: ['status'],
+      where: kpiWhereClause,
+      _count: { id: true }
+    });
+
+    const ticketStats = await prisma.ticket.groupBy({
+      by: ['status'],
+      where: ticketWhereClause,
+      _count: { id: true }
+    });
+
+    const ticketDeptGroup = await prisma.ticket.groupBy({
+      by: ['targetDepartment'],
+      where: ticketWhereClause,
+      _count: { id: true }
+    });
 
     // ⚡ Bolt Optimization: Calculate total KPIs during initial reduce
     // What: Added total calculation inside the reduce loop

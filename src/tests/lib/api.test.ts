@@ -200,7 +200,7 @@ describe('ApiClient', () => {
         expect(localStorage.getItem('token')).toBeNull();
 
         // Assert redirect
-        expect(window.location.href).toBe('/login');
+        expect(window.location.href).toBe('/auth');
       }
     });
 

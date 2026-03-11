@@ -78,7 +78,7 @@ class ApiClient {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('auth_token'); // Make sure auth_token is removed
-        window.location.href = '/login';
+        window.location.href = '/auth';
         const customError = new Error('Oturum süresi doldu. Lütfen tekrar giriş yapın.') as ApiError;
         customError.status = response.status;
         throw customError;

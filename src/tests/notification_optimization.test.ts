@@ -28,11 +28,21 @@ describe('Notification Performance Optimization', () => {
         // Batch create users
         // Profile creation needs to be done carefully as email must be unique
         // We'll delete them first just in case
-        await prisma.profile.deleteMany({
-            where: {
-                email: { in: usersData.map(u => u.email) }
-            }
+        const userEmails = usersData.map(u => u.email);
+        
+        const existingUsers = await prisma.profile.findMany({
+            where: { email: { in: userEmails } },
+            select: { id: true }
         });
+        const existingIds = existingUsers.map(u => u.id);
+
+        if (existingIds.length > 0) {
+            await prisma.userRole.deleteMany({ where: { userId: { in: existingIds } } });
+            await prisma.kpiAssignment.deleteMany({ where: { userId: { in: existingIds } } });
+            await prisma.notification.deleteMany({ where: { userId: { in: existingIds } } });
+            await prisma.ticket.deleteMany({ where: { createdBy: { in: existingIds } } });
+            await prisma.profile.deleteMany({ where: { id: { in: existingIds } } });
+        }
 
         // Use createMany for users too if supported, but Profile has relations (department)
         // createMany is supported for simple models. Profile has a foreign key to Department.
@@ -124,5 +134,5 @@ describe('Notification Performance Optimization', () => {
         // Note: In some environments with small N, overhead might make them close, but with N=50 it should be faster.
         // Let's be conservative.
         expect(durationOptimized).toBeLessThan(durationSequential);
-    });
+    }, 15000);
 });

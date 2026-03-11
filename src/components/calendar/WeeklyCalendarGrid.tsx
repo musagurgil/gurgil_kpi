@@ -317,6 +317,9 @@ export const WeeklyCalendarGrid = ({
         onClose={() => setActivityDialog(prev => ({ ...prev, isOpen: false }))}
         initialHour={activityDialog.hour}
         editingActivity={activityDialog.editingActivity}
+        onCreateActivity={onCreateActivity}
+        onUpdateActivity={onUpdateActivity}
+        onDeleteActivity={onDeleteActivity}
       />
 
       <EventDetailDialog
