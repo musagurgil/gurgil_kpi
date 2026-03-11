@@ -178,7 +178,7 @@ describe('useAuth Hook', () => {
       expect(result.current.isAuthenticated).toBe(false);
     });
 
-    it('should logout correctly', () => {
+    it('should logout correctly', async () => {
       // Setup initial logged in state
       const payload = btoa(JSON.stringify(mockUser));
       const token = `header.${payload}.signature`;
@@ -188,8 +188,8 @@ describe('useAuth Hook', () => {
 
       expect(result.current.isAuthenticated).toBe(true);
 
-      act(() => {
-        result.current.logout();
+      await act(async () => {
+        await result.current.logout();
       });
 
       expect(apiClient.logout).toHaveBeenCalled();
