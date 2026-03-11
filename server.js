@@ -1998,18 +1998,57 @@ app.delete('/api/notifications', authenticateToken, async (req, res) => {
 // Dashboard stats
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
+    const user = req.user;
+    const isAdmin = user.roles && user.roles.includes('admin');
+    const isBoardMember = user.roles && user.roles.includes('board_member');
+    const isDepartmentManager = user.roles && user.roles.includes('department_manager');
+
+    // Build KPI where clause
+    let kpiWhereClause = {};
+    if (!isAdmin && !isBoardMember) {
+      if (isDepartmentManager) {
+        kpiWhereClause = {
+          OR: [
+            { department: user.department },
+            { assignments: { some: { userId: user.id } } }
+          ]
+        };
+      } else {
+        kpiWhereClause = {
+          OR: [
+            { assignments: { some: { userId: user.id } } }
+          ]
+        };
+      }
+    }
+
+    // Build Ticket where clause
+    let ticketWhereClause = {};
+    if (!isAdmin && !isBoardMember) {
+      ticketWhereClause = {
+        OR: [
+          { targetDepartment: user.department },
+          { sourceDepartment: user.department, createdBy: user.id },
+          { assignedTo: user.id }
+        ]
+      };
+    }
+
     // Optimization: Run queries in parallel and use groupBy to reduce DB calls from 9 to 3
     const [kpiStats, ticketStats, ticketDeptGroup] = await Promise.all([
       prisma.kpiTarget.groupBy({
         by: ['status'],
+        where: kpiWhereClause,
         _count: { id: true }
       }),
       prisma.ticket.groupBy({
         by: ['status'],
+        where: ticketWhereClause,
         _count: { id: true }
       }),
       prisma.ticket.groupBy({
         by: ['targetDepartment'],
+        where: ticketWhereClause,
         _count: { id: true }
       })
     ]);
