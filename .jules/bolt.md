@@ -31,3 +31,7 @@
 ## 2024-05-20 - [React Render Bottleneck: O(N) array loops over identical arrays]
 **Learning:** Found multiple instances where `.filter().length` was called on the same array consecutively inside `useMemo` hooks to derive summary statistics, causing O(N*C) iterations (where C is the number of filtered views). E.g., `MeetingRoomStats.tsx` iterating `reservations` to calculate `upcoming`, `pending`, and `today` reservations in independent loops.
 **Action:** Always combine consecutive identical-source array filters into a single `.reduce()` pass. In React components with derived aggregate stats, this changes O(N*C) to O(N), saving critical main thread processing time when dashboards initialize or filter states change.
+
+## 2026-03-12 - [React Render Bottleneck: O(N*C) duplicate filtering in render loop]
+**Learning:** Found an issue where the `userReservations` array in `MeetingRooms.tsx` was being repeatedly filtered using `.filter().map()` and `.filter().length` *for each tab iteration* inside the render loop. This essentially iterated the entire array 6 times per render cycle, causing an O(N*C) operation bottleneck.
+**Action:** When categorizing an array of elements based on conditions (e.g. into 'approved', 'pending', 'history' buckets), do not use `.filter()` inside the render map. Instead, pre-calculate the buckets in a single `useMemo` pass by iterating once over the array (`O(N)`) and pushing each item into its respective category bucket. Render the pre-calculated arrays directly to prevent excessive CPU cycles.
