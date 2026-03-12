@@ -301,6 +301,28 @@ export default function MeetingRooms() {
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   }, [reservations, user?.id]);
 
+  // Pre-categorize user reservations to avoid O(N*C) filtering in the render loop
+  const categorizedUserReservations = useMemo(() => {
+    const categorized: Record<'approved' | 'pending' | 'history', typeof userReservations> = {
+      approved: [],
+      pending: [],
+      history: []
+    };
+
+    userReservations.forEach(r => {
+      const isPastRes = isPast(new Date(r.endTime));
+      if (isPastRes || r.status === 'rejected') {
+        categorized.history.push(r);
+      } else if (r.status === 'approved') {
+        categorized.approved.push(r);
+      } else if (r.status === 'pending') {
+        categorized.pending.push(r);
+      }
+    });
+
+    return categorized;
+  }, [userReservations]);
+
 
   if (loading) {
     return (
@@ -528,13 +550,7 @@ export default function MeetingRooms() {
                 {['approved', 'pending', 'history'].map((tab) => (
                   <TabsContent key={tab} value={tab} className="mt-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {userReservations.filter(r => {
-                        const isPastRes = isPast(new Date(r.endTime));
-                        if (tab === 'history') return isPastRes || r.status === 'rejected';
-                        if (tab === 'approved') return !isPastRes && r.status === 'approved';
-                        if (tab === 'pending') return !isPastRes && r.status === 'pending';
-                        return false;
-                      }).map((reservation) => {
+                      {categorizedUserReservations[tab as 'approved' | 'pending' | 'history'].map((reservation) => {
                         const room = roomsById[reservation.roomId];
                         const startDate = new Date(reservation.startTime);
                         const endDate = new Date(reservation.endTime);
@@ -602,13 +618,7 @@ export default function MeetingRooms() {
                           </Card>
                         );
                       })}
-                      {userReservations.filter(r => {
-                        const isPastRes = isPast(new Date(r.endTime));
-                        if (tab === 'history') return isPastRes || r.status === 'rejected';
-                        if (tab === 'approved') return !isPastRes && r.status === 'approved';
-                        if (tab === 'pending') return !isPastRes && r.status === 'pending';
-                        return false;
-                      }).length === 0 && (
+                      {categorizedUserReservations[tab as 'approved' | 'pending' | 'history'].length === 0 && (
                           <p className="text-muted-foreground text-sm col-span-full py-4 text-center">
                             Bu kategoride rezervasyon bulunmuyor.
                           </p>
