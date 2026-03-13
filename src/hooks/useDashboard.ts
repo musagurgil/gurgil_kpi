@@ -59,20 +59,70 @@ export const useDashboard = () => {
     todaySummary
   } = useMemo(() => {
     const userKPIs = userKPIsList.length;
-    const userCompletedKPIs = userKPIsList.filter(kpi =>
-      kpi.lifecycleStatus === 'completed' || kpi.progressPercentage >= 100
-    ).length;
-    const userActiveKPIs = userKPIsList.filter(kpi =>
-      kpi.lifecycleStatus === 'active' && kpi.progressPercentage < 100
-    ).length;
 
-    // Filter critical KPIs
-    const criticalKPIs: CriticalKPI[] = userKPIsList
-      .filter(kpi =>
+    // ⚡ Bolt Optimization: Single O(N) pass to calculate all derived stats
+    // What: Replaced multiple O(N) array filters (.filter().length) with a single pass
+    // Why: Prevent redundant iterations over the KPI list for different aggregates
+    let userCompletedKPIs = 0;
+    let userActiveKPIs = 0;
+    const rawCriticalKPIs = [];
+    const rawUpcomingDeadlines = [];
+    let completedToday = 0;
+    let dueToday = 0;
+    let dueThisWeek = 0;
+
+    const now = new Date();
+    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const weekLater = new Date(today);
+    weekLater.setDate(weekLater.getDate() + 7);
+
+    for (const kpi of userKPIsList) {
+      if (kpi.lifecycleStatus === 'completed' || kpi.progressPercentage >= 100) {
+        userCompletedKPIs++;
+      } else if (kpi.lifecycleStatus === 'active' && kpi.progressPercentage < 100) {
+        userActiveKPIs++;
+      }
+
+      if (
         kpi.priority === 'critical' ||
         kpi.status === 'danger' ||
         (kpi.status === 'warning' && kpi.progressPercentage < 50)
-      )
+      ) {
+        rawCriticalKPIs.push(kpi);
+      }
+
+      const endDate = new Date(kpi.endDate);
+      if (endDate >= now && endDate <= sevenDaysLater && kpi.progressPercentage < 100) {
+        rawUpcomingDeadlines.push(kpi);
+      }
+
+      const hasProgressToday = kpi.recentProgress?.some((p: KPIProgress) => {
+        const progressDate = new Date(p.createdAt);
+        return progressDate >= today && progressDate < tomorrow;
+      });
+      if (hasProgressToday || (kpi.status === 'success' && kpi.progressPercentage >= 100)) {
+        completedToday++;
+      }
+
+      if (kpi.progressPercentage < 100) {
+        const endDateMidnight = new Date(kpi.endDate);
+        endDateMidnight.setHours(0, 0, 0, 0);
+        if (endDateMidnight.getTime() === today.getTime()) {
+          dueToday++;
+        }
+
+        if (endDate >= today && endDate <= weekLater) {
+          dueThisWeek++;
+        }
+      }
+    }
+
+    // Process sorted critical KPIs
+    const criticalKPIs: CriticalKPI[] = rawCriticalKPIs
       .sort((a, b) => {
         // Sort by priority: danger > warning > critical priority > others
         if (a.status === 'danger' && b.status !== 'danger') return -1;
@@ -98,23 +148,8 @@ export const useDashboard = () => {
         remainingDays: kpi.remainingDays
       }));
 
-    // Calculate upcoming deadlines (7 days)
-    const now = new Date();
-    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-    // Normalize dates for day comparison
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const weekLater = new Date(today);
-    weekLater.setDate(weekLater.getDate() + 7);
-
-    const upcomingDeadlines: UpcomingDeadline[] = userKPIsList
-      .filter(kpi => {
-        const endDate = new Date(kpi.endDate);
-        return endDate >= now && endDate <= sevenDaysLater && kpi.progressPercentage < 100;
-      })
+    // Process sorted upcoming deadlines
+    const upcomingDeadlines: UpcomingDeadline[] = rawUpcomingDeadlines
       .sort((a, b) => {
         const aDate = new Date(a.endDate);
         const bDate = new Date(b.endDate);
@@ -130,27 +165,6 @@ export const useDashboard = () => {
         priority: kpi.priority,
         department: kpi.department
       }));
-
-    // Calculate today's summary
-    const completedToday = userKPIsList.filter(kpi => {
-      // Check if progress was recorded today
-      const hasProgressToday = kpi.recentProgress?.some((p: KPIProgress) => {
-        const progressDate = new Date(p.createdAt);
-        return progressDate >= today && progressDate < tomorrow;
-      });
-      return hasProgressToday || (kpi.status === 'success' && kpi.progressPercentage >= 100);
-    }).length;
-
-    const dueToday = userKPIsList.filter(kpi => {
-      const endDate = new Date(kpi.endDate);
-      endDate.setHours(0, 0, 0, 0);
-      return endDate.getTime() === today.getTime() && kpi.progressPercentage < 100;
-    }).length;
-
-    const dueThisWeek = userKPIsList.filter(kpi => {
-      const endDate = new Date(kpi.endDate);
-      return endDate >= today && endDate <= weekLater && kpi.progressPercentage < 100;
-    }).length;
 
     return {
       userKPIs,
