@@ -279,6 +279,7 @@ export function TicketManagement() {
                   key={mode}
                   onClick={() => setViewMode(mode)}
                   title={title}
+                  aria-label={title}
                   className={`p-1.5 rounded-md transition-all duration-200 ${viewMode === mode
                     ? 'bg-white/25 text-white shadow-sm'
                     : 'text-white/60 hover:text-white hover:bg-white/10'
@@ -293,6 +294,7 @@ export function TicketManagement() {
             <button
               onClick={() => setShowCharts(!showCharts)}
               title={showCharts ? 'Grafikleri Gizle' : 'Grafikleri Göster'}
+              aria-label={showCharts ? 'Grafikleri Gizle' : 'Grafikleri Göster'}
               className={`p-2 rounded-lg transition-all duration-200 border ${showCharts
                 ? 'bg-white/20 text-white border-white/30'
                 : 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white/70'
