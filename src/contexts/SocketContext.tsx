@@ -35,6 +35,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     useEffect(() => {
         if (socket && user) {
+            socket.auth = { token: localStorage.getItem('auth_token') };
             socket.connect();
 
             socket.on('connect', () => {
