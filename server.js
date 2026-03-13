@@ -44,20 +44,42 @@ app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 // Socket.io Connection Handler
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    return next(new Error('Authentication error: Token required'));
+  }
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return next(new Error('Authentication error: Invalid token'));
+    }
+    socket.user = decoded;
+    next();
+  });
+});
+
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+  console.log('User connected:', socket.id, 'User ID:', socket.user.id);
 
   socket.on('join_user_room', (userId) => {
-    if (userId) {
+    // Security: Only allow user to join their own room or admin can join any
+    const isAdmin = socket.user.roles && socket.user.roles.includes('admin');
+    if (userId && (socket.user.id === userId || isAdmin)) {
       socket.join(`user:${userId}`);
       console.log(`Socket ${socket.id} joined room user:${userId}`);
+    } else {
+      console.log(`Socket ${socket.id} unauthorized attempt to join room user:${userId}`);
     }
   });
 
   socket.on('join_department_room', (department) => {
-    if (department) {
+    // Security: Only allow user to join their own department room or admin can join any
+    const isAdmin = socket.user.roles && socket.user.roles.includes('admin');
+    if (department && (socket.user.department === department || isAdmin)) {
       socket.join(`dept:${department}`);
       console.log(`Socket ${socket.id} joined room dept:${department}`);
+    } else {
+      console.log(`Socket ${socket.id} unauthorized attempt to join room dept:${department}`);
     }
   });
 
