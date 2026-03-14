@@ -3635,36 +3635,34 @@ app.post('/api/admin/backup/:id/restore', authenticateToken, async (req, res) =>
 
       // 6. KPI Progress
       if (data.kpi_progress?.length) {
-        for (const progress of data.kpi_progress) {
-          await tx.kpiProgress.create({
-            data: {
-              id: progress.id,
-              kpiId: progress.kpiId,
-              userId: progress.userId,
-              value: progress.value,
-              note: progress.note,
-              recordedAt: new Date(progress.recordedAt),
-              recordedBy: progress.recordedBy
-            }
-          });
-        }
+        // Optimize: Use createMany to avoid N+1 queries during backup restore
+        await tx.kpiProgress.createMany({
+          data: data.kpi_progress.map(progress => ({
+            id: progress.id,
+            kpiId: progress.kpiId,
+            userId: progress.userId,
+            value: progress.value,
+            note: progress.note,
+            recordedAt: new Date(progress.recordedAt),
+            recordedBy: progress.recordedBy
+          }))
+        });
         restoredRecords += data.kpi_progress.length;
       }
 
       // 7. KPI Comments
       if (data.kpi_comments?.length) {
-        for (const comment of data.kpi_comments) {
-          await tx.kpiComment.create({
-            data: {
-              id: comment.id,
-              kpiId: comment.kpiId,
-              userId: comment.userId,
-              userName: comment.userName,
-              content: comment.content,
-              createdAt: new Date(comment.createdAt)
-            }
-          });
-        }
+        // Optimize: Use createMany to avoid N+1 queries during backup restore
+        await tx.kpiComment.createMany({
+          data: data.kpi_comments.map(comment => ({
+            id: comment.id,
+            kpiId: comment.kpiId,
+            userId: comment.userId,
+            userName: comment.userName,
+            content: comment.content,
+            createdAt: new Date(comment.createdAt)
+          }))
+        });
         restoredRecords += data.kpi_comments.length;
       }
 
