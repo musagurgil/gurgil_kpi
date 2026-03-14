@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, AlertTriangle, ArrowRight, Check } from 'lucide-react';
+import { User, AlertTriangle, ArrowRight, Check, Loader2 } from 'lucide-react';
 import { API_URL } from '../../config';
 
 interface UserDeactivationDialogProps {
@@ -172,6 +172,13 @@ const UserDeactivationDialog: React.FC<UserDeactivationDialogProps> = ({
                                 Devret ve Tamamla
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {step === 'processing' && (
+                    <div className="flex flex-col items-center justify-center py-8">
+                        <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+                        <p className="text-gray-600 font-medium">İşlem yapılıyor, lütfen bekleyin...</p>
                     </div>
                 )}
             </div>
