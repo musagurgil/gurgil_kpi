@@ -99,23 +99,21 @@ export default function Settings() {
 
     setLoading(true);
     try {
-      // Mock password update
-      console.log('Updating password');
-
-      // No error handling needed for mock
+      await apiClient.changePassword(currentPassword, newPassword);
 
       toast({
         title: 'Başarılı',
-        description: 'Şifreniz güncellendi',
+        description: 'Şifreniz başarıyla güncellendi',
       });
 
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error) {
+    } catch (error: unknown) {
+      const err = error as Error;
       toast({
         title: 'Hata',
-        description: 'Şifre güncellenirken bir hata oluştu',
+        description: err.message || 'Şifre güncellenirken bir hata oluştu',
         variant: 'destructive',
       });
     } finally {
@@ -249,6 +247,17 @@ export default function Settings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Mevcut Şifre</Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Mevcut şifreniz"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="newPassword">Yeni Şifre</Label>
                   <Input
                     id="newPassword"
@@ -275,7 +284,7 @@ export default function Settings() {
                 <div className="flex justify-end">
                   <Button
                     onClick={handleChangePassword}
-                    disabled={loading || !newPassword || !confirmPassword}
+                    disabled={loading || !currentPassword || !newPassword || !confirmPassword}
                   >
                     {loading ? 'Güncelleniyor...' : 'Şifreyi Güncelle'}
                   </Button>
