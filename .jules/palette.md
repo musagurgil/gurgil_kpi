@@ -1,3 +1,7 @@
 ## 2024-05-18 - Added ARIA Labels to Category Management Action Buttons
 **Learning:** Icon-only buttons for critical actions like editing or deleting categories were missing `aria-label` attributes, making them inaccessible to screen readers. This is a common accessibility oversight in admin interfaces where icons (`Edit`, `Trash2`) are heavily relied upon to save space.
 **Action:** When creating or reviewing UI components, always ensure that any `<Button>` or `<button>` that relies solely on an icon (e.g., from `lucide-react`) has a descriptive, localized `aria-label` (e.g., `aria-label="Kategoriyi düzenle"`) to ensure the action is clear to assistive technologies.
+
+## 2024-05-20 - Missing Processing States in Multi-Step Dialogs
+**Learning:** In complex, multi-step dialogs like `UserDeactivationDialog` where a state transition triggers an asynchronous API call (e.g., `setStep('processing')`), the UI can completely blank out if a fallback render block isn't explicitly defined for that intermediate step. This results in users staring at a frozen, empty modal during long network requests.
+**Action:** Always verify that every defined step in a multi-step flow has a corresponding visual state, especially intermediate loading steps (`processing`, `loading`). Implement `Loader2` spinners with context-aware text (e.g., "İşlem yapılıyor...") to bridge the UX gap between action initiation and completion.

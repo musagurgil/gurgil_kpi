@@ -810,6 +810,57 @@ app.post('/api/admin/profiles/transfer', authenticateToken, async (req, res) => 
   }
 });
 
+// User Password Change endpoint
+app.put('/api/profiles/password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Mevcut şifre ve yeni şifre gereklidir' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Yeni şifre en az 6 karakter olmalıdır' });
+    }
+
+    const user = await prisma.profile.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    }
+
+    // Verify current password
+    if (user.passwordHash) {
+      const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isValid) {
+        return res.status(400).json({ error: 'Mevcut şifre yanlış' });
+      }
+    } else {
+      // Legacy fallback
+      if (currentPassword !== '123456') {
+        return res.status(400).json({ error: 'Mevcut şifre yanlış' });
+      }
+    }
+
+    // Hash the new password
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update the password
+    await prisma.profile.update({
+      where: { id: userId },
+      data: { passwordHash }
+    });
+
+    res.json({ success: true, message: 'Şifreniz başarıyla güncellendi' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Admin Password Reset endpoint
 app.put('/api/admin/profiles/:id/password', authenticateToken, async (req, res) => {
   try {
@@ -3618,36 +3669,34 @@ app.post('/api/admin/backup/:id/restore', authenticateToken, async (req, res) =>
 
       // 6. KPI Progress
       if (data.kpi_progress?.length) {
-        for (const progress of data.kpi_progress) {
-          await tx.kpiProgress.create({
-            data: {
-              id: progress.id,
-              kpiId: progress.kpiId,
-              userId: progress.userId,
-              value: progress.value,
-              note: progress.note,
-              recordedAt: new Date(progress.recordedAt),
-              recordedBy: progress.recordedBy
-            }
-          });
-        }
+        // Optimize: Use createMany to avoid N+1 queries during backup restore
+        await tx.kpiProgress.createMany({
+          data: data.kpi_progress.map(progress => ({
+            id: progress.id,
+            kpiId: progress.kpiId,
+            userId: progress.userId,
+            value: progress.value,
+            note: progress.note,
+            recordedAt: new Date(progress.recordedAt),
+            recordedBy: progress.recordedBy
+          }))
+        });
         restoredRecords += data.kpi_progress.length;
       }
 
       // 7. KPI Comments
       if (data.kpi_comments?.length) {
-        for (const comment of data.kpi_comments) {
-          await tx.kpiComment.create({
-            data: {
-              id: comment.id,
-              kpiId: comment.kpiId,
-              userId: comment.userId,
-              userName: comment.userName,
-              content: comment.content,
-              createdAt: new Date(comment.createdAt)
-            }
-          });
-        }
+        // Optimize: Use createMany to avoid N+1 queries during backup restore
+        await tx.kpiComment.createMany({
+          data: data.kpi_comments.map(comment => ({
+            id: comment.id,
+            kpiId: comment.kpiId,
+            userId: comment.userId,
+            userName: comment.userName,
+            content: comment.content,
+            createdAt: new Date(comment.createdAt)
+          }))
+        });
         restoredRecords += data.kpi_comments.length;
       }
 

@@ -38,3 +38,7 @@
 ## 2026-03-22 - [React Render Bottleneck: O(N) array loops over identical arrays]
 **Learning:** Found multiple instances in `src/hooks/useDashboard.ts` where `.filter().length` was called on the same array consecutively inside `useMemo` hooks to derive summary statistics, causing O(N*C) iterations (where C is the number of filtered views).
 **Action:** Always combine consecutive identical-source array filters into a single loop pass (e.g. `for...of` or `.reduce()`). In React components with derived aggregate stats, this changes O(N*C) to O(N), saving critical main thread processing time when dashboards initialize or filter states change.
+
+## 2026-03-14 - [Prisma N+1 Query Bottleneck in Transactions]
+**Learning:** During large database seed or backup restoration scripts (like in `server.js`), sequential `tx.[model].create()` inside a `for...of` loop creates an N+1 query problem, dramatically slowing down the transaction and blocking the Node.js event loop due to thousands of individual database roundtrips.
+**Action:** Always replace sequential `create` loops within transactions with a single `createMany({ data: [...] })` bulk insert when IDs are either pre-generated (as in backup data) or not immediately needed. This reduces transaction time and prevents timeout errors on large datasets.
