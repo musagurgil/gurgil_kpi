@@ -165,6 +165,13 @@ class ApiClient {
     });
   }
 
+  async changePassword(currentPassword: string, newPassword: string) {
+    return this.request<{ success: boolean; message: string }>('/profiles/password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
   async adminResetPassword(userId: string, newPassword: string) {
     return this.request<{ success: boolean; message: string }>(`/admin/profiles/${userId}/password`, {
       method: 'PUT',
