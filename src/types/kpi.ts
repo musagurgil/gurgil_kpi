@@ -19,7 +19,7 @@ export interface KPITarget {
 
 export interface RawKPI extends KPITarget {
   progress?: KPIProgress[];
-  assignments?: { userId: string }[];
+  assignments?: { userId: string; user?: { id: string; firstName: string; lastName: string; email: string } }[];
   comments?: KPIComment[];
 }
 
@@ -67,6 +67,7 @@ export interface KPIStats {
   recentProgress: KPIProgress[];
   comments: KPIComment[];
   assignedUsers: string[];
+  assignedUserNames: { id: string; name: string }[];
 }
 
 export interface CreateKPIData {
@@ -185,8 +186,14 @@ export const calculateKPIStats = (kpi: RawKPI): KPIStats => {
     }
   }
 
-  // Transform assignments array to assignedUsers array (user IDs)
+  // Transform assignments array to assignedUsers array (user IDs) and names
   const assignedUsers = kpi.assignments?.map((assignment) => assignment.userId) || [];
+  const assignedUserNames = kpi.assignments?.map((assignment) => ({
+    id: assignment.userId,
+    name: assignment.user
+      ? `${assignment.user.firstName} ${assignment.user.lastName}`.trim()
+      : assignment.userId
+  })) || [];
 
   return {
     ...kpi,
@@ -201,6 +208,7 @@ export const calculateKPIStats = (kpi: RawKPI): KPIStats => {
     estimatedCompletion: estimatedCompletion?.toISOString(),
     recentProgress: kpi.progress || [],
     assignedUsers,
+    assignedUserNames,
     comments: kpi.comments || []
   };
 };

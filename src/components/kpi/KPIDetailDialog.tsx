@@ -442,16 +442,38 @@ export function KPIDetailDialog({
 
                             <div className="text-muted-foreground text-xs">Atananlar</div>
                             <div className="text-right">
-                              {kpiStats.assignedUsers && kpiStats.assignedUsers.length > 0 ? (
+                              {kpiStats.assignedUserNames && kpiStats.assignedUserNames.length > 0 ? (
                                 <div className="flex flex-wrap justify-end gap-1">
-                                  {kpiStats.assignedUsers.map((u: any) => {
-                                    const user = availableUsers.find(au => au.id === u) || { firstName: u, lastName: '' };
-                                    return (
-                                      <Badge key={u} variant="secondary" className="text-[10px] px-1.5 h-5 bg-muted/50">
-                                        {user.firstName} {user.lastName?.[0]}.
+                                  {kpiStats.assignedUserNames.slice(0, 2).map((u) => (
+                                    <Badge key={u.id} variant="secondary" className="text-[10px] px-1.5 h-5 bg-muted/50">
+                                      {u.name}
+                                    </Badge>
+                                  ))}
+                                  {kpiStats.assignedUserNames.length > 2 && (
+                                    <div className="relative group">
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] px-1.5 h-5 cursor-pointer hover:bg-primary/10 transition-colors"
+                                      >
+                                        +{kpiStats.assignedUserNames.length - 2} kişi
                                       </Badge>
-                                    );
-                                  })}
+                                      <div className="absolute right-0 top-full mt-1 z-50 hidden group-hover:block animate-in fade-in-50 zoom-in-95">
+                                        <div className="bg-popover border border-border rounded-lg shadow-lg p-3 min-w-[180px]">
+                                          <p className="text-xs font-semibold text-foreground mb-2">Atanan Kişiler ({kpiStats.assignedUserNames.length})</p>
+                                          <div className="space-y-1.5">
+                                            {kpiStats.assignedUserNames.map((u) => (
+                                              <div key={u.id} className="flex items-center gap-2 text-xs text-foreground/80">
+                                                <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-[9px] font-medium text-primary shrink-0">
+                                                  {u.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                {u.name}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-muted-foreground italic text-xs">Atanmamış</span>

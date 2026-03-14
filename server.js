@@ -403,6 +403,40 @@ app.get('/api/users', authenticateToken, async (req, res) => {
   }
 });
 
+// Department-scoped user listing for KPI assignment
+// Admins can see all users, department managers can see users in their own department
+app.get('/api/profiles/department-users', authenticateToken, async (req, res) => {
+  try {
+    const isAdmin = req.user.roles && req.user.roles.includes('admin');
+    const isDepartmentManager = req.user.roles && req.user.roles.includes('department_manager');
+
+    if (!isAdmin && !isDepartmentManager) {
+      return res.status(403).json({ error: 'Only admins and department managers can view department users' });
+    }
+
+    let whereClause = { isActive: true };
+
+    if (!isAdmin) {
+      // Department managers can only see users in their own department
+      whereClause.department = req.user.department;
+    } else if (req.query.department) {
+      // Admins can optionally filter by department
+      whereClause.department = req.query.department;
+    }
+
+    const profiles = await prisma.profile.findMany({
+      where: whereClause,
+      include: { userRoles: true },
+      orderBy: { firstName: 'asc' }
+    });
+
+    res.json(profiles);
+  } catch (error) {
+    console.error('Get department users error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // User management routes
 app.get('/api/admin/profiles', authenticateToken, async (req, res) => {
   try {

@@ -207,7 +207,7 @@ export const useKPI = () => {
 
   const getAccessibleUsers = useCallback(async (): Promise<KPIUser[]> => {
     try {
-      const profiles = await apiClient.getProfiles();
+      const profiles = await apiClient.getDepartmentUsers();
       const processedUsers = profiles.map((profile: User) => {
         // Get the highest priority role (admin > department_manager > employee)
         const roles = profile.userRoles?.map((ur) => ur.role) || profile.roles || [];

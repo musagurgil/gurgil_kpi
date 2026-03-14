@@ -358,25 +358,55 @@ export function CreateKPIDialog({
                 Bu departmanda kullanıcı bulunamadı
               </div>
             ) : (
-              <div className="max-h-32 sm:max-h-40 overflow-y-auto border rounded-md p-3 space-y-2">
-                {departmentUsers.map(user => (
-                  <div key={user.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`user-${user.id}`}
-                      checked={formData.assignedTo.includes(user.id)}
-                      onCheckedChange={(checked) =>
-                        handleAssignedToChange(user.id, checked as boolean)
+              <div className="space-y-2">
+                {/* Select All / Assign to entire department */}
+                <div className="flex items-center space-x-2 p-2 bg-primary/5 border border-primary/20 rounded-md">
+                  <Checkbox
+                    id="select-all-users"
+                    checked={departmentUsers.length > 0 && formData.assignedTo.length === departmentUsers.length}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setFormData(prev => ({
+                          ...prev,
+                          assignedTo: departmentUsers.map(u => u.id)
+                        }));
+                      } else {
+                        setFormData(prev => ({
+                          ...prev,
+                          assignedTo: []
+                        }));
                       }
-                    />
-                    <Label
-                      htmlFor={`user-${user.id}`}
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      {user.firstName} {user.lastName} ({user.role === 'admin' ? 'Sistem Yöneticisi' :
-                        user.role === 'department_manager' ? 'Departman Yöneticisi' : 'Çalışan'})
-                    </Label>
-                  </div>
-                ))}
+                    }}
+                  />
+                  <Label
+                    htmlFor="select-all-users"
+                    className="text-sm font-medium cursor-pointer text-primary"
+                  >
+                    Tüm Birime Ata ({departmentUsers.length} kişi)
+                  </Label>
+                </div>
+
+                {/* Individual user checkboxes */}
+                <div className="max-h-32 sm:max-h-40 overflow-y-auto border rounded-md p-3 space-y-2">
+                  {departmentUsers.map(user => (
+                    <div key={user.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`user-${user.id}`}
+                        checked={formData.assignedTo.includes(user.id)}
+                        onCheckedChange={(checked) =>
+                          handleAssignedToChange(user.id, checked as boolean)
+                        }
+                      />
+                      <Label
+                        htmlFor={`user-${user.id}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {user.firstName} {user.lastName} ({user.role === 'admin' ? 'Sistem Yöneticisi' :
+                          user.role === 'department_manager' ? 'Departman Yöneticisi' : 'Çalışan'})
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             {formData.assignedTo.length === 0 && formData.department && departmentUsers.length > 0 && (

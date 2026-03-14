@@ -139,6 +139,11 @@ class ApiClient {
     return this.request<User[]>('/admin/profiles');
   }
 
+  async getDepartmentUsers(department?: string) {
+    const query = department ? `?department=${encodeURIComponent(department)}` : '';
+    return this.request<User[]>(`/profiles/department-users${query}`);
+  }
+
   async createProfile(data: CreateUserData) {
     return this.request<User>('/admin/profiles', {
       method: 'POST',
