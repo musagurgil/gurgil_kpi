@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, AlertTriangle, ArrowRight, Check, Loader2 } from 'lucide-react';
 import { API_URL } from '../../config';
+import { Button } from '@/components/ui/button';
 
 interface UserDeactivationDialogProps {
     isOpen: boolean;
@@ -118,18 +119,21 @@ const UserDeactivationDialog: React.FC<UserDeactivationDialogProps> = ({
                             Giriş yetkisi kapatılacak ancak geçmiş verileri korunacaktır.
                         </p>
                         <div className="flex justify-end gap-2">
-                            <button
+                            <Button
+                                variant="outline"
                                 onClick={onClose}
-                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                                aria-label="İşlemi iptal et"
                             >
                                 İptal
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant="destructive"
                                 onClick={handleDeactivate}
-                                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+                                className="bg-orange-600 hover:bg-orange-700"
+                                aria-label="Kullanıcıyı pasife al"
                             >
                                 Pasife Al
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 )}
@@ -158,19 +162,21 @@ const UserDeactivationDialog: React.FC<UserDeactivationDialogProps> = ({
                         </select>
 
                         <div className="flex justify-end gap-2">
-                            <button
+                            <Button
+                                variant="outline"
                                 onClick={() => { onSuccess(); onClose(); }} // Skip transfer
-                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded"
+                                aria-label="Görevleri devretmeden kapat"
                             >
                                 Devretmeden Kapat
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                                 onClick={handleTransferAndClose}
                                 disabled={!targetUser}
-                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                                className="bg-blue-600 hover:bg-blue-700"
+                                aria-label="Görevleri devret ve işlemi tamamla"
                             >
                                 Devret ve Tamamla
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 )}
