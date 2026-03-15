@@ -184,8 +184,16 @@ export const useDashboard = () => {
   const { userTickets, userAssignedTickets, recentActivities } = useMemo(() => {
     if (!user) return { userTickets: 0, userAssignedTickets: 0, recentActivities: [] };
 
-    const userTickets = tickets.filter(ticket => ticket.createdBy === user.id).length;
-    const userAssignedTickets = tickets.filter(ticket => ticket.assignedTo === user.id).length;
+    // ⚡ Bolt Optimization: Single O(N) pass for ticket stats
+    // What: Replaced multiple O(N) array filters (.filter().length) with a single pass
+    // Why: Prevents redundant loops over the tickets array when calculating distinct aggregate metrics
+    let userTickets = 0;
+    let userAssignedTickets = 0;
+
+    for (const ticket of tickets) {
+      if (ticket.createdBy === user.id) userTickets++;
+      if (ticket.assignedTo === user.id) userAssignedTickets++;
+    }
 
     // Recent activities from user's KPIs and tickets
     const recentActivities: RecentActivity[] = [];
