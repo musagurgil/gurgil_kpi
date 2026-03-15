@@ -42,3 +42,7 @@
 ## 2026-03-14 - [Prisma N+1 Query Bottleneck in Transactions]
 **Learning:** During large database seed or backup restoration scripts (like in `server.js`), sequential `tx.[model].create()` inside a `for...of` loop creates an N+1 query problem, dramatically slowing down the transaction and blocking the Node.js event loop due to thousands of individual database roundtrips.
 **Action:** Always replace sequential `create` loops within transactions with a single `createMany({ data: [...] })` bulk insert when IDs are either pre-generated (as in backup data) or not immediately needed. This reduces transaction time and prevents timeout errors on large datasets.
+
+## 2024-10-25 - [Frontend Optimize Ticket Stat Calculations]
+**Learning:** Calling `.filter().length` repeatedly inside `useMemo` hooks to calculate different derived metrics (e.g. `userTickets` and `userAssignedTickets`) from the same array results in redundant O(N) loops. This pattern impacts UI responsiveness significantly as arrays grow larger over time.
+**Action:** Always combine derived count calculations into a single `for...of` loop or `.reduce()` when processing large collections like tickets on the frontend to reduce rendering bottlenecks.
