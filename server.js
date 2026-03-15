@@ -9,7 +9,7 @@ import { Server } from 'socket.io';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes } from 'crypto';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 
@@ -466,7 +466,12 @@ app.post('/api/admin/profiles', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Only admins can create profiles' });
     }
 
-    const { email, firstName, lastName, department, roles } = req.body;
+    const { email, password, firstName, lastName, department, roles } = req.body;
+
+    // Security: Hash password before saving, do not store plain text or rely on legacy fallback
+    // If no password is provided, generate a secure random one instead of a predictable default
+    const securePassword = password || randomBytes(16).toString('hex');
+    const passwordHash = await bcrypt.hash(securePassword, 10);
 
     // First, check if department exists, if not create it
     let departmentRecord = await prisma.department.findUnique({
@@ -482,6 +487,7 @@ app.post('/api/admin/profiles', authenticateToken, async (req, res) => {
     const profile = await prisma.profile.create({
       data: {
         email,
+        passwordHash,
         firstName,
         lastName,
         department,
